@@ -6,29 +6,21 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware  # Use FastAPI's built-in CORS
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import RedirectResponse, JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.responses import JSONResponse
 
-from common.couchdb_interactions import build_couchdb_database, get_couchdb_connection
+from common.utilities.configuration import Configuration
+from common.databases.couchdb_interactions import get_couchdb_connection
 from common.logging_helpers import LOGGER
 
 from routers.authentication_router import router as authentication_router
 
-# Configure logging
-
-load_dotenv()
 
 
 def create_app() -> FastAPI:
-    """Application factory pattern for better testability"""
-
     app = FastAPI(
         title="Auxilium API",
         description="The core data IO for Auxilium 3",
         version="3.0.0-alpha",
-        docs_url=None,
-        redoc_url=None,
         swagger_ui_parameters={
             "syntaxHighlight": {
                 "theme": "obsidian",
@@ -37,20 +29,19 @@ def create_app() -> FastAPI:
             "defaultModelExpandDepth": 2,
             "displayRequestDuration": True,
         },
+        contact={
+            "name": CONFIGURATION.get_string('Instance', 'Contacts', 'Maintainer', 'Name'),
+            "email": CONFIGURATION.get_string('Instance', 'Contacts', 'Maintainer', 'EmailAddress'),
+        },
+        license_info={
+            "name": "Apache 2.0",
+            "identifier": "Apache-2.0",
+        },
     )
 
-    # Add CORS middleware FIRST (before other middleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "https://go.fflyd.com",
-            "http://localhost",
-            "http://127.0.0.1",
-            "http://localhost:1234",
-            "http://127.0.0.1:1234",
-            "http://localhost:1938",
-            "http://127.0.0.1:1938",
-        ],
+        allow_origins=CONFIGURATION.get_object('API', 'AllowedOrigins'),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=[
@@ -66,7 +57,6 @@ def create_app() -> FastAPI:
             "X-Requested-With",
             "X-CSRF-Token",
             "X-API-Key",
-            "X-Tenant-ID"
         ],
         expose_headers=[
             "X-Process-Time",
@@ -77,16 +67,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=[
-            "localhost",
-            "127.0.0.1",
-            "localhost:1234",
-            "127.0.0.1:1234",
-            "localhost:1938",
-            "127.0.0.1:1938",
-            "api.fflyd.com",
-            "go.fflyd.com",
-        ]
+        allowed_hosts=CONFIGURATION.get_object('API', 'AllowedHosts'),
     )
 
     app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -124,19 +105,15 @@ def create_app() -> FastAPI:
     return app
 
 
-# Create the app instance
 app = create_app()
 
 if __name__ == "__main__":
-    couchdb = get_couchdb_connection()
-    build_couchdb_database()
-
     import uvicorn
 
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=1938,
+        host=CONFIGURATION.get_string('API', 'Host'),
+        port=CONFIGURATION.get_int('API', 'Port'),
         reload=True,
         # log_level="info",
         log_level="debug",

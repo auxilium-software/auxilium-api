@@ -1,29 +1,20 @@
 import logging
-import os
-import secrets
 
-from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-from passlib.context import CryptContext
-from passlib.hash import argon2
-import jwt
+from fastapi import HTTPException, Depends, status, APIRouter
+from sqlalchemy import text
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional
 import hashlib
-import httpx
 
 from common.captcha_helpers import _verify_recaptcha
-from common.couchdb_interactions import get_couchdb_connection
-from common.mariadb_interactions import get_mariadb_connection
+from common.databases.couchdb_interactions import get_couchdb_connection
+from common.databases.mariadb_interactions import get_mariadb_connection
 
 from common.password_helpers import get_password_hash, verify_password
-from common.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, \
+from common.utilities.configuration import CONFIGURATION
+from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, get_current_user
 from common.uuid_handling import UUIDHandling
-from enumerators.casbin_role import CasbinRole
 from enumerators.database_object_type import DatabaseObjectType
 from models.refresh.refresh_request_model import RefreshRequestModel
 from models.success_response_model import SuccessResponseModel
@@ -41,12 +32,19 @@ router = APIRouter(prefix="/api/v3/authentication", tags=["Authentication"])
 
 
 
-@router.post("/register", response_model=UserRegistrationResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post(
+    path="/register",
+    response_model=UserRegistrationResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Authentication"
+    ],
+)
 async def register(
         request: UserRegistrationRequestModel,
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
-        client_ip: Optional[str] = None
+        client_ip: str = None
 ):
     try:
         if hasattr(request, 'recaptcha_token') and request.recaptcha_token:
@@ -85,14 +83,24 @@ async def register(
         )
 
         user_doc = {
-
+            "full_name": request.full_name,
+            "telephone_number": request.telephone_number,
+            "full_address": request.full_address,
+            "gender": request.gender,
+            "date_of_birth": request.date_of_birth,
         }
         case_doc = {
             "description": request.description,
         }
+        other = {
+            "on_behalf_of": request.on_behalf_of,
+            "data_processing_consent": request.data_processing_consent,
+            "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
+        }
 
 
-        couchdb
+        couchdb[CONFIGURATION.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
+        couchdb[CONFIGURATION.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)
 
         mariadb.commit()
 
@@ -110,7 +118,7 @@ async def register(
 async def login(
         request: UserLoginRequestModel,
         mariadb=Depends(get_mariadb_connection),
-        client_ip: Optional[str] = None
+        client_ip: str = None
 ):
     try:
         if hasattr(request, 'recaptcha_token') and request.recaptcha_token:
