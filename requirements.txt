@@ -1,0 +1,17 @@
+
+fastapi==0.116.1
+uvicorn==0.35.0
+sqlalchemy==2.0.43
+PyMySQL==1.1.1
+passlib[argon2]==1.7.4
+python-jose[cryptography]==3.5.0
+python-multipart==0.0.20
+httpx==0.28.1
+PyJWT==2.10.1
+argon2_cffi==25.1.0
+pydantic[email]==2.11.7
+python-dotenv==1.1.1
+casbin==1.43.0
+casbin-sqlalchemy-adapter==1.4.0
+aiofiles==24.1.0
+couchdb==1.2

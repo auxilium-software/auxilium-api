@@ -1,0 +1,115 @@
+import os
+import logging
+
+from fastapi import HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from passlib.context import CryptContext
+import jwt
+from datetime import datetime, timedelta
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+ALGORITHM = os.getenv('JWT_ALGORITHM')
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
+RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY')
+CAPTCHA_REQUIRED = os.getenv('CAPTCHA_REQUIRED', 'true').lower() == 'true'
+
+security = HTTPBearer()
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    argon2__memory_cost=2048,
+    argon2__time_cost=4,
+    argon2__parallelism=3
+)
+
+from collections import defaultdict
+import time
+
+
+class RateLimiter:
+    def __init__(self):
+        self.attempts = defaultdict(list)
+        self.max_attempts = int(os.getenv('MAX_LOGIN_ATTEMPTS', '5'))
+        self.window_minutes = int(os.getenv('RATE_LIMIT_WINDOW_MINUTES', '15'))
+
+    def is_rate_limited(self, identifier: str) -> bool:
+        """Check if identifier (IP or email) is rate limited"""
+        now = time.time()
+        window_start = now - (self.window_minutes * 60)
+
+        self.attempts[identifier] = [
+            attempt_time for attempt_time in self.attempts[identifier]
+            if attempt_time > window_start
+        ]
+
+        return len(self.attempts[identifier]) >= self.max_attempts
+
+    def record_attempt(self, identifier: str):
+        """Record a failed attempt"""
+        self.attempts[identifier].append(time.time())
+
+
+rate_limiter = RateLimiter()
+
+
+def create_access_token(user_data: dict):
+    to_encode = user_data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "sub": str(user_data["id"])})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_refresh_token(user_data: dict):
+    to_encode = user_data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "sub": str(user_data["id"])})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
+
+
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials"
+            )
+        return payload
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
