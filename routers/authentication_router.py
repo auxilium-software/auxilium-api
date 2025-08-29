@@ -11,7 +11,7 @@ from common.databases.couchdb_interactions import get_couchdb_connection
 from common.databases.mariadb_interactions import get_mariadb_connection
 
 from common.password_helpers import get_password_hash, verify_password
-from common.utilities.configuration import CONFIGURATION
+from common.utilities.configuration import get_configuration
 from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, get_current_user
 from common.uuid_handling import UUIDHandling
@@ -30,8 +30,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/authentication", tags=["Authentication"])
 
 
-
-
 @router.post(
     path="/register",
     response_model=UserRegistrationResponseModel,
@@ -42,6 +40,7 @@ router = APIRouter(prefix="/api/v3/authentication", tags=["Authentication"])
 )
 async def register(
         request: UserRegistrationRequestModel,
+        configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
         client_ip: str = None
@@ -99,8 +98,8 @@ async def register(
         }
 
 
-        couchdb[CONFIGURATION.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
-        couchdb[CONFIGURATION.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)
 
         mariadb.commit()
 

@@ -1,5 +1,5 @@
 import yaml
-
+from typing import Optional
 
 class Configuration:
     def __init__(self, path: str):
@@ -18,5 +18,16 @@ class Configuration:
     def get_int(self, *path: str) -> int:
         return int(self.get_string(*path))
 
+    def get_float(self, *path: str) -> float:
+        return float(self.get_string(*path))
 
-CONFIGURATION: Configuration|None = None
+_configuration: Optional[Configuration] = None
+
+def load_configuration(path: str) -> None:
+    global _configuration
+    _configuration = Configuration(path=path)
+
+def get_configuration() -> Configuration:
+    if _configuration is None:
+        raise RuntimeError("Configuration not loaded. Call load_configuration() first.")
+    return _configuration

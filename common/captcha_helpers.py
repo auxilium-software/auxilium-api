@@ -5,9 +5,13 @@ from fastapi import HTTPException, status
 from typing import Optional
 import httpx
 
+from common.utilities.configuration import get_configuration
+
 async def _verify_recaptcha(token: str, remote_ip: Optional[str] = None) -> dict:
+    configuration = get_configuration()
+
     payload = {
-        "secret": os.getenv("RECAPTCHA_SECRET_KEY"),
+        "secret": configuration.get_string('ReCAPTCHA', 'SecretKey'),
         "response": token
     }
     if remote_ip:
@@ -31,7 +35,7 @@ async def _verify_recaptcha(token: str, remote_ip: Optional[str] = None) -> dict
                 )
 
             score = result.get("score", 0)
-            if score < float(os.getenv("RECAPTCHA_SCORE_THRESHOLD")):
+            if score < configuration.get_float('ReCAPTCHA', 'ScoreThreshold'):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Suspicious activity detected. Please try again."

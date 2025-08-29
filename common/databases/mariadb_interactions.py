@@ -1,17 +1,19 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from common.utilities.configuration import CONFIGURATION
+from common.utilities.configuration import get_configuration
 
 MARIADB_CONNECTION = None
 
 
 def get_mariadb_path():
-    hostname = CONFIGURATION.get_string('Databases', 'MariaDB', 'Host')
-    port     = CONFIGURATION.get_int('Databases', 'MariaDB', 'Port')
-    username = CONFIGURATION.get_string('Databases', 'MariaDB', 'Username')
-    password = CONFIGURATION.get_string('Databases', 'MariaDB', 'Password')
-    database = CONFIGURATION.get_string('Databases', 'MariaDB', 'Database')
+    configuration = get_configuration()
+
+    hostname = configuration.get_string('Databases', 'MariaDB', 'Host')
+    port     = configuration.get_int('Databases', 'MariaDB', 'Port')
+    username = configuration.get_string('Databases', 'MariaDB', 'Username')
+    password = configuration.get_string('Databases', 'MariaDB', 'Password')
+    database = configuration.get_string('Databases', 'MariaDB', 'Database')
 
 
     return f"mysql+pymysql://{username}:{password}@{hostname}:{port}/{database}"

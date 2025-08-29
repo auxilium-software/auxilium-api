@@ -8,13 +8,14 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from common.utilities.configuration import Configuration
+from common.utilities.configuration import Configuration, load_configuration, get_configuration
 from common.databases.couchdb_interactions import get_couchdb_connection
 from common.logging_helpers import LOGGER
 
 from routers.authentication_router import router as authentication_router
 
-
+load_configuration("aux3-dev.yaml")
+CONFIGURATION = get_configuration()
 
 def create_app() -> FastAPI:
     app = FastAPI(
