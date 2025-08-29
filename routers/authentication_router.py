@@ -66,7 +66,9 @@ async def register(
                 detail="Email address is already associated with an existing user account."
             )
 
-        user_id = UUIDHandling().v5s(ObjectType=DatabaseObjectType.STANDARD_LOGIN)
+        user_id = UUIDHandling().v5s(ObjectType=DatabaseObjectType.USER)
+        case_id = UUIDHandling().v5s(ObjectType=DatabaseObjectType.CASE)
+
         password_hash = get_password_hash(request.raw_password)
 
         mariadb.execute(
@@ -82,6 +84,7 @@ async def register(
         )
 
         user_doc = {
+            "_id": user_id,
             "full_name": request.full_name,
             "telephone_number": request.telephone_number,
             "full_address": request.full_address,
@@ -89,7 +92,8 @@ async def register(
             "date_of_birth": request.date_of_birth,
         }
         case_doc = {
-            "description": request.description,
+            "_id": case_id,
+            "description": request.case_description,
         }
         other = {
             "on_behalf_of": request.on_behalf_of,
@@ -113,7 +117,14 @@ async def register(
         raise e
 
 
-@router.post("/login", response_model=UserLoginResponseModel)
+@router.post(
+    path="/login",
+    response_model=UserLoginResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Authentication"
+    ],
+)
 async def login(
         request: UserLoginRequestModel,
         mariadb=Depends(get_mariadb_connection),
@@ -130,7 +141,7 @@ async def login(
 
         result = mariadb.execute(
             text(
-                "SELECT * FROM standard_logins WHERE email_address = :email"),
+                "SELECT * FROM users WHERE email_address = :email"),
             {
                 "email": request.email_address,
             }
@@ -200,7 +211,14 @@ async def login(
         raise e
 
 
-@router.post("/refresh", response_model=UserLoginResponseModel)
+@router.post(
+    path="/refresh",
+    response_model=UserLoginResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Authentication"
+    ],
+)
 async def refresh(
         request: RefreshRequestModel,
         mariadb=Depends(get_mariadb_connection)
@@ -264,7 +282,14 @@ async def refresh(
         raise e
 
 
-@router.post("/logout", response_model=SuccessResponseModel)
+@router.post(
+    path="/logout",
+    response_model=UserLoginResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Authentication"
+    ],
+)
 async def logout(
         current_user=Depends(get_current_user),
         db=Depends(get_mariadb_connection)
