@@ -1,4 +1,5 @@
-
+import argparse
+import sys
 import time
 
 from dotenv import load_dotenv
@@ -14,7 +15,10 @@ from common.logging_helpers import LOGGER
 
 from routers.authentication_router import router as authentication_router
 
-load_configuration("aux3-dev.yaml")
+parser=argparse.ArgumentParser()
+parser.add_argument("--config", help="The location of the config file")
+args=parser.parse_args()
+load_configuration(args.config)
 CONFIGURATION = get_configuration()
 
 def create_app() -> FastAPI:
