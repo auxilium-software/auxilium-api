@@ -13,13 +13,17 @@ from common.utilities.configuration import Configuration, load_configuration, ge
 from common.databases.couchdb_interactions import get_couchdb_connection
 from common.logging_helpers import LOGGER
 
-from routers.authentication_router import router as authentication_router
+
+from routers.authentication_router  import router as authentication_router
+from routers.user_router            import router as user_router
+
 
 parser=argparse.ArgumentParser()
 parser.add_argument("--config", help="The location of the config file")
 args=parser.parse_args()
 load_configuration(args.config)
 CONFIGURATION = get_configuration()
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -44,25 +48,31 @@ def create_app() -> FastAPI:
         },
     )
 
+    allowed_methods = [
+        "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+    ]
+    allowed_headers = [
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Mx-ReqToken",
+        "Keep-Alive",
+        "X-Requested-With",
+        "X-CSRF-Token",
+        "X-API-Key",
+        "credentials",
+    ]
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=CONFIGURATION.get_object('API', 'AllowedOrigins'),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allow_headers=[
-            "Authorization",
-            "Content-Type",
-            "Accept",
-            "Origin",
-            "User-Agent",
-            "DNT",
-            "Cache-Control",
-            "X-Mx-ReqToken",
-            "Keep-Alive",
-            "X-Requested-With",
-            "X-CSRF-Token",
-            "X-API-Key",
-        ],
+        allow_methods=allowed_methods,
+        allow_headers=allowed_headers,
         expose_headers=[
             "X-Process-Time",
             "X-Total-Count",
@@ -84,8 +94,8 @@ def create_app() -> FastAPI:
         if request.method == "OPTIONS":
             response = JSONResponse(content={}, status_code=200)
             response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, X-CSRF-Token, X-API-Key, X-Tenant-ID"
+            response.headers["Access-Control-Allow-Methods"] = ', '.join(allowed_methods) + ','
+            response.headers["Access-Control-Allow-Headers"] = ', '.join(allowed_headers) + ','
             response.headers["Access-Control-Allow-Credentials"] = "true"
             return response
 
@@ -101,6 +111,7 @@ def create_app() -> FastAPI:
 
     all_routers = [
         (authentication_router,     '/api/v3/authentication'),
+        (user_router,               '/api/v3/user'),
     ]
 
     for router, description in all_routers:

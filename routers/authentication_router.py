@@ -43,7 +43,7 @@ async def register(
         configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
-        client_ip: str = None
+        client_ip: str = None,
 ):
     try:
         if hasattr(request, 'recaptcha_token') and request.recaptcha_token:
@@ -55,7 +55,7 @@ async def register(
             )
 
         result = mariadb.execute(
-            text("SELECT * FROM users WHERE email_address = :email"),
+            text("SELECT * FROM user WHERE email_address = :email"),
             {"email": request.email_address}
         )
         user = result.fetchone()
@@ -71,9 +71,10 @@ async def register(
 
         password_hash = get_password_hash(request.raw_password)
 
+
         mariadb.execute(
             text("""
-                INSERT INTO users (id, email_address, password_hash) 
+                INSERT INTO user (id, email_address, password_hash) 
                 VALUES (:user_id, :email_address, :password_hash)
             """),
             {
@@ -85,6 +86,8 @@ async def register(
 
         user_doc = {
             "_id": user_id,
+            "email_address": request.email_address,
+            "password_hash": password_hash,
             "full_name": request.full_name,
             "telephone_number": request.telephone_number,
             "full_address": request.full_address,
@@ -104,7 +107,6 @@ async def register(
 
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)
-
         mariadb.commit()
 
         return UserRegistrationResponseModel(
@@ -127,8 +129,10 @@ async def register(
 )
 async def login(
         request: UserLoginRequestModel,
+        configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_connection),
-        client_ip: str = None
+        couchdb=Depends(get_couchdb_connection),
+        client_ip: str = None,
 ):
     try:
         if hasattr(request, 'recaptcha_token') and request.recaptcha_token:
@@ -141,35 +145,33 @@ async def login(
 
         result = mariadb.execute(
             text(
-                "SELECT * FROM users WHERE email_address = :email"),
+                "SELECT * FROM user WHERE email_address = :email"),
             {
                 "email": request.email_address,
             }
         )
-        user = result.fetchone()
+        mariadb_user_data = result.fetchone()
 
-        if not user:
+        if not mariadb_user_data:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
             )
 
-        if not user.allow_login:
+        if not mariadb_user_data.allow_login:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account blocked from logging in by the Auxilium IT department."
             )
 
-        if not verify_password(request.raw_password, user.password_hash):
+        if not verify_password(request.raw_password, mariadb_user_data.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
             )
 
         user_data = {
-            "id": user.id,
-            "primary_email_address": user.primary_email_address,
-            "preferred_name": user.preferred_name,
+            "id": mariadb_user_data.id,
         }
         access_token = create_access_token(user_data)
         refresh_token = create_refresh_token(user_data)
@@ -180,7 +182,9 @@ async def login(
                 DELETE FROM refresh_tokens 
                 WHERE user_id=:user_id AND expires_at<NOW()
             """),
-            {"user_id": user.id}
+            {
+                "user_id": mariadb_user_data.id,
+            }
         )
 
         # Store refresh token
@@ -193,7 +197,7 @@ async def login(
                 VALUES (:user_id, :token_hash, :expires_at)
             """),
             {
-                "user_id": user.id,
+                "user_id": mariadb_user_data.id,
                 "token_hash": token_hash,
                 "expires_at": expires_at
             }
@@ -221,7 +225,10 @@ async def login(
 )
 async def refresh(
         request: RefreshRequestModel,
-        mariadb=Depends(get_mariadb_connection)
+        configuration=Depends(get_configuration),
+        mariadb=Depends(get_mariadb_connection),
+        couchdb=Depends(get_couchdb_connection),
+        client_ip: str = None,
 ):
     try:
         token_hash = hashlib.sha256(request.refresh_token.encode()).hexdigest()
@@ -292,22 +299,25 @@ async def refresh(
 )
 async def logout(
         current_user=Depends(get_current_user),
-        db=Depends(get_mariadb_connection)
+        configuration=Depends(get_configuration),
+        mariadb=Depends(get_mariadb_connection),
+        couchdb=Depends(get_couchdb_connection),
+        client_ip: str = None,
 ):
     try:
         user_id = current_user["sub"]
 
         # Remove all refresh tokens for this user
-        db.execute(
+        mariadb.execute(
             text("DELETE FROM refresh_tokens WHERE user_id = :user_id"),
             {
                 "user_id": user_id,
             }
         )
-        db.commit()
+        mariadb.commit()
 
         return SuccessResponseModel()
 
     except Exception as e:
-        db.rollback()
+        mariadb.rollback()
         raise e

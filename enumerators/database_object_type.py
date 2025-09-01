@@ -3,4 +3,5 @@ from enum import Enum
 
 
 class DatabaseObjectType(Enum):
-    USER  = "users"
+    USER    = "user"
+    CASE    = "cases"

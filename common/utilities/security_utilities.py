@@ -7,17 +7,13 @@ from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
 
+from common.utilities.configuration import get_configuration
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-ALGORITHM = os.getenv('JWT_ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
-RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY')
-CAPTCHA_REQUIRED = os.getenv('CAPTCHA_REQUIRED', 'true').lower() == 'true'
 
 security = HTTPBearer()
 pwd_context = CryptContext(
@@ -58,17 +54,25 @@ rate_limiter = RateLimiter()
 
 
 def create_access_token(user_data: dict):
+    configuration = get_configuration()
+    secret_key = configuration.get_string('JWT', 'SecretKey')
+    algorithm = configuration.get_string('JWT', 'Algorithm')
+
     to_encode = user_data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "sub": str(user_data["id"])})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
 
 def create_refresh_token(user_data: dict):
+    configuration = get_configuration()
+    secret_key = configuration.get_string('JWT', 'SecretKey')
+    algorithm = configuration.get_string('JWT', 'Algorithm')
+
     to_encode = user_data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "sub": str(user_data["id"])})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
 
 
@@ -84,8 +88,12 @@ def create_refresh_token(user_data: dict):
 
 
 def decode_token(token: str):
+    configuration = get_configuration()
+    secret_key = configuration.get_string('JWT', 'SecretKey')
+    algorithm = configuration.get_string('JWT', 'Algorithm')
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[algorithm])
         return payload
     except jwt.PyJWTError:
         raise HTTPException(
