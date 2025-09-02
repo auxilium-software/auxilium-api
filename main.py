@@ -15,6 +15,7 @@ from common.logging_helpers import LOGGER
 
 
 from routers.authentication_router  import router as authentication_router
+from routers.case_router            import router as case_router
 from routers.user_router            import router as user_router
 
 
@@ -111,7 +112,8 @@ def create_app() -> FastAPI:
 
     all_routers = [
         (authentication_router,     '/api/v3/authentication'),
-        (user_router,               '/api/v3/user'),
+        (case_router,               '/api/v3/cases'),
+        (user_router,               '/api/v3/users'),
     ]
 
     for router, description in all_routers:

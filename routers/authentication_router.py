@@ -55,7 +55,7 @@ async def register(
             )
 
         result = mariadb.execute(
-            text("SELECT * FROM user WHERE email_address = :email"),
+            text("SELECT * FROM users WHERE email_address = :email"),
             {"email": request.email_address}
         )
         user = result.fetchone()
@@ -74,7 +74,7 @@ async def register(
 
         mariadb.execute(
             text("""
-                INSERT INTO user (id, email_address, password_hash) 
+                INSERT INTO users (id, email_address, password_hash) 
                 VALUES (:user_id, :email_address, :password_hash)
             """),
             {
@@ -145,7 +145,7 @@ async def login(
 
         result = mariadb.execute(
             text(
-                "SELECT * FROM user WHERE email_address = :email"),
+                "SELECT * FROM users WHERE email_address = :email"),
             {
                 "email": request.email_address,
             }
@@ -237,7 +237,7 @@ async def refresh(
         result = mariadb.execute(
             text("""
                 SELECT RT.*, SL.* FROM refresh_tokens AS RT
-                INNER JOIN standard_logins AS SL ON RT.user_id = SL.id
+                INNER JOIN users AS SL ON RT.user_id = SL.id
                 WHERE RT.token_hash = :token_hash AND RT.expires_at > NOW()
             """),
             {

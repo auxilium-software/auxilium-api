@@ -45,16 +45,15 @@ async def me(
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
 ):
-    print(current_user)
     try:
         result = mariadb.execute(
-            text("SELECT * FROM users WHERE email_address = :email"),
+            text("SELECT * FROM users WHERE id = :id"),
             {
-                "email": current_user['email_address'],
+                "id": current_user['id'],
             }
         )
         mariadb_user_data = result.fetchone()
-        couchdb_user_data = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].get(mariadb_user_data.id)
+        couchdb_user_data = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].get(current_user['id'])
 
 
         if not mariadb_user_data:
