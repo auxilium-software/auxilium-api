@@ -1,12 +1,14 @@
-import os
 import logging
+import os
+from datetime import datetime, timedelta
 
+import jwt
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
-import jwt
-from datetime import datetime, timedelta
+from sqlalchemy import text
 
+from common.databases.mariadb_interactions import get_mariadb_connection
 from common.utilities.configuration import get_configuration
 
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +36,6 @@ class RateLimiter:
         self.window_minutes = int(os.getenv('RATE_LIMIT_WINDOW_MINUTES', '15'))
 
     def is_rate_limited(self, identifier: str) -> bool:
-        """Check if identifier (IP or email) is rate limited"""
         now = time.time()
         window_start = now - (self.window_minutes * 60)
 
@@ -46,7 +47,6 @@ class RateLimiter:
         return len(self.attempts[identifier]) >= self.max_attempts
 
     def record_attempt(self, identifier: str):
-        """Record a failed attempt"""
         self.attempts[identifier].append(time.time())
 
 
@@ -75,18 +75,6 @@ def create_refresh_token(user_data: dict):
     return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def decode_token(token: str):
     configuration = get_configuration()
     secret_key = configuration.get_string('JWT', 'SecretKey')
@@ -102,9 +90,10 @@ def decode_token(token: str):
         )
 
 
-
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        mariadb=Depends(get_mariadb_connection),
+):
     token = credentials.credentials
 
     try:
@@ -115,7 +104,20 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
             )
-        return payload
+
+        result = mariadb.execute(
+            text("SELECT * FROM users WHERE id = :id"),
+            {"id": user_id}
+        )
+        mariadb_data = result.fetchone()
+
+        if mariadb_data is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User does not exist"
+            )
+
+        return mariadb_data
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

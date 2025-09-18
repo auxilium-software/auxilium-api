@@ -1,27 +1,24 @@
 import argparse
-import sys
 import time
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware  # Use FastAPI's built-in CORS
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from common.utilities.configuration import Configuration, load_configuration, get_configuration
-from common.databases.couchdb_interactions import get_couchdb_connection
 from common.logging_helpers import LOGGER
+from common.utilities.configuration import load_configuration, get_configuration
 
+from routers.authentication_router              import router as authentication_router
+from routers.case_router                        import router as case_router
+from routers.case_additional_properties_router  import router as case_additional_properties_router
+from routers.user_router                        import router as user_router
+from routers.user_additional_properties_router  import router as user_additional_properties_router
 
-from routers.authentication_router  import router as authentication_router
-from routers.case_router            import router as case_router
-from routers.user_router            import router as user_router
-
-
-parser=argparse.ArgumentParser()
+parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="The location of the config file")
-args=parser.parse_args()
+args = parser.parse_args()
 load_configuration(args.config)
 CONFIGURATION = get_configuration()
 
@@ -109,11 +106,12 @@ def create_app() -> FastAPI:
 
         return response
 
-
     all_routers = [
-        (authentication_router,     '/api/v3/authentication'),
-        (case_router,               '/api/v3/cases'),
-        (user_router,               '/api/v3/users'),
+        (authentication_router,             '/api/v3/authentication'),
+        (case_router,                       '/api/v3/cases'),
+        (case_additional_properties_router, '/api/v3/cases/{case_id}/additional_properties'),
+        (user_router,                       '/api/v3/users'),
+        (user_additional_properties_router, '/api/v3/users/{user_id}/additional_properties'),
     ]
 
     for router, description in all_routers:

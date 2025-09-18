@@ -1,5 +1,7 @@
-import yaml
 from typing import Optional
+
+import yaml
+
 
 class Configuration:
     def __init__(self, path: str):
@@ -21,11 +23,14 @@ class Configuration:
     def get_float(self, *path: str) -> float:
         return float(self.get_string(*path))
 
+
 _configuration: Optional[Configuration] = None
+
 
 def load_configuration(path: str) -> None:
     global _configuration
     _configuration = Configuration(path=path)
+
 
 def get_configuration() -> Configuration:
     if _configuration is None:

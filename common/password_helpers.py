@@ -11,9 +11,11 @@ PASSWORD_CONTEXT = CryptContext(
     argon2__parallelism=1,
 )
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     global PASSWORD_CONTEXT
     return PASSWORD_CONTEXT.verify(plain_password, hashed_password)
+
 
 def get_password_hash(password: str) -> str:
     global PASSWORD_CONTEXT

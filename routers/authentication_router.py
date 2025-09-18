@@ -1,18 +1,17 @@
+import hashlib
 import logging
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, Depends, status, APIRouter
 from sqlalchemy import text
-from datetime import datetime, timedelta
-from typing import Optional
-import hashlib
 
 from common.captcha_helpers import _verify_recaptcha
 from common.databases.couchdb_interactions import get_couchdb_connection
 from common.databases.mariadb_interactions import get_mariadb_connection
-
 from common.password_helpers import get_password_hash, verify_password
 from common.utilities.configuration import get_configuration
-from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, \
+from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, \
+    ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, get_current_user
 from common.uuid_handling import UUIDHandling
 from enumerators.database_object_type import DatabaseObjectType
@@ -71,7 +70,6 @@ async def register(
 
         password_hash = get_password_hash(request.raw_password)
 
-
         mariadb.execute(
             text("""
                 INSERT INTO users (id, email_address, password_hash) 
@@ -103,7 +101,6 @@ async def register(
             "data_processing_consent": request.data_processing_consent,
             "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
         }
-
 
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)

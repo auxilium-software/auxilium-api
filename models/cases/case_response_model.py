@@ -1,17 +1,18 @@
 from typing import List, Any, Dict
 
-from pydantic import EmailStr, BaseModel
+from pydantic import BaseModel
 
 
 class CaseResponseModel(BaseModel):
     id: str
-    sensitivity: str
-    title: str
-    status: str
-    brief_description: str
-    case_referrer: str
-    description: str
+    sensitivity: str | None
+    title: str | None
+    status: str | None
+    brief_description: str | None
+    case_referrer: str | None
+    description: str | None
+    additional_properties: Dict[str, Any] = {}
     workers: List[str] = []
     clients: List[str] = []
-    additional_properties: Dict[str, Any] = {}
-
+    todos: List[str] = []
+    timeline: List[str] = []

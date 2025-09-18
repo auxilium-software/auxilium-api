@@ -1,8 +1,5 @@
-import os
 import uuid
 from uuid import UUID
-
-from dotenv import load_dotenv
 
 from common.utilities.configuration import get_configuration
 from enumerators.database_object_type import DatabaseObjectType

@@ -1,11 +1,10 @@
-
-import os
-
-from fastapi import HTTPException, status
 from typing import Optional
+
 import httpx
+from fastapi import HTTPException, status
 
 from common.utilities.configuration import get_configuration
+
 
 async def _verify_recaptcha(token: str, remote_ip: Optional[str] = None) -> dict:
     configuration = get_configuration()
@@ -53,4 +52,3 @@ async def _verify_recaptcha(token: str, remote_ip: Optional[str] = None) -> dict
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="reCAPTCHA verification service error"
         )
-

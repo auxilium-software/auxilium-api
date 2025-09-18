@@ -1,6 +1,4 @@
-from typing import Optional
-
-from pydantic import EmailStr, BaseModel
+from pydantic import BaseModel
 
 
 class UserRegistrationRequestModel(BaseModel):
