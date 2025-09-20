@@ -1,3 +1,5 @@
+import logging
+import traceback
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -6,6 +8,8 @@ from fastapi import status as http_status
 
 from models.cases.case_response_model import CaseResponseModel
 from models.cases.paginated_case_response_model import PaginatedCasesResponse
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 8
 MAX_PAGE_SIZE = 100
@@ -49,6 +53,8 @@ async def get_cases_with_filter(
 
         query_selector = selector if selector else {}
 
+        logger.info(f"Query selector: {query_selector}")
+
         skip = (page - 1) * page_size
 
         count_result = database.find(
@@ -59,12 +65,17 @@ async def get_cases_with_filter(
 
         count_docs = count_result.get('docs', [])
         total = len(count_docs)
+        logger.info(f"Count query returned {total} documents")
 
         result = database.find(
             selector=query_selector,
             limit=page_size,
             skip=skip,
         )
+
+        logger.info(f"Main query returned {len(result.get('docs', []))} documents")
+        if result.get('warning'):
+            logger.warning(f"Query warning (ignoring): {result.get('warning')}")
 
         docs = result.get('docs', [])
 
@@ -73,6 +84,7 @@ async def get_cases_with_filter(
 
         cases = [build_case_response(doc) for doc in docs]
 
+        logger.info(f"Returning {len(cases)} cases out of {total} total")
 
         return PaginatedCasesResponse(
             data=cases,
@@ -84,6 +96,9 @@ async def get_cases_with_filter(
         )
 
     except Exception as e:
+        logger.error(f"Error querying cases: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database query failed: {str(e)}"
