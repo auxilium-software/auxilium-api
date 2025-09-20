@@ -1,126 +1,233 @@
 import logging
+from typing import Optional, List, Dict, Any
 
-from fastapi import HTTPException, Depends, status, APIRouter
-from sqlalchemy import text
-from datetime import datetime, timedelta
-from typing import Optional, List
-import hashlib
+from fastapi import HTTPException, Depends, status, APIRouter, Query, Path
+from pydantic import BaseModel
 
-from common.captcha_helpers import _verify_recaptcha
 from common.databases.couchdb_interactions import get_couchdb_connection
 from common.databases.mariadb_interactions import get_mariadb_connection
-
-from common.password_helpers import get_password_hash, verify_password
+from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from common.utilities.configuration import get_configuration
-from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, \
-    create_access_token, get_current_user
-from common.uuid_handling import UUIDHandling
-from enumerators.database_object_type import DatabaseObjectType
+from common.utilities.security_utilities import (
+    get_current_user
+)
 from models.cases.case_response_model import CaseResponseModel
-from models.refresh.refresh_request_model import RefreshRequestModel
-from models.success_response_model import SuccessResponseModel
-from models.user_login.user_login_request_model import UserLoginRequestModel
-from models.user_login.user_login_response_model import UserLoginResponseModel
-from models.user_registration.user_registration_request_model import UserRegistrationRequestModel
-from models.user_registration.user_registration_response_model import UserRegistrationResponseModel
-from models.user.user_details_response_model import UserDetailsResponseModel
+from models.cases.paginated_case_response_model import PaginatedCasesResponse
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/v3/cases", tags=["Cases"])
 
 
-@router.get(
-    path="/mine",
-    response_model=List[CaseResponseModel],
-    status_code=status.HTTP_200_OK,
-    tags=[
-        "Cases"
-    ],
-)
-async def mine(
+def pagination_params(
+        page: int = Query(1, ge=1, description="Page number"),
+        per_page: Optional[int] = Query(None, ge=1, le=MAX_PAGE_SIZE, description="Items per page"),
+) -> Dict[str, Any]:
+    return {
+        'page': page,
+        'page_size': per_page or DEFAULT_PAGE_SIZE
+    }
+
+
+def filter_params(
+        search: Optional[str] = Query(None, description="Search in title, description, brief_description"),
+        status: Optional[str] = Query(None, description="Filter by case status"),
+        priority: Optional[str] = Query(None, description="Filter by priority level"),
+) -> Dict[str, Any]:
+    return {
+        'search': search,
+        'status': status,
+        'priority': priority
+    }
+
+
+def sort_params(
+        sort: str = Query("created_at", description="Field to sort by"),
+        order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+) -> Dict[str, str]:
+    return {
+        'sort': sort,
+        'order': order.lower()
+    }
+
+
+
+@router.get("/mine", response_model=PaginatedCasesResponse)
+async def get_my_cases(
+        pagination=Depends(pagination_params),
+        filters=Depends(filter_params),
+        sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
 ):
     try:
-        query = {
-            "selector": {
-                "clients": {
-                    "$elemMatch": {
-                        "$eq": current_user['id'],
-                    }
-                }
-            }
+        selector = {
+            "clients": {
+                "$elemMatch": {
+                    "$eq": current_user.id
+                },
+            },
         }
-        results = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].find(query)
 
-        builder = []
-        for doc in results:
-            builder.append(CaseResponseModel(
-                id=doc['_id'],
-                sensitivity=doc['sensitivity'],
-                title=doc['title'],
-                status=doc['status'],
-                brief_description=doc['brief_description'],
-                case_referrer=doc['case_referrer'],
-                description=doc['description'],
-                workers=doc['workers'],
-                clients=doc['clients'],
-                additional_properties=doc['additional_properties'],
-            ))
-
-        return builder
-
+        return await get_cases_with_filter(
+            selector=selector,
+            **pagination,
+            **filters,
+            **sorting,
+            config=configuration,
+            couchdb=couchdb
+        )
     except Exception as e:
-        raise e
+        logger.error(f"Error fetching user cases: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cases: {str(e)}"
+        )
 
 
-@router.get(
-    path="/assigned",
-    response_model=List[CaseResponseModel],
-    status_code=status.HTTP_200_OK,
-    tags=[
-        "Cases"
-    ],
-)
-async def assigned(
+@router.get("/assigned", response_model=PaginatedCasesResponse)
+async def get_assigned_cases(
+        pagination=Depends(pagination_params),
+        filters=Depends(filter_params),
+        sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
         mariadb=Depends(get_mariadb_connection),
         couchdb=Depends(get_couchdb_connection),
 ):
     try:
-        query = {
-            "selector": {
+        selector = {
+            "workers": {
+                "$elemMatch": {
+                    "$eq": current_user.id
+                },
+            },
+        }
+
+        return await get_cases_with_filter(
+            selector=selector,
+            **pagination,
+            **filters,
+            **sorting,
+            config=configuration,
+            couchdb=couchdb
+        )
+    except Exception as e:
+        logger.error(f"Error fetching assigned cases: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cases: {str(e)}"
+        )
+
+
+@router.get("/all", response_model=PaginatedCasesResponse)
+async def get_all_cases(
+        pagination=Depends(pagination_params),
+        filters=Depends(filter_params),
+        sorting=Depends(sort_params),
+        assigned_to: Optional[str] = Query(None, description="Filter by worker ID"),
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        mariadb=Depends(get_mariadb_connection),
+        couchdb=Depends(get_couchdb_connection),
+):
+    try:
+        if current_user.is_admin:
+            selector = {}
+        else:
+            selector = {
+                "$or": [
+                    {
+                        "clients": {
+                            "$elemMatch": {
+                                "$eq": current_user.id
+                            }
+                        }
+                    },
+                    {
+                        "workers": {
+                            "$elemMatch": {
+                                "$eq": current_user.id
+                            }
+                        }
+                    }
+                ]
+            }
+
+        if assigned_to:
+            worker_filter = {
                 "workers": {
                     "$elemMatch": {
-                        "$eq": current_user['id'],
+                        "$eq": assigned_to
                     }
                 }
             }
-        }
-        results = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].find(query)
 
-        builder = []
-        for doc in results:
-            builder.append(CaseResponseModel(
-                id=doc['_id'],
-                sensitivity=doc['sensitivity'],
-                title=doc['title'],
-                status=doc['status'],
-                brief_description=doc['brief_description'],
-                case_referrer=doc['case_referrer'],
-                description=doc['description'],
-                workers=doc['workers'],
-                clients=doc['clients'],
-                additional_properties=doc['additional_properties'],
-            ))
+            if current_user.is_admin or not selector:
+                selector.update(worker_filter)
+            else:
+                selector = {
+                    "$and": [
+                        selector,
+                        worker_filter
+                    ]
+                }
 
-        return builder
-
+        return await get_cases_with_filter(
+            selector=selector,
+            **pagination,
+            **filters,
+            **sorting,
+            config=configuration,
+            couchdb=couchdb
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise e
+        logger.error(f"Error fetching all cases: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cases: {str(e)}"
+        )
+
+
+@router.get("/{case_id}", response_model=CaseResponseModel)
+async def get_single_case(
+        case_id: str = Path(..., description="Case ID"),
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        couchdb=Depends(get_couchdb_connection),
+):
+    try:
+        collection = get_cases_collection(configuration, couchdb)
+
+        try:
+            doc = collection[case_id]
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Case not found"
+            )
+
+        user_id = current_user.id
+        is_client = user_id in doc.get('clients', [])
+        is_worker = user_id in doc.get('workers', [])
+        is_admin = current_user.is_admin
+
+        if not (is_client or is_worker or is_admin):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this case"
+            )
+
+        return build_case_response(doc)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching case {case_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch case: {str(e)}"
+        )
