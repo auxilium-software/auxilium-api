@@ -6,19 +6,41 @@ from datetime import datetime
 from fastapi import HTTPException, Query
 from fastapi import status as http_status
 
+from common.utilities.parameters import MAX_FETCH_LIMIT
 from models.cases.case_response_model import CaseResponseModel
-from models.cases.paginated_case_response_model import PaginatedCasesResponse
+from models.cases.paginated_cases_response_model import PaginatedCasesResponse
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PAGE_SIZE = 8
-MAX_PAGE_SIZE = 100
-MAX_FETCH_LIMIT = 10000
 
-
-def get_cases_collection(config, couchdb):
-    db_name = config.get_string('Databases', 'CouchDB', 'Databases', 'Cases')
+def get_cases_collection(configuration, couchdb):
+    db_name = configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')
     return couchdb[db_name]
+
+
+def get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id):
+    collection = get_cases_collection(configuration, couchdb)
+
+    try:
+        doc = collection[case_id]
+    except:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Case not found"
+        )
+
+    user_id = current_user.id
+    is_client = user_id in doc.get('clients', [])
+    is_worker = user_id in doc.get('workers', [])
+    is_admin = current_user.is_admin
+
+    if not (is_client or is_worker or is_admin):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
+
+    return doc
 
 
 def build_case_response(doc: Dict) -> CaseResponseModel:
@@ -33,6 +55,8 @@ def build_case_response(doc: Dict) -> CaseResponseModel:
         workers=doc.get('workers', []),
         clients=doc.get('clients', []),
         additional_properties=doc.get('additional_properties', {}),
+        todos=doc.get('todos', []),
+        timeline=doc.get('timeline', []),
     )
 
 

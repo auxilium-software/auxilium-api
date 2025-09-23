@@ -29,11 +29,11 @@ def get_couchdb_connection() -> Generator[couchdb3.Server, None, None]:
     database_url = get_couchdb_path()
     COUCHDB_CONNECTION = couchdb3.Server(database_url)
 
-    for x in ["Cases", "Users"]:
+    for x in ["Cases", "Files", "Messages", "Users"]:
         db_name = configuration.get_string('Databases', 'CouchDB', 'Databases', x)
         try:
             db = COUCHDB_CONNECTION[db_name]
-        except couchdb3.ResourceNotFound:
+        except couchdb3.exceptions.NotFoundError:
             db = COUCHDB_CONNECTION.create(db_name)
 
     try:

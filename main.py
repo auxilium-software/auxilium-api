@@ -11,8 +11,12 @@ from common.logging_helpers import LOGGER
 from common.utilities.configuration import load_configuration, get_configuration
 
 from routers.authentication_router              import router as authentication_router
+from routers.debug_router                       import router as debug_router
+
 from routers.case_router                        import router as case_router
+from routers.case_todo_router                   import router as case_todo_router
 from routers.case_additional_properties_router  import router as case_additional_properties_router
+
 from routers.user_router                        import router as user_router
 from routers.user_additional_properties_router  import router as user_additional_properties_router
 
@@ -107,9 +111,13 @@ def create_app() -> FastAPI:
         return response
 
     all_routers = [
+        (debug_router,                      '/api/v3/debug'),
         (authentication_router,             '/api/v3/authentication'),
+
         (case_router,                       '/api/v3/cases'),
         (case_additional_properties_router, '/api/v3/cases/{case_id}/additional_properties'),
+        (case_todo_router,                  '/api/v3/cases/{case_id}/todos'),
+
         (user_router,                       '/api/v3/users'),
         (user_additional_properties_router, '/api/v3/users/{user_id}/additional_properties'),
     ]

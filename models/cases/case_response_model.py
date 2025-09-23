@@ -12,7 +12,7 @@ class CaseResponseModel(BaseModel):
     case_referrer: str | None
     description: str | None
     additional_properties: Dict[str, Any] = {}
-    workers: List[str] = []
-    clients: List[str] = []
-    todos: List[str] = []
-    timeline: List[str] = []
+    workers: List[str]
+    clients: List[str]
+    todos: List
+    timeline: List

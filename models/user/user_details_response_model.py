@@ -11,4 +11,4 @@ class UserDetailsResponseModel(BaseModel):
     additional_properties: dict  # [str, dict[str, str|int|float|bool|None]]
     documents: list
     created_at: datetime
-    last_updated_at: str
+    last_updated_at: datetime|None

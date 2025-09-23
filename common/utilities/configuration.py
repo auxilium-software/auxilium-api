@@ -14,14 +14,14 @@ class Configuration:
             temp = temp[key]
         return temp
 
-    def get_string(self, *path: str) -> str:
+    def get_string(self, *path: str, default: str = None) -> str:
         return str(self.get_object(*path))
 
-    def get_int(self, *path: str) -> int:
-        return int(self.get_string(*path))
+    def get_int(self, *path: str, default: str = None) -> int:
+        return int(self.get_string(*path, default=default))
 
-    def get_float(self, *path: str) -> float:
-        return float(self.get_string(*path))
+    def get_float(self, *path: str, default: str = None) -> float:
+        return float(self.get_string(*path, default=default))
 
 
 _configuration: Optional[Configuration] = None

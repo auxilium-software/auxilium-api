@@ -6,55 +6,25 @@ from pydantic import BaseModel
 
 from common.databases.couchdb_interactions import get_couchdb_connection
 from common.databases.mariadb_interactions import get_mariadb_connection
-from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, \
+    get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
+from common.utilities.parameters import pagination_params, case_filter_params, sort_params
 from common.utilities.security_utilities import (
     get_current_user
 )
 from models.cases.case_response_model import CaseResponseModel
-from models.cases.paginated_case_response_model import PaginatedCasesResponse
+from models.cases.paginated_cases_response_model import PaginatedCasesResponse
+from models.success_response_model import SuccessResponseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases", tags=["Cases"])
 
 
-def pagination_params(
-        page: int = Query(1, ge=1, description="Page number"),
-        per_page: Optional[int] = Query(None, ge=1, le=MAX_PAGE_SIZE, description="Items per page"),
-) -> Dict[str, Any]:
-    return {
-        'page': page,
-        'page_size': per_page or DEFAULT_PAGE_SIZE
-    }
-
-
-def filter_params(
-        search: Optional[str] = Query(None, description="Search in title, description, brief_description"),
-        status: Optional[str] = Query(None, description="Filter by case status"),
-        priority: Optional[str] = Query(None, description="Filter by priority level"),
-) -> Dict[str, Any]:
-    return {
-        'search': search,
-        'status': status,
-        'priority': priority
-    }
-
-
-def sort_params(
-        sort: str = Query("created_at", description="Field to sort by"),
-        order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
-) -> Dict[str, str]:
-    return {
-        'sort': sort,
-        'order': order.lower()
-    }
-
-
-
 @router.get("/mine", response_model=PaginatedCasesResponse)
 async def get_my_cases(
         pagination=Depends(pagination_params),
-        filters=Depends(filter_params),
+        filters=Depends(case_filter_params),
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
@@ -89,7 +59,7 @@ async def get_my_cases(
 @router.get("/assigned", response_model=PaginatedCasesResponse)
 async def get_assigned_cases(
         pagination=Depends(pagination_params),
-        filters=Depends(filter_params),
+        filters=Depends(case_filter_params),
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
@@ -124,7 +94,7 @@ async def get_assigned_cases(
 @router.get("/all", response_model=PaginatedCasesResponse)
 async def get_all_cases(
         pagination=Depends(pagination_params),
-        filters=Depends(filter_params),
+        filters=Depends(case_filter_params),
         sorting=Depends(sort_params),
         assigned_to: Optional[str] = Query(None, description="Filter by worker ID"),
         configuration=Depends(get_configuration),
@@ -192,7 +162,7 @@ async def get_all_cases(
         )
 
 
-@router.get("/{case_id}", response_model=CaseResponseModel)
+@router.get("/{case_id:path}", response_model=CaseResponseModel)
 async def get_single_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
@@ -200,27 +170,7 @@ async def get_single_case(
         couchdb=Depends(get_couchdb_connection),
 ):
     try:
-        collection = get_cases_collection(configuration, couchdb)
-
-        try:
-            doc = collection[case_id]
-        except:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Case not found"
-            )
-
-        user_id = current_user.id
-        is_client = user_id in doc.get('clients', [])
-        is_worker = user_id in doc.get('workers', [])
-        is_admin = current_user.is_admin
-
-        if not (is_client or is_worker or is_admin):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this case"
-            )
-
+        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
         return build_case_response(doc)
 
     except HTTPException:

@@ -241,18 +241,16 @@ async def refresh(
                 "token_hash": token_hash,
             }
         )
-        token_record = result.fetchone()
+        mariadb_user_data = result.fetchone()
 
-        if not token_record:
+        if not mariadb_user_data:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired refresh token"
             )
 
         user_data = {
-            "id": token_record.user_id,
-            "primary_email_address": token_record.primary_email_address,
-            "preferred_name": token_record.preferred_name,
+            "id": mariadb_user_data.id,
         }
 
         access_token = create_access_token(user_data)
