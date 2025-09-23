@@ -8,19 +8,19 @@ class Configuration:
         with open(path, "r") as file:
             self.config_data = yaml.load(file, Loader=yaml.FullLoader)
 
-    def get_object(self, *path: str) -> object:
+    def get_object(self, *path: str, default=None) -> object:
         temp = self.config_data
         for key in path:
             temp = temp[key]
         return temp
 
     def get_string(self, *path: str, default: str = None) -> str:
-        return str(self.get_object(*path))
+        return str(self.get_object(*path, default=default))
 
-    def get_int(self, *path: str, default: str = None) -> int:
+    def get_int(self, *path: str, default: int = None) -> int:
         return int(self.get_string(*path, default=default))
 
-    def get_float(self, *path: str, default: str = None) -> float:
+    def get_float(self, *path: str, default: float = None) -> float:
         return float(self.get_string(*path, default=default))
 
 

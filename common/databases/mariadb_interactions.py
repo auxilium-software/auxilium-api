@@ -14,7 +14,7 @@ def get_mariadb_path():
     configuration = get_configuration()
 
     hostname = configuration.get_string('Databases', 'MariaDB', 'Host')
-    port     = configuration.get_int('Databases', 'MariaDB', 'Port')
+    port     = configuration.get_int('Databases', 'MariaDB', 'Port', default=3306)
     username = configuration.get_string('Databases', 'MariaDB', 'Username')
     password = configuration.get_string('Databases', 'MariaDB', 'Password')
     database = configuration.get_string('Databases', 'MariaDB', 'Database')

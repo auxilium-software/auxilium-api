@@ -22,11 +22,11 @@ def get_rabbitmq_connection() -> Generator[pika.BlockingConnection, None, None]:
         )
         parameters = pika.ConnectionParameters(
             host                        = configuration.get_string('Databases', 'RabbitMQ', 'Host'),
-            port                        = configuration.get_int('Databases', 'RabbitMQ', 'Port'),
+            port                        = configuration.get_int('Databases', 'RabbitMQ', 'Port', default=5984),
             virtual_host                = configuration.get_string('Databases', 'RabbitMQ', 'VirtualHost'),
             credentials                 = credentials,
-            heartbeat                   = configuration.get_int('Databases', 'RabbitMQ', 'Heartbeat'),
-            blocked_connection_timeout  = configuration.get_int('Databases', 'RabbitMQ', 'BlockedConnectionTimeout'),
+            heartbeat                   = configuration.get_int('Databases', 'RabbitMQ', 'Heartbeat', default=600),
+            blocked_connection_timeout  = configuration.get_int('Databases', 'RabbitMQ', 'BlockedConnectionTimeout', default=300),
         )
 
         connection = pika.BlockingConnection(parameters)
