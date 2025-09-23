@@ -1,9 +1,13 @@
+import logging
+from contextlib import contextmanager
+from typing import Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from common.utilities.configuration import get_configuration
 
-MARIADB_CONNECTION = None
+logger = logging.getLogger(__name__)
 
 
 def get_mariadb_path():
@@ -15,20 +19,36 @@ def get_mariadb_path():
     password = configuration.get_string('Databases', 'MariaDB', 'Password')
     database = configuration.get_string('Databases', 'MariaDB', 'Database')
 
-
     return f"mysql+pymysql://{username}:{password}@{hostname}:{port}/{database}"
 
 
-def get_mariadb_connection():
-    global MARIADB_CONNECTION
-
-    database_url = get_mariadb_path()
-
-    engine = create_engine(database_url)
-    session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    MARIADB_CONNECTION = session()
+@contextmanager
+def get_mariadb_connection() -> Generator[Session, None, None]:
+    session = None
     try:
-        yield MARIADB_CONNECTION
+        database_url = get_mariadb_path()
+
+        engine = create_engine(database_url)
+        session_maker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        session = session_maker()
+
+        logger.info("MariaDB connection established")
+        yield session
+
+    except Exception as e:
+        logger.error(f"Failed to connect to MariaDB: {e}")
+        if session:
+            session.rollback()
+        raise
     finally:
-        MARIADB_CONNECTION.close()
+        if session:
+            try:
+                session.close()
+                logger.info("MariaDB connection closed")
+            except Exception as e:
+                logger.error(f"Error closing MariaDB connection: {e}")
+
+
+def get_mariadb_dependency():
+    with get_mariadb_connection() as session:
+        yield session
