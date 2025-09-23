@@ -23,6 +23,9 @@ class Configuration:
     def get_float(self, *path: str, default: float = None) -> float:
         return float(self.get_string(*path, default=default))
 
+    def get_bool(self, *path: str, default: bool = None) -> bool:
+        return bool(self.get_string(*path, default=default))
+
 
 _configuration: Optional[Configuration] = None
 
