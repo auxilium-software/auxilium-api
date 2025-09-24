@@ -8,7 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 from sqlalchemy import text
 
-from common.databases.mariadb_interactions import get_mariadb_connection
+from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
 from common.utilities.configuration import get_configuration
 
 logging.basicConfig(level=logging.INFO)
@@ -92,13 +92,14 @@ def decode_token(token: str):
 
 def get_current_user(
         credentials: HTTPAuthorizationCredentials = Depends(security),
-        mariadb=Depends(get_mariadb_connection),
+        mariadb=Depends(get_mariadb_dependency),
 ):
     token = credentials.credentials
 
     try:
         payload = decode_token(token)
         user_id = payload.get("sub")
+
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,7 +119,7 @@ def get_current_user(
             )
 
         return mariadb_data
-    except Exception:
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
