@@ -14,7 +14,7 @@ def get_couchdb_path():
 
     protocol = configuration.get_string('Databases', 'CouchDB', 'Protocol')
     hostname = configuration.get_string('Databases', 'CouchDB', 'Host')
-    port     = configuration.get_int('Databases', 'CouchDB', 'Port', default=5984)
+    port     = configuration.get_int('Databases', 'CouchDB', 'Port')
     username = configuration.get_string('Databases', 'CouchDB', 'Username')
     password = configuration.get_string('Databases', 'CouchDB', 'Password')
 

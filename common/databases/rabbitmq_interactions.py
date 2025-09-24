@@ -22,11 +22,11 @@ def get_rabbitmq_connection() -> Generator[pika.BlockingConnection, None, None]:
         )
         parameters = pika.ConnectionParameters(
             host                        = configuration.get_string('Databases', 'RabbitMQ', 'Host'),
-            port                        = configuration.get_int('Databases', 'RabbitMQ', 'Port', default=5984),
+            port                        = configuration.get_int('Databases', 'RabbitMQ', 'Port'),
             virtual_host                = configuration.get_string('Databases', 'RabbitMQ', 'VirtualHost'),
             credentials                 = credentials,
-            heartbeat                   = configuration.get_int('Databases', 'RabbitMQ', 'Heartbeat', default=600),
-            blocked_connection_timeout  = configuration.get_int('Databases', 'RabbitMQ', 'BlockedConnectionTimeout', default=300),
+            heartbeat                   = configuration.get_int('Databases', 'RabbitMQ', 'Heartbeat'),
+            blocked_connection_timeout  = configuration.get_int('Databases', 'RabbitMQ', 'BlockedConnectionTimeout'),
         )
 
         connection = pika.BlockingConnection(parameters)
@@ -50,25 +50,27 @@ def get_rabbitmq_dependency():
         yield connection
 
 
-def publish_message(connection: pika.BlockingConnection, queue_name: str, message: dict, exchange: str = ''):
+def publish_message(connection: pika.BlockingConnection, queue_key: str, message: dict):
     try:
+        configuration = get_configuration()
+
         channel = connection.channel()
 
-        channel.queue_declare(queue=queue_name, durable=True)
+        channel.queue_declare(queue=configuration.get_string('Databases', 'RabbitMQ', 'Queues', queue_key), durable=True)
 
         channel.basic_publish(
-            exchange=exchange,
-            routing_key=queue_name,
+            exchange=configuration.get_string('Databases', 'RabbitMQ', 'Exchange'),
+            routing_key=configuration.get_string('Databases', 'RabbitMQ', 'Queues', queue_key),
             body=json.dumps(message),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make the message persistent
             )
         )
 
-        logger.info(f"Message published to queue '{queue_name}': {message}")
+        logger.info(f"Message published to queue '{queue_key}': {message}")
         channel.close()
 
     except Exception as e:
-        logger.error(f"Failed to publish message to '{queue_name}': {e}")
+        logger.error(f"Failed to publish message to '{queue_key}': {e}")
         raise
 

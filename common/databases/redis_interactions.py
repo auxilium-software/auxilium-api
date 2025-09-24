@@ -18,14 +18,14 @@ def get_redis_connection() -> Generator[redis.Redis, None, None]:
 
         connection = redis.Redis(
             host                    = configuration.get_string('Databases', 'Redis', 'Host'),
-            port                    = configuration.get_int('Databases', 'Redis', 'Port', default=6379),
+            port                    = configuration.get_int('Databases', 'Redis', 'Port'),
             password                = configuration.get_string('Databases', 'Redis', 'Password'),
             db                      = configuration.get_int('Databases', 'Redis', 'Database'),
-            decode_responses        = configuration.get_bool('Databases', 'Redis', 'DecodeResponses', default=True),
-            socket_connect_timeout  = configuration.get_int('Databases', 'Redis', 'ConnectTimeout', default=5),
-            socket_timeout          = configuration.get_int('Databases', 'Redis', 'SocketTimeout', default=5),
-            retry_on_timeout        = configuration.get_bool('Databases', 'Redis', 'RetryOnTimeout', default=True),
-            health_check_interval   = configuration.get_int('Databases', 'Redis', 'HealthCheckInterval', default=30),
+            decode_responses        = configuration.get_bool('Databases', 'Redis', 'DecodeResponses'),
+            socket_connect_timeout  = configuration.get_int('Databases', 'Redis', 'ConnectTimeout'),
+            socket_timeout          = configuration.get_int('Databases', 'Redis', 'SocketTimeout'),
+            retry_on_timeout        = configuration.get_bool('Databases', 'Redis', 'RetryOnTimeout'),
+            health_check_interval   = configuration.get_int('Databases', 'Redis', 'HealthCheckInterval'),
         )
 
         connection.ping()
