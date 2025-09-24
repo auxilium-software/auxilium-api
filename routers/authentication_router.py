@@ -6,8 +6,10 @@ from fastapi import HTTPException, Depends, status, APIRouter
 from sqlalchemy import text
 
 from common.captcha_helpers import _verify_recaptcha
-from common.databases.couchdb_interactions import get_couchdb_connection
-from common.databases.mariadb_interactions import get_mariadb_connection
+from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
+from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
+from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
+from common.databases.redis_interactions import get_redis_dependency
 from common.password_helpers import get_password_hash, verify_password
 from common.utilities.configuration import get_configuration
 from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, \
@@ -40,8 +42,10 @@ router = APIRouter(prefix="/api/v3/authentication", tags=["Authentication"])
 async def register(
         request: UserRegistrationRequestModel,
         configuration=Depends(get_configuration),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -127,8 +131,10 @@ async def register(
 async def login(
         request: UserLoginRequestModel,
         configuration=Depends(get_configuration),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -223,8 +229,10 @@ async def login(
 async def refresh(
         request: RefreshRequestModel,
         configuration=Depends(get_configuration),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -295,8 +303,10 @@ async def refresh(
 async def logout(
         current_user=Depends(get_current_user),
         configuration=Depends(get_configuration),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:

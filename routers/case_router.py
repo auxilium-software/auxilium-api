@@ -4,8 +4,10 @@ from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, Depends, status, APIRouter, Query, Path
 from pydantic import BaseModel
 
-from common.databases.couchdb_interactions import get_couchdb_connection
-from common.databases.mariadb_interactions import get_mariadb_connection
+from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
+from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
+from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
+from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, \
     get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
@@ -28,8 +30,10 @@ async def get_my_cases(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         selector = {
@@ -63,8 +67,10 @@ async def get_assigned_cases(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         selector = {
@@ -99,8 +105,10 @@ async def get_all_cases(
         assigned_to: Optional[str] = Query(None, description="Filter by worker ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if current_user.is_admin:
@@ -167,7 +175,10 @@ async def get_single_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)

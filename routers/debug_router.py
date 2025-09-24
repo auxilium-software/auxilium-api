@@ -6,8 +6,10 @@ from typing import Optional
 from fastapi import HTTPException, Depends, status, APIRouter, Path, Query, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 
-from common.databases.couchdb_interactions import get_couchdb_connection
-from common.databases.mariadb_interactions import get_mariadb_connection
+from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
+from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
+from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
+from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.configuration import get_configuration
 from common.utilities.security_utilities import (
     get_current_user
@@ -26,8 +28,10 @@ router = APIRouter(prefix="/api/v3/server", tags=["Users"])
 async def get_current_user_details(
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_connection),
-        couchdb=Depends(get_couchdb_connection),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        redis=Depends(get_redis_dependency),
+        rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         return PingResponseModel(
