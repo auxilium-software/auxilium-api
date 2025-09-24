@@ -18,7 +18,7 @@ def get_redis_connection() -> Generator[redis.Redis, None, None]:
 
         connection = redis.Redis(
             host                    = configuration.get_string('Databases', 'Redis', 'Host'),
-            port                    = configuration.get_int('Databases', 'Redis', 'Port', default=5984),
+            port                    = configuration.get_int('Databases', 'Redis', 'Port', default=6379),
             password                = configuration.get_string('Databases', 'Redis', 'Password'),
             db                      = configuration.get_int('Databases', 'Redis', 'Database'),
             decode_responses        = configuration.get_bool('Databases', 'Redis', 'DecodeResponses', default=True),
