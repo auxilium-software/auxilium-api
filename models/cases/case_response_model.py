@@ -14,5 +14,5 @@ class CaseResponseModel(BaseModel):
     additional_properties: Dict[str, Any] = {}
     workers: List[str]
     clients: List[str]
-    todos: List
-    timeline: List
+    todos: dict
+    timeline: dict
