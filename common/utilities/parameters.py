@@ -4,7 +4,7 @@ from fastapi import Query
 
 
 DEFAULT_PAGE_SIZE = 8
-MAX_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 1000
 MAX_FETCH_LIMIT = 10000
 
 def pagination_params(
