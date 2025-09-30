@@ -32,10 +32,10 @@ async def get_all_users(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if current_user.is_admin:
@@ -72,8 +72,8 @@ async def get_user_by_id(
         current_user=Depends(get_current_user),
         mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if user_id == 'me':
