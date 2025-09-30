@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import HTTPException, Depends, APIRouter, Path, Body
 from fastapi import status as http_status
+from starlette.status import HTTP_201_CREATED
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
@@ -22,15 +23,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases/{case_id:path}/todos", tags=["Cases"])
 
 
-@router.post("", response_model=TodoResponseModel, status_code=201)
+@router.post("", response_model=TodoResponseModel, status_code=HTTP_201_CREATED)
 async def add_single_todo_to_single_case(
         case_id: str = Path(..., description="Case ID"),
         todo_request: TodoCreationRequestModel = Body(...),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
+        # redis=Depends(get_redis_dependency),
         rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
@@ -105,10 +106,10 @@ async def update_todo_status(
         notes: Optional[str] = Body(None, description="Completion notes"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
@@ -157,10 +158,10 @@ async def delete_todo(
         todo_id: str = Path(..., description="Todo ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
