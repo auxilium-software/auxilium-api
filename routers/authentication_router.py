@@ -44,8 +44,8 @@ async def register(
         configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -132,9 +132,9 @@ async def login(
         request: UserLoginRequestModel,
         configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -230,9 +230,9 @@ async def refresh(
         request: RefreshRequestModel,
         configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:
@@ -304,9 +304,9 @@ async def logout(
         current_user=Depends(get_current_user),
         configuration=Depends(get_configuration),
         mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
         client_ip: str = None,
 ):
     try:

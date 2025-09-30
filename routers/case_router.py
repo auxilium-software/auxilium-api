@@ -31,10 +31,10 @@ async def get_my_cases(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         selector = {
@@ -68,10 +68,10 @@ async def get_assigned_cases(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         selector = {
@@ -106,10 +106,10 @@ async def get_all_cases(
         assigned_to: Optional[str] = Query(None, description="Filter by worker ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if current_user.is_admin:
@@ -177,10 +177,10 @@ async def add_client_to_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
@@ -216,10 +216,10 @@ async def remove_client_from_case(
         client_id: str = Path(..., description="Client user ID to remove"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
@@ -252,10 +252,10 @@ async def add_worker_to_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
@@ -291,10 +291,10 @@ async def remove_worker_from_case(
         worker_id: str = Path(..., description="Worker user ID to remove"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
@@ -326,10 +326,10 @@ async def get_single_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)

@@ -33,10 +33,10 @@ async def create_user_property(
         display_name: Optional[str] = Body(None, description="Override display name"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if user_id == 'me':
@@ -95,10 +95,10 @@ async def update_user_property(
         content_type: Optional[str] = None,
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if user_id == 'me':
@@ -159,10 +159,10 @@ async def delete_user_property(
         property_name: str = Path(..., description="Property name"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         if user_id == 'me':

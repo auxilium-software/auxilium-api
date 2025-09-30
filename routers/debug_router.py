@@ -28,10 +28,10 @@ router = APIRouter(prefix="/api/v3/server", tags=["Users"])
 async def get_current_user_details(
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        redis=Depends(get_redis_dependency),
-        rabbitmq=Depends(get_rabbitmq_dependency),
+        # mariadb=Depends(get_mariadb_dependency),
+        # couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
         return PingResponseModel(
@@ -41,8 +41,6 @@ async def get_current_user_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching current user details: {e}")
-        mariadb.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch user details"
