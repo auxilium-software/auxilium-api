@@ -1,12 +1,23 @@
 import hashlib
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from fastapi import HTTPException
 from fastapi import status as http_status
 
 from common.uuid_handling import UUIDHandling
 from enumerators.database_object_type import DatabaseObjectType
+
+
+def get_file_details(file_id: str, mariadb, couchdb, config):
+    couchdb_data = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', 'Files')].get(file_id)
+    return None, couchdb_data
+
+def get_file_contents(file_id: str, config):
+    Path(config.get_string("AuxLFS", "RootStorageDirectory")).mkdir(parents=True, exist_ok=True)
+    with open(config.get_string("AuxLFS", "RootStorageDirectory") + "/" + f"{file_id}.bin", "r") as f:
+        return f.read()
 
 
 def create_file(

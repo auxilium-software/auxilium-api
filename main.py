@@ -21,6 +21,8 @@ from routers.case_additional_properties_router  import router as case_additional
 from routers.user_router                        import router as user_router
 from routers.user_additional_properties_router  import router as user_additional_properties_router
 
+from routers.file_router                        import router as file_router
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="The location of the config file")
 args = parser.parse_args()
@@ -122,6 +124,8 @@ def create_app() -> FastAPI:
 
         (user_router,                       '/api/v3/users'),
         (user_additional_properties_router, '/api/v3/users/{user_id}/additional_properties'),
+
+        (file_router,                       '/api/v3/files'),
     ]
 
     for router, description in all_routers:
