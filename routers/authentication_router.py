@@ -69,8 +69,8 @@ async def register(
                 detail="Email address is already associated with an existing user account."
             )
 
-        user_id = UUIDHandling().v5s(ObjectType=DatabaseObjectType.USER)
-        case_id = UUIDHandling().v5s(ObjectType=DatabaseObjectType.CASE)
+        user_id = UUIDHandling().v5s(object_type=DatabaseObjectType.USER)
+        case_id = UUIDHandling().v5s(object_type=DatabaseObjectType.CASE)
 
         password_hash = get_password_hash(request.raw_password)
 
