@@ -99,7 +99,7 @@ async def get_assigned_cases(
 
 
 @router.get("", response_model=PaginatedCasesResponse)
-async def get_all_cases(
+async def search_cases(
         pagination=Depends(pagination_params),
         filters=Depends(case_filter_params),
         sorting=Depends(sort_params),
