@@ -25,8 +25,8 @@ router = APIRouter(prefix="/api/v3/users", tags=["Users"])
 
 
 
-@router.get("/all", response_model=PaginatedUsersResponse)
-async def get_all_users(
+@router.get("", response_model=PaginatedUsersResponse)
+async def search_users(
         pagination=Depends(pagination_params),
         filters=Depends(user_filter_params),
         sorting=Depends(sort_params),
