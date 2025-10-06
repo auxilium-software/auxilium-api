@@ -166,8 +166,7 @@ async def delete_todo(
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
-        doc['timeline'].append({
-            "id": str(uuid.uuid4()),
+        doc['timeline'][str(uuid.uuid4())].append({
             "type": "TODO",
             "original_data": doc.get('todos', todo_id)
         })
@@ -175,7 +174,7 @@ async def delete_todo(
         todos = doc.get('todos', [])
         original_length = len(todos)
 
-        doc['todos'] = [t for t in todos if t['id'] != todo_id]
+        del todos[todo_id]
 
         if len(doc['todos']) == original_length:
             raise HTTPException(
@@ -185,8 +184,7 @@ async def delete_todo(
 
         doc['updated_at'] = datetime.utcnow().isoformat()
 
-        cases_db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
-        cases_db.save(doc)
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
 
         return SuccessResponseModel()
 
