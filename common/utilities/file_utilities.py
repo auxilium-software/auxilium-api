@@ -27,6 +27,7 @@ def create_file(
         file_type: Any,
         uploaded_by: str,
         file_contents: Any,
+        description: str,
         couchdb,
         config
 ):
@@ -49,6 +50,7 @@ def create_file(
     files_doc = {
         "_id": file_id,
         'filename': file_name,
+        'description': description,
         'content_type': file_type,
         "hash": file_hash,
         'size': len(file_contents),
@@ -56,7 +58,7 @@ def create_file(
         'uploaded_by': uploaded_by,
     }
 
-    main_doc['files'].append(f"auxlfs://%%couchdb%%/{file_id}?size={len(file_contents)}&hash={file_hash}")
+    main_doc['files'].append(f"auxlfs://%%default%%/{file_id}?size={len(file_contents)}&hash={file_hash}")
     main_doc['last_updated_at'] = datetime.utcnow().isoformat()
 
     Path(config.get_string("AuxLFS", "RootStorageDirectory")).mkdir(parents=True, exist_ok=True)

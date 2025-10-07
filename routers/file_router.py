@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/v3/files", tags=["Files"])
 
 
 @router.get("/{file_id:path}", response_model=FileDetailsResponseModel)
-async def search_users(
+async def search_files(
         file_id: str = Path(..., description="File ID"),
         pagination=Depends(pagination_params),
         filters=Depends(user_filter_params),
