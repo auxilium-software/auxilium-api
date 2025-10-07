@@ -2,8 +2,10 @@ import logging
 from contextlib import contextmanager
 from typing import Generator
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from starlette import status
 
 from common.utilities.configuration import get_configuration
 
@@ -39,7 +41,10 @@ def get_mariadb_connection() -> Generator[Session, None, None]:
         logger.error(f"Failed to connect to MariaDB: {e}")
         if session:
             session.rollback()
-        raise
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to connect to MariaDB"
+        )
     finally:
         if session:
             try:
