@@ -1,7 +1,8 @@
 import logging
+import mimetypes
 from typing import Optional, List, Dict, Any
 
-from fastapi import HTTPException, Depends, status, APIRouter, Query, Path
+from fastapi import HTTPException, Depends, status, APIRouter, Query, Path, UploadFile, Form, File
 from pydantic import BaseModel
 
 from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
@@ -11,10 +12,12 @@ from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, \
     get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
+from common.utilities.file_utilities import create_file
 from common.utilities.parameters import pagination_params, case_filter_params, sort_params
 from common.utilities.security_utilities import (
     get_current_user
 )
+from enumerators.property_type import PropertyType
 from models.cases.add_person_request_model import AddPersonRequestModel
 from models.cases.case_response_model import CaseResponseModel
 from models.cases.paginated_cases_response_model import PaginatedCasesResponse
@@ -171,9 +174,10 @@ async def search_cases(
         )
 
 
-@router.post("/{case_id:path}/clients", response_model=CaseResponseModel)
-async def add_client_to_case(
-        person_to_add: AddPersonRequestModel,
+@router.post("/{case_id:path}/upload", response_model=SuccessResponseModel)
+async def upload_file(
+        file: UploadFile = File(...),
+        description: str = Form(...),
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
@@ -185,139 +189,30 @@ async def add_client_to_case(
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
-        if "clients" not in doc:
-            doc["clients"] = []
+        content = await file.read()
+        content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or PropertyType.BINARY
 
-        if person_to_add.user_id in doc["clients"]:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Client is already added to this case"
-            )
-
-        doc["clients"].append(person_to_add.user_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
-
-        return build_case_response(doc)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error adding client to case {case_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add client: {str(e)}"
+        create_file(
+            document_type="Cases",
+            document_id=case_id,
+            file_name=file.filename,
+            file_type=content_type,
+            uploaded_by=current_user.id,
+            file_contents=content.hex() if isinstance(content, bytes) else content,
+            description=description,
+            couchdb=couchdb,
+            config=configuration,
         )
-
-
-@router.delete("/{case_id:path}/clients/{client_id:path}", response_model=SuccessResponseModel)
-async def remove_client_from_case(
-        case_id: str = Path(..., description="Case ID"),
-        client_id: str = Path(..., description="Client user ID to remove"),
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        # redis=Depends(get_redis_dependency),
-        # rabbitmq=Depends(get_rabbitmq_dependency),
-):
-    try:
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
-
-        if "clients" not in doc or client_id not in doc["clients"]:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Client not found in this case"
-            )
-
-        doc["clients"].remove(client_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
 
         return SuccessResponseModel()
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error removing client from case {case_id}: {e}")
+        logger.error(f"Error uploading file for user {case_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to remove client: {str(e)}"
-        )
-
-
-@router.post("/{case_id:path}/workers", response_model=CaseResponseModel)
-async def add_worker_to_case(
-        person_to_add: AddPersonRequestModel,
-        case_id: str = Path(..., description="Case ID"),
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        # redis=Depends(get_redis_dependency),
-        # rabbitmq=Depends(get_rabbitmq_dependency),
-):
-    try:
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
-
-        if "workers" not in doc:
-            doc["workers"] = []
-
-        if person_to_add.user_id in doc["workers"]:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Worker is already assigned to this case"
-            )
-
-        doc["workers"].append(person_to_add.user_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
-
-        return build_case_response(doc)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error adding worker to case {case_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add worker: {str(e)}"
-        )
-
-
-@router.delete("/{case_id:path}/workers/{worker_id:path}", response_model=SuccessResponseModel)
-async def remove_worker_from_case(
-        case_id: str = Path(..., description="Case ID"),
-        worker_id: str = Path(..., description="Worker user ID to remove"),
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        # redis=Depends(get_redis_dependency),
-        # rabbitmq=Depends(get_rabbitmq_dependency),
-):
-    try:
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
-
-        if "workers" not in doc or worker_id not in doc["workers"]:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Worker not found in this case"
-            )
-
-        doc["workers"].remove(worker_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
-
-        return SuccessResponseModel()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error removing worker from case {case_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to remove worker: {str(e)}"
+            detail="Failed to upload file"
         )
 
 
@@ -343,3 +238,4 @@ async def get_single_case(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch case: {str(e)}"
         )
+
