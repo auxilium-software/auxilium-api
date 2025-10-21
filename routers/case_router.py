@@ -18,8 +18,12 @@ from common.utilities.parameters import pagination_params, case_filter_params, s
 from common.utilities.security_utilities import (
     get_current_user
 )
+from common.uuid_handling import UUIDHandling
+from enumerators.case_status import CaseStatus
+from enumerators.database_object_type import DatabaseObjectType
 from enumerators.property_type import PropertyType
 from models.cases.add_person_request_model import AddPersonRequestModel
+from models.cases.case_creation_request_model import CaseCreationRequestModel
 from models.cases.case_response_model import CaseResponseModel
 from models.cases.paginated_cases_response_model import PaginatedCasesResponse
 from models.success_response_model import SuccessResponseModel
@@ -100,6 +104,52 @@ async def get_assigned_cases(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
         )
+
+
+@router.post(
+    path="",
+    response_model=CaseResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases"
+    ],
+)
+async def create_case(
+        request: CaseCreationRequestModel,
+        configuration=Depends(get_configuration),
+        # mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
+        client_ip: str = None,
+):
+    try:
+        case_id = UUIDHandling().v5s(object_type=DatabaseObjectType.CASE)
+
+        case_doc = {
+            "_id": case_id,
+            "sensitivity": None,
+            "title": request.title,
+            "description": request.description,
+            "status": CaseStatus.NEW_CASE.value,
+            "case_referrer": request.case_referrer,
+        }
+        other = {
+            "on_behalf_of": request.on_behalf_of,
+            "data_processing_consent": request.data_processing_consent,
+            "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
+        }
+
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
+
+        return CaseResponseModel(
+            id=case_id,
+            email_address=request.email_address,
+        )
+
+    except Exception as e:
+        PRIMARY_LOGGER.exception(e)
+        raise e
 
 
 @router.get("", response_model=PaginatedCasesResponse)

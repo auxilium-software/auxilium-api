@@ -99,7 +99,8 @@ async def register(
         }
         case_doc = {
             "_id": case_id,
-            "description": request.case_description,
+            "title": request.title,
+            "description": request.description,
         }
         other = {
             "on_behalf_of": request.on_behalf_of,

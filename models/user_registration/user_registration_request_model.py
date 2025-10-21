@@ -15,4 +15,5 @@ class UserRegistrationRequestModel(BaseModel):
     how_did_you_find_out_about_our_service: str
     email_address: str
     raw_password: str
-    case_description: str
+    title: str
+    description: str
