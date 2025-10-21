@@ -291,7 +291,7 @@ class ClickHouseLogHandler(logging.Handler):
                             port=self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
                             database=self.database,
                             user=self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
-                            password=self.password,
+                            password=self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
                             settings={'use_numpy': False}
                         )
 
@@ -308,7 +308,7 @@ class ClickHouseLogHandler(logging.Handler):
                         port=self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
                         database=self.database,
                         user=self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
-                        password=self.password,
+                        password=self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
                         settings={'use_numpy': False}
                     )
 

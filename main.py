@@ -1,8 +1,9 @@
 import argparse
 import logging
 
-from common.utilities.configuration import load_configuration, get_configuration
+from redis.cluster import PRIMARY
 
+from common.utilities.configuration import load_configuration, get_configuration
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="The location of the config file")
@@ -11,8 +12,9 @@ load_configuration(args.config)
 CONFIGURATION = get_configuration()
 
 from common.clickhouse_log_handler import setup_clickhouse_logging
+from common.utilities import logging_utilities
 
-logger = setup_clickhouse_logging(
+logging_utilities.PRIMARY_LOGGER = setup_clickhouse_logging(
     logger_name='Auxilium 3 API Server',
     level=logging.DEBUG
 )
@@ -27,7 +29,6 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from common.logging_helpers import LOGGER
-from common.utilities.logging_utilities import PRIMARY_LOGGER
 
 from routers.authentication_router              import router as authentication_router
 from routers.debug_router                       import router as debug_router
@@ -155,7 +156,7 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
 
-    logger.debug(
+    logging_utilities.PRIMARY_LOGGER.debug(
         msg="API server starting",
         exc_info=True,
     )
