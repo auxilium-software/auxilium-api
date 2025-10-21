@@ -13,6 +13,7 @@ from common.databases.rabbitmq_interactions import get_rabbitmq_dependency, publ
 from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.case_utilities import get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
 from enumerators.todo_status import TodoStatus
 from models.cases.todo_creation_request_model import TodoCreationRequestModel
@@ -88,10 +89,11 @@ async def add_single_todo_to_single_case(
             assigned_to=todo_request.assigned_to,
         )
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error creating todo item for case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating todo item for case: {str(e)}"
@@ -142,10 +144,11 @@ async def update_todo_status(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error updating todo {todo_id} for case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating todo: {str(e)}"
@@ -188,10 +191,11 @@ async def delete_todo(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error deleting todo {todo_id} from case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error deleting todo: {str(e)}"

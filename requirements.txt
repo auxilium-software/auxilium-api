@@ -19,6 +19,8 @@ PyMySQL==1.1.1
 couchdb3==2.0.2
 pika==1.3.2
 redis==6.4.0
+clickhouse-driver==0.2.9
+clickhouse-driver[lz4]
 
 # parsing
 PyYAML==6.0.2

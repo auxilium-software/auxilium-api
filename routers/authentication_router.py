@@ -6,12 +6,14 @@ from fastapi import HTTPException, Depends, status, APIRouter
 from sqlalchemy import text
 
 from common.captcha_helpers import _verify_recaptcha
+from common.clickhouse_log_handler import setup_clickhouse_logging
 from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
 from common.password_helpers import get_password_hash, verify_password
 from common.utilities.configuration import get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, \
     ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, get_current_user
@@ -24,9 +26,6 @@ from models.user_login.user_login_response_model import UserLoginResponseModel
 from models.user_registration.user_registration_request_model import UserRegistrationRequestModel
 from models.user_registration.user_registration_response_model import UserRegistrationResponseModel
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v3/authentication", tags=["Authentication"])
 
@@ -117,6 +116,7 @@ async def register(
 
     except Exception as e:
         mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
         raise e
 
 
@@ -215,6 +215,7 @@ async def login(
 
     except Exception as e:
         mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
         raise e
 
 
@@ -237,7 +238,6 @@ async def refresh(
 ):
     try:
         token_hash = hashlib.sha256(request.refresh_token.encode()).hexdigest()
-        logger.debug(token_hash)
 
         result = mariadb.execute(
             text("""
@@ -289,6 +289,7 @@ async def refresh(
 
     except Exception as e:
         mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
         raise e
 
 
@@ -325,4 +326,5 @@ async def logout(
 
     except Exception as e:
         mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
         raise e

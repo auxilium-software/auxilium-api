@@ -12,6 +12,7 @@ from common.databases.mariadb_interactions import get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.configuration import get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.property_name_handler import PropertyNameHandler
 from common.utilities.security_utilities import (
     get_current_user
@@ -77,10 +78,11 @@ async def create_user_property(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error creating property {property_name} for user {user_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create property"
@@ -143,10 +145,11 @@ async def update_user_property(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error updating property {property_name} for user {user_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update property"
@@ -190,10 +193,11 @@ async def delete_user_property(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error deleting property {property_name} for user {user_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete property"

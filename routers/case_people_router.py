@@ -12,6 +12,7 @@ from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.case_utilities import get_cases_with_filter, get_cases_collection, build_case_response, \
     get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.parameters import pagination_params, case_filter_params, sort_params
 from common.utilities.security_utilities import (
     get_current_user
@@ -54,10 +55,11 @@ async def add_client_to_case(
 
         return build_case_response(doc)
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error adding client to case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add client: {str(e)}"
@@ -90,10 +92,11 @@ async def remove_client_from_case(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error removing client from case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove client: {str(e)}"
@@ -129,10 +132,11 @@ async def add_worker_to_case(
 
         return build_case_response(doc)
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error adding worker to case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add worker: {str(e)}"
@@ -165,10 +169,11 @@ async def remove_worker_from_case(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error removing worker from case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove worker: {str(e)}"

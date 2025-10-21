@@ -12,6 +12,7 @@ from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.configuration import get_configuration
 from common.utilities.file_utilities import create_file
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.parameters import pagination_params, sort_params, case_filter_params, user_filter_params
 from common.utilities.security_utilities import get_current_user
 from common.utilities.user_utilities import get_user_details, check_user_access, get_user_properties, save_user_property, find_shared_cases, get_users_with_filter
@@ -55,10 +56,11 @@ async def search_users(
             config=configuration,
             couchdb=couchdb
         )
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error fetching all cases: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
@@ -111,10 +113,11 @@ async def get_user_by_id(
             last_updated_at=couchdb_data.get('last_updated_at') if couchdb_data else None,
         )
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error fetching user {user_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         mariadb.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -161,10 +164,11 @@ async def upload_file(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error uploading file for user {user_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload file"

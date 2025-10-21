@@ -11,6 +11,7 @@ from common.databases.mariadb_interactions import get_mariadb_connection, get_ma
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
 from common.utilities.configuration import get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import (
     get_current_user
 )
@@ -38,9 +39,11 @@ async def get_current_user_details(
             response="pong!"
         )
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch user details"

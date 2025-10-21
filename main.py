@@ -1,4 +1,23 @@
 import argparse
+import logging
+
+from common.utilities.configuration import load_configuration, get_configuration
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--config", help="The location of the config file")
+args = parser.parse_args()
+load_configuration(args.config)
+CONFIGURATION = get_configuration()
+
+from common.clickhouse_log_handler import setup_clickhouse_logging
+
+logger = setup_clickhouse_logging(
+    logger_name='Auxilium 3 API Server',
+    level=logging.DEBUG
+)
+
+
 import time
 
 from fastapi import FastAPI, Request
@@ -8,7 +27,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from common.logging_helpers import LOGGER
-from common.utilities.configuration import load_configuration, get_configuration
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 
 from routers.authentication_router              import router as authentication_router
 from routers.debug_router                       import router as debug_router
@@ -23,11 +42,7 @@ from routers.user_additional_properties_router  import router as user_additional
 
 from routers.file_router                        import router as file_router
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--config", help="The location of the config file")
-args = parser.parse_args()
-load_configuration(args.config)
-CONFIGURATION = get_configuration()
+
 
 
 def create_app() -> FastAPI:
@@ -139,6 +154,11 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
+    logger.debug(
+        msg="API server starting",
+        exc_info=True,
+    )
 
     uvicorn.run(
         "main:app",

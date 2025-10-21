@@ -13,6 +13,7 @@ from common.utilities.case_utilities import get_cases_with_filter, get_cases_col
     get_single_case_and_handle_permissions
 from common.utilities.configuration import get_configuration
 from common.utilities.file_utilities import create_file
+from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.parameters import pagination_params, case_filter_params, sort_params
 from common.utilities.security_utilities import (
     get_current_user
@@ -57,7 +58,7 @@ async def get_my_cases(
             couchdb=couchdb
         )
     except Exception as e:
-        logger.error(f"Error fetching user cases: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
@@ -94,7 +95,7 @@ async def get_assigned_cases(
             couchdb=couchdb
         )
     except Exception as e:
-        logger.error(f"Error fetching assigned cases: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
@@ -164,10 +165,11 @@ async def search_cases(
             config=configuration,
             couchdb=couchdb
         )
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error fetching all cases: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
@@ -206,10 +208,11 @@ async def upload_file(
 
         return SuccessResponseModel()
 
-    except HTTPException:
+    except HTTPException as e:
+        PRIMARY_LOGGER.exception(e)
         raise
     except Exception as e:
-        logger.error(f"Error uploading file for user {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload file"
@@ -230,10 +233,10 @@ async def get_single_case(
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
         return build_case_response(doc)
 
-    except HTTPException:
+    except HTTPException as e:
         raise
     except Exception as e:
-        logger.error(f"Error fetching case {case_id}: {e}")
+        PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch case: {str(e)}"

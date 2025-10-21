@@ -30,6 +30,19 @@ class Configuration:
                     "Heartbeat": 600,
                     "BlockedConnectionTimeout": 300,
                 },
+                "ClickHouse": {
+                    "Port": 8123,
+                    "Secure": False,
+                    "Verify": True,
+                    "Compression": True,
+                    "ConnectTimeout": 10,
+                    "SendReceiveTimeout": 300,
+                    "BatchSize": 100,
+                    "FlushInterval": 5,
+                    "MaxQueueSize": 10000,
+                    "TTLDays": 0,
+                    "PartitionBy": "toYYYYMM(timestamp)",
+                },
             },
             "ReCAPTCHA": {
                 "ScoreThreshold": 0.5
