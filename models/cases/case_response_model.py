@@ -5,12 +5,11 @@ from pydantic import BaseModel
 
 class CaseResponseModel(BaseModel):
     id: str
-    sensitivity: str | None
     title: str | None
-    status: str | None
-    brief_description: str | None
-    case_referrer: str | None
     description: str | None
+    sensitivity: str | None
+    status: str | None
+    case_referrer: str | None
     additional_properties: Dict[str, Any] = {}
     workers: List[str]
     clients: List[str]

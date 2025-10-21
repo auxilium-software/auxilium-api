@@ -117,6 +117,7 @@ async def get_assigned_cases(
 async def create_case(
         request: CaseCreationRequestModel,
         configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
         # mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
         # redis=Depends(get_redis_dependency),
@@ -128,23 +129,40 @@ async def create_case(
 
         case_doc = {
             "_id": case_id,
-            "sensitivity": None,
             "title": request.title,
             "description": request.description,
+            "sensitivity": None,
             "status": CaseStatus.NEW_CASE.value,
-            "case_referrer": request.case_referrer,
+            # "case_referrer": request.case_referrer,
+            "additional_properties": {},
+            "workers": [],
+            "clients": [
+                current_user.id
+            ],
+            "todos": {},
+            "timeline": {},
         }
         other = {
-            "on_behalf_of": request.on_behalf_of,
-            "data_processing_consent": request.data_processing_consent,
-            "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
+            # "on_behalf_of": request.on_behalf_of,
+            # "data_processing_consent": request.data_processing_consent,
+            # "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
         }
 
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
+        case_doc = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].get(case_id)
 
         return CaseResponseModel(
-            id=case_id,
-            email_address=request.email_address,
+            id                      = case_doc.get('_id'),
+            sensitivity             = case_doc.get('sensitivity'),
+            status                  = case_doc.get('status'),
+            case_referrer           = case_doc.get('case_referrer'),
+            title                   = case_doc.get('title'),
+            description             = case_doc.get('description'),
+            additional_properties   = case_doc.get('additional_properties'),
+            workers                 = case_doc.get('workers'),
+            clients                 = case_doc.get('clients'),
+            todos                   = case_doc.get('todos'),
+            timeline                = case_doc.get('timeline'),
         )
 
     except Exception as e:
