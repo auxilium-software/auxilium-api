@@ -87,7 +87,7 @@ async def register(
 
         user_doc = {
             "_id": user_id,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.utcnow().isoformat(),
             "created_by": user_id,
             "email_address": request.email_address,
             "password_hash": password_hash,
@@ -96,6 +96,11 @@ async def register(
             "full_address": request.full_address,
             "gender": request.gender,
             "date_of_birth": request.date_of_birth,
+            "case_referrer": None,
+            "additional_properties": {},
+            "files": [],
+            "last_updated_at": None,
+            "migrations": {}
         }
         case_doc = {
             "_id": case_id,

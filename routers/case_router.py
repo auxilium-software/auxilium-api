@@ -133,7 +133,7 @@ async def create_case(
             "description": request.description,
             "sensitivity": None,
             "status": CaseStatus.NEW_CASE.value,
-            # "case_referrer": request.case_referrer,
+            "case_referrer": request.case_referrer,
             "additional_properties": {},
             "workers": [],
             "clients": [
