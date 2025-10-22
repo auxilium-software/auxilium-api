@@ -36,15 +36,25 @@ def find_shared_cases(user_id: str, other_user_id: str, couchdb, config) -> List
     cases_collection = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
 
     query = {
-        "selector": {
-            "$or": [
-                {"clients": {"$elemMatch": {"$eq": user_id}}},
-                {"workers": {"$elemMatch": {"$eq": user_id}}}
-            ]
-        }
+        "$or": [
+            {
+                "clients": {
+                    "$elemMatch": {
+                        "$eq": user_id
+                    }
+                }
+            },
+            {
+                "workers": {
+                    "$elemMatch": {
+                        "$eq": user_id
+                    }
+                }
+            }
+        ]
     }
 
-    user_cases = list(cases_collection.find(query))
+    user_cases = list(cases_collection.find(query).get('docs', []))
 
     shared_cases = []
     for case in user_cases:

@@ -43,6 +43,13 @@ async def add_client_to_case(
         if "clients" not in doc:
             doc["clients"] = []
 
+        if not current_user.is_admin:
+            if current_user.id not in doc['workers']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You have not got permissions to do this action"
+                )
+
         if person_to_add.user_id in doc["clients"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -80,6 +87,13 @@ async def remove_client_from_case(
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
+        if not current_user.is_admin:
+            if current_user.id not in doc['workers']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You have not got permissions to do this action"
+                )
+
         if "clients" not in doc or client_id not in doc["clients"]:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -116,6 +130,13 @@ async def add_worker_to_case(
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+
+        if not current_user.is_admin:
+            if current_user.id not in doc['workers']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You have not got permissions to do this action"
+                )
 
         if "workers" not in doc:
             doc["workers"] = []
@@ -156,6 +177,13 @@ async def remove_worker_from_case(
 ):
     try:
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+
+        if not current_user.is_admin:
+            if current_user.id not in doc['workers']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You have not got permissions to do this action"
+                )
 
         if "workers" not in doc or worker_id not in doc["workers"]:
             raise HTTPException(
