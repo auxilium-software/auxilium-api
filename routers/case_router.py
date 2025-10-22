@@ -49,8 +49,8 @@ async def get_my_cases(
             "clients": {
                 "$elemMatch": {
                     "$eq": current_user.id
-                },
-            },
+                }
+            }
         }
 
         return await get_cases_with_filter(
@@ -86,8 +86,8 @@ async def get_assigned_cases(
             "workers": {
                 "$elemMatch": {
                     "$eq": current_user.id
-                },
-            },
+                }
+            }
         }
 
         return await get_cases_with_filter(
@@ -175,7 +175,6 @@ async def search_cases(
         pagination=Depends(pagination_params),
         filters=Depends(case_filter_params),
         sorting=Depends(sort_params),
-        assigned_to: Optional[str] = Query(None, description="Filter by worker ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
         # mariadb=Depends(get_mariadb_dependency),
@@ -205,25 +204,6 @@ async def search_cases(
                     }
                 ]
             }
-
-        if assigned_to:
-            worker_filter = {
-                "workers": {
-                    "$elemMatch": {
-                        "$eq": assigned_to
-                    }
-                }
-            }
-
-            if current_user.is_admin or not selector:
-                selector.update(worker_filter)
-            else:
-                selector = {
-                    "$and": [
-                        selector,
-                        worker_filter
-                    ]
-                }
 
         return await get_cases_with_filter(
             selector=selector,
