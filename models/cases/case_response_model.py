@@ -15,3 +15,4 @@ class CaseResponseModel(BaseModel):
     clients: List[str]
     todos: dict
     timeline: dict
+    messages: List[str]

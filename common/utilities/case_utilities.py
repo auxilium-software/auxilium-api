@@ -52,11 +52,12 @@ def build_case_response(doc: Dict) -> CaseResponseModel:
         brief_description=doc.get('brief_description'),
         case_referrer=doc.get('case_referrer'),
         description=doc.get('description'),
-        workers=doc.get('workers', []),
-        clients=doc.get('clients', []),
-        additional_properties=doc.get('additional_properties', {}),
-        todos=doc.get('todos', []),
-        timeline=doc.get('timeline', []),
+        workers=doc.get('workers'),
+        clients=doc.get('clients'),
+        additional_properties=doc.get('additional_properties'),
+        todos=doc.get('todos'),
+        timeline=doc.get('timeline'),
+        messages=doc.get('messages'),
     )
 
 

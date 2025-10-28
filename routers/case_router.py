@@ -141,6 +141,8 @@ async def create_case(
             ],
             "todos": {},
             "timeline": {},
+            "files": [],
+            "messages": [],
         }
         other = {
             # "on_behalf_of": request.on_behalf_of,
@@ -163,6 +165,7 @@ async def create_case(
             clients                 = case_doc.get('clients'),
             todos                   = case_doc.get('todos'),
             timeline                = case_doc.get('timeline'),
+            messages                = case_doc.get('messages'),
         )
 
     except Exception as e:

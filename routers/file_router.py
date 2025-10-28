@@ -50,7 +50,7 @@ async def search_files(
                 detail=f"wip lol"
             )
 
-        mariadb_data, couchdb_data = get_file_details(
+        _, couchdb_data = get_file_details(
             file_id, mariadb, couchdb, configuration
         )
 
