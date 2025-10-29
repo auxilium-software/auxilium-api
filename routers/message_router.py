@@ -41,7 +41,7 @@ async def get_single_message_from_case(
             message_id, mariadb, couchdb, configuration
         )
 
-        if current_user.id not in couchdb_data['read_by']:
+        if current_user.id not in couchdb_data.get('read_by'):
             couchdb_data['read_by'][current_user.id] = datetime.utcnow().isoformat()
             couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Messages')].save(couchdb_data)
 
