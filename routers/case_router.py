@@ -246,7 +246,7 @@ async def upload_file(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        _ = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         content = await file.read()
         content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or PropertyType.BINARY
