@@ -18,6 +18,40 @@ def get_cases_collection(configuration, couchdb):
     return couchdb[db_name]
 
 
+def get_case_properties(user_id: str, couchdb, config) -> Dict:
+    cases_db = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
+    case_doc = cases_db.get(user_id)
+
+    if not case_doc:
+        return {}
+
+    system_props = ['_id', '_rev', 'full_name', 'email_address', 'created_at', 'updated_at']
+    properties = {}
+
+    for key, value in case_doc.get('additional_properties').items():
+        if key not in system_props and not key.startswith('_'):
+            properties[key] = value
+
+    return properties
+
+
+def save_case_property(user_id: str, property_name: str, property_value: Any, couchdb, config):
+    cases_db = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
+    case_doc = cases_db.get(user_id)
+
+    if not case_doc:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="User does not exist"
+        )
+
+    case_doc['additional_properties'][property_name] = property_value
+    case_doc['last_updated_at'] = datetime.utcnow().isoformat()
+
+    cases_db.save(case_doc)
+    return case_doc
+
+
 def get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id):
     collection = get_cases_collection(configuration, couchdb)
 
