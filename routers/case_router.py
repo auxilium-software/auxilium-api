@@ -240,6 +240,12 @@ async def upload_file(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         content = await file.read()
@@ -281,6 +287,12 @@ async def get_single_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
         return build_case_response(doc)
 

@@ -17,6 +17,7 @@ from common.utilities.parameters import pagination_params, case_filter_params, s
 from common.utilities.security_utilities import (
     get_current_user
 )
+from common.uuid_handling import UUIDHandling
 from models.cases.add_person_request_model import AddPersonRequestModel
 from models.cases.case_response_model import CaseResponseModel
 from models.cases.paginated_cases_response_model import PaginatedCasesResponse
@@ -38,6 +39,12 @@ async def add_client_to_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         if "clients" not in doc:
@@ -85,6 +92,12 @@ async def remove_client_from_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         if not current_user.is_admin:
@@ -129,6 +142,12 @@ async def add_worker_to_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         if not current_user.is_admin:
@@ -176,6 +195,17 @@ async def remove_worker_from_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+        if not UUIDHandling.is_valid(worker_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         if not current_user.is_admin:

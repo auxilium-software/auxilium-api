@@ -11,6 +11,7 @@ from common.utilities.configuration import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.message_utilities import get_message_details
 from common.utilities.security_utilities import get_current_user
+from common.uuid_handling import UUIDHandling
 from models.message.message_response_model import MessageResponseModel
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,12 @@ async def get_single_message_from_case(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(message_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         if current_user.is_admin:
             selector = {}
         else:

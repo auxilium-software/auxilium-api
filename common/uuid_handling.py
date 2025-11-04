@@ -21,3 +21,11 @@ class UUIDHandling:
     @staticmethod
     def v5s(object_type: DatabaseObjectType) -> str:
         return str(UUIDHandling.v5(object_type))
+
+    @staticmethod
+    def is_valid(potential_uuid: str) -> bool:
+        try:
+            UUID(potential_uuid)
+            return True
+        except (ValueError, AttributeError, TypeError):
+            return False

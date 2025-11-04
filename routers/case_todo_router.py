@@ -15,6 +15,9 @@ from common.utilities.case_utilities import get_single_case_and_handle_permissio
 from common.utilities.configuration import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
+from common.utilities.timeline_utilities import build_timeline_object
+from common.uuid_handling import UUIDHandling
+from enumerators.timeline_entry_type import TimelineEntryType
 from enumerators.todo_status import TodoStatus
 from models.cases.todo_creation_request_model import TodoCreationRequestModel
 from models.cases.todo_response_model import TodoResponseModel
@@ -36,6 +39,12 @@ async def add_single_todo_to_single_case(
         rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         todo_id = str(uuid.uuid4())
@@ -53,7 +62,7 @@ async def add_single_todo_to_single_case(
             'due_date': todo_request.due_date.isoformat(),
             'completed_at': None,
             'assigned_to': todo_request.assigned_to,
-            'reminders': []
+            'reminders': [],
         }
 
         if todo_request.reminder:
@@ -114,6 +123,17 @@ async def update_todo_status(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+        if not UUIDHandling.is_valid(todo_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         todos = doc.get('todos', [])
@@ -167,6 +187,17 @@ async def delete_todo(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(case_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+        if not UUIDHandling.is_valid(todo_id):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
         doc['timeline'][str(uuid.uuid4())].append({

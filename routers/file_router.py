@@ -17,6 +17,7 @@ from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.parameters import pagination_params, sort_params, case_filter_params, user_filter_params
 from common.utilities.security_utilities import get_current_user
 from common.utilities.user_utilities import get_user_details, check_user_access, get_user_properties, save_user_property, find_shared_cases, get_users_with_filter
+from common.uuid_handling import UUIDHandling
 from enumerators.property_type import PropertyType
 from models.file.file_details_response_model import FileDetailsResponseModel
 from models.user.paginated_users_response_model import PaginatedUsersResponse
@@ -42,6 +43,12 @@ async def search_files(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        if not UUIDHandling.is_valid(file_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
         if current_user.is_admin:
             selector = {}
         else:
