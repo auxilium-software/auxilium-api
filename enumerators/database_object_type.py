@@ -2,8 +2,8 @@ from enum import Enum
 
 
 class DatabaseObjectType(Enum):
-    USER            = "aux3/couchdb/users"
-    CASE            = "aux3/couchdb/cases"
-    FILE            = "aux3/couchdb/files"
-    MESSAGE         = "aux3/couchdb/messages"
-    TIMELINE_ITEM   = "aux3/couchdb/timeline_items"
+    USER            = "/auxilium/3/database_object/couchdb/user"
+    CASE            = "/auxilium/3/database_object/couchdb/case"
+    FILE            = "/auxilium/3/database_object/couchdb/file"
+    MESSAGE         = "/auxilium/3/database_object/couchdb/message"
+    TIMELINE_ITEM   = "/auxilium/3/database_object/couchdb/timeline_item"
