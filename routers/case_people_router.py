@@ -27,7 +27,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases/{case_id:path}", tags=["Cases"])
 
 
-@router.post("/clients", response_model=CaseResponseModel)
+@router.post(
+    path="/clients",
+    response_model=CaseResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def add_client_to_case(
         person_to_add: AddPersonRequestModel,
         case_id: str = Path(..., description="Case ID"),
@@ -80,7 +87,14 @@ async def add_client_to_case(
         )
 
 
-@router.delete("/clients/{client_id:path}", response_model=SuccessResponseModel)
+@router.delete(
+    path="/clients/{client_id:path}",
+    response_model=SuccessResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def remove_client_from_case(
         case_id: str = Path(..., description="Case ID"),
         client_id: str = Path(..., description="Client user ID to remove"),
@@ -130,7 +144,14 @@ async def remove_client_from_case(
         )
 
 
-@router.post("/workers", response_model=CaseResponseModel)
+@router.post(
+    path="/workers",
+    response_model=CaseResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def add_worker_to_case(
         person_to_add: AddPersonRequestModel,
         case_id: str = Path(..., description="Case ID"),
@@ -183,7 +204,14 @@ async def add_worker_to_case(
         )
 
 
-@router.delete("/workers/{worker_id:path}", response_model=SuccessResponseModel)
+@router.post(
+    path="/workers/{worker_id:path}",
+    response_model=SuccessResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def remove_worker_from_case(
         case_id: str = Path(..., description="Case ID"),
         worker_id: str = Path(..., description="Worker user ID to remove"),

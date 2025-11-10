@@ -20,7 +20,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases/{case_id:path}/messages", tags=["Cases"])
 
 
-@router.post("", response_model=MessageResponseModel, status_code=HTTP_201_CREATED)
+@router.post(
+    path="",
+    response_model=MessageResponseModel,
+    status_code=HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def create_message_for_case(
         case_id: str = Path(..., description="Case ID"),
         request: MessageCreationRequestModel = Body(...),

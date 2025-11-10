@@ -4,11 +4,11 @@ from pydantic import EmailStr, BaseModel
 
 
 class UserDetailsResponseModel(BaseModel):
-    id: str
-    email_address: EmailStr | None
-    full_name: str
-    is_admin: bool
-    additional_properties: dict  # [str, dict[str, str|int|float|bool|None]]
-    files: list
-    created_at: datetime
-    last_updated_at: datetime|None
+    id:                     str
+    email_address:          EmailStr | None
+    full_name:              str
+    is_admin:               bool
+    additional_properties:  dict  # [str, dict[str, str|int|float|bool|None]]
+    files:                  list
+    created_at:             datetime
+    last_updated_at:        datetime|None

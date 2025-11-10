@@ -92,6 +92,7 @@ def build_case_response(doc: Dict) -> CaseResponseModel:
         todos=doc.get('todos'),
         timeline=doc.get('timeline'),
         messages=doc.get('messages'),
+        files=doc.get('files'),
     )
 
 

@@ -7,9 +7,9 @@ from models.user.simplified_user_details_response_model import SimplifiedUserDet
 
 
 class PaginatedUsersResponse(BaseModel):
-    data: List[SimplifiedUserDetailsResponseModel]
-    page: int
-    per_page: int
-    total: int
-    total_pages: int
-    has_more: bool
+    data:           List[SimplifiedUserDetailsResponseModel]
+    page:           int
+    per_page:       int
+    total:          int
+    total_pages:    int
+    has_more:       bool

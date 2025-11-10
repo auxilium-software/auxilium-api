@@ -32,7 +32,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases", tags=["Cases"])
 
 
-@router.get("/mine", response_model=PaginatedCasesResponse)
+@router.get(
+    path="/mine",
+    response_model=PaginatedCasesResponse,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def get_my_cases(
         pagination=Depends(pagination_params),
         filters=Depends(case_filter_params),
@@ -69,7 +76,14 @@ async def get_my_cases(
         )
 
 
-@router.get("/assigned", response_model=PaginatedCasesResponse)
+@router.get(
+    path="/assigned",
+    response_model=PaginatedCasesResponse,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def get_assigned_cases(
         pagination=Depends(pagination_params),
         filters=Depends(case_filter_params),
@@ -173,7 +187,14 @@ async def create_case(
         raise e
 
 
-@router.get("", response_model=PaginatedCasesResponse)
+@router.get(
+    path="",
+    response_model=PaginatedCasesResponse,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def search_cases(
         pagination=Depends(pagination_params),
         filters=Depends(case_filter_params),
@@ -227,7 +248,14 @@ async def search_cases(
         )
 
 
-@router.post("/{case_id:path}/upload", response_model=SuccessResponseModel)
+@router.post(
+    path="/{case_id:path}/upload",
+    response_model=SuccessResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def upload_file(
         file: UploadFile = File(...),
         description: str = Form(...),
@@ -276,7 +304,14 @@ async def upload_file(
         )
 
 
-@router.get("/{case_id:path}", response_model=CaseResponseModel)
+@router.get(
+    path="/{case_id:path}",
+    response_model=CaseResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def get_single_case(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),

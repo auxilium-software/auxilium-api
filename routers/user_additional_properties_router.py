@@ -5,7 +5,7 @@ from typing import Optional, Any
 
 from fastapi import HTTPException, Depends, status, APIRouter, Path, Body
 from fastapi.responses import Response, JSONResponse
-from starlette.status import HTTP_201_CREATED
+from starlette.status import HTTP_201_CREATED, HTTP_200_OK
 
 from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
@@ -26,7 +26,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/users/{user_id:path}", tags=["Users"])
 
 
-@router.post("/additional_properties/{property_name:path}", response_model=SuccessResponseModel, status_code=HTTP_201_CREATED)
+@router.post(
+    path="/additional_properties/{property_name:path}",
+    response_model=SuccessResponseModel,
+    status_code=HTTP_201_CREATED,
+    tags=[
+        "Users",
+    ]
+)
 async def create_user_property(
         user_id: str = Path(..., description="User ID"),
         property_name: str = Path(..., description="Property name (pretty or normalized)"),
@@ -90,7 +97,14 @@ async def create_user_property(
         )
 
 
-@router.patch("/additional_properties/{property_name:path}", response_model=SuccessResponseModel)
+@router.patch(
+    path="/additional_properties/{property_name:path}",
+    response_model=SuccessResponseModel,
+    status_code=HTTP_200_OK,
+    tags=[
+        "Users",
+    ]
+)
 async def update_user_property(
         user_id: str = Path(..., description="User ID"),
         property_name: str = Path(..., description="Property name"),
@@ -157,7 +171,14 @@ async def update_user_property(
         )
 
 
-@router.delete("/additional_properties/{property_name:path}", response_model=SuccessResponseModel)
+@router.delete(
+    path="/additional_properties/{property_name:path}",
+    response_model=SuccessResponseModel,
+    status_code=HTTP_200_OK,
+    tags=[
+        "Users",
+    ]
+)
 async def delete_user_property(
         user_id: str = Path(..., description="User ID"),
         property_name: str = Path(..., description="Property name"),

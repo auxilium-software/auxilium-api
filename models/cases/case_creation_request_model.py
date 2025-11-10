@@ -4,5 +4,5 @@ from pydantic import BaseModel
 
 
 class CaseCreationRequestModel(BaseModel):
-    title: str | None
-    description: str | None
+    title:          str | None
+    description:    str | None

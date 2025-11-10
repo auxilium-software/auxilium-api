@@ -39,6 +39,8 @@ from routers.case_people_router                 import router as case_people_rou
 from routers.case_todo_router                   import router as case_todo_router
 from routers.case_additional_properties_router  import router as case_additional_properties_router
 
+from routers.me_router                          import router as me_router
+
 from routers.message_router                     import router as message_router
 
 from routers.user_router                        import router as user_router
@@ -141,6 +143,8 @@ def create_app() -> FastAPI:
         (case_todo_router,                  '/api/v3/cases/{case_id}/todos'),
         (case_people_router,                '/api/v3/cases/{case_id}/{clients//workers}'),
         (case_messages_router,              '/api/v3/cases/{case_id}/messages'),
+
+        (me_router,                         '/api/v3/me'),
 
         (message_router,                    '/api/v3/messages'),
 

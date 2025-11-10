@@ -8,14 +8,14 @@ from enumerators.todo_status import TodoStatus
 
 
 class TodoResponseModel(BaseModel):
-    id: str
-    case_id: str
-    summary: str
-    description: Optional[str]
-    status: TodoStatus
-    priority: TodoPriority
-    created_at: datetime
-    created_by: str
-    due_date: Optional[datetime]
-    completed_at: Optional[datetime]
-    assigned_to: Optional[str]
+    id:             str
+    case_id:        str
+    summary:        str
+    description:    Optional[str]
+    status:         TodoStatus
+    priority:       TodoPriority
+    created_at:     datetime
+    created_by:     str
+    due_date:       Optional[datetime]
+    completed_at:   Optional[datetime]
+    assigned_to:    Optional[str]
