@@ -23,12 +23,19 @@ from models.user.simplified_user_details_response_model import SimplifiedUserDet
 from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v3/server", tags=["Users"])
+router = APIRouter(prefix="/api/v3/server", tags=["Debug"])
 
-@router.get("/ping", response_model=SimplifiedUserDetailsResponseModel)
+@router.delete(
+    path="/ping",
+    response_model=PingResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Debug",
+    ]
+)
 async def get_current_user_details(
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
+        # configuration=Depends(get_configuration),
+        # current_user=Depends(get_current_user),
         # mariadb=Depends(get_mariadb_dependency),
         # couchdb=Depends(get_couchdb_dependency),
         # redis=Depends(get_redis_dependency),
