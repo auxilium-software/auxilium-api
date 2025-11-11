@@ -25,7 +25,7 @@ from models.user.user_details_response_model import UserDetailsResponseModel
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/server", tags=["Debug"])
 
-@router.delete(
+@router.get(
     path="/ping",
     response_model=PingResponseModel,
     status_code=status.HTTP_200_OK,
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/v3/server", tags=["Debug"])
         "Debug",
     ]
 )
-async def get_current_user_details(
+async def ping(
         # configuration=Depends(get_configuration),
         # current_user=Depends(get_current_user),
         # mariadb=Depends(get_mariadb_dependency),
