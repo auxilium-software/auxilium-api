@@ -27,7 +27,14 @@ router = APIRouter(prefix="/api/v3/users", tags=["Users"])
 
 
 
-@router.get("", response_model=PaginatedUsersResponse)
+@router.get(
+    path="",
+    response_model=PaginatedUsersResponse,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Users",
+    ]
+)
 async def search_users(
         pagination=Depends(pagination_params),
         filters=Depends(user_filter_params),
@@ -67,7 +74,14 @@ async def search_users(
         )
 
 
-@router.get("/{user_id:path}", response_model=UserDetailsResponseModel)
+@router.get(
+    path="/{user_id:path}",
+    response_model=UserDetailsResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Users",
+    ]
+)
 async def get_user_by_id(
         user_id: str = Path(..., description="User ID to fetch"),
         include_properties: bool = Query(True, description="Include additional properties"),
@@ -125,7 +139,14 @@ async def get_user_by_id(
         )
 
 
-@router.post("/{user_id:path}/upload", response_model=SuccessResponseModel)
+@router.post(
+    path="/{user_id:path}/upload",
+    response_model=SuccessResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Users",
+    ]
+)
 async def upload_file(
         file: UploadFile = File(...),
         description: str = Form(...),
