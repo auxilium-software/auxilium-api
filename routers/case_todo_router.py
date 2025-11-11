@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import HTTPException, Depends, APIRouter, Path, Body
 from fastapi import status as http_status
-from starlette.status import HTTP_201_CREATED
+from starlette.status import HTTP_201_CREATED, HTTP_200_OK
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
@@ -27,7 +27,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases/{case_id:path}/todos", tags=["Cases"])
 
 
-@router.post("", response_model=TodoResponseModel, status_code=HTTP_201_CREATED)
+@router.post(
+    path="",
+    response_model=TodoResponseModel,
+    status_code=HTTP_201_CREATED,
+    tags=[
+        "Cases",
+    ]
+)
 async def add_single_todo_to_single_case(
         case_id: str = Path(..., description="Case ID"),
         todo_request: TodoCreationRequestModel = Body(...),
@@ -109,7 +116,14 @@ async def add_single_todo_to_single_case(
         )
 
 
-@router.patch("/{todo_id:path}", response_model=SuccessResponseModel)
+@router.patch(
+    path="/{todo_id:path}",
+    response_model=SuccessResponseModel,
+    status_code=HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def update_todo_status(
         case_id: str = Path(..., description="Case ID"),
         todo_id: str = Path(..., description="Todo ID"),
@@ -175,7 +189,14 @@ async def update_todo_status(
         )
 
 
-@router.delete("/{todo_id:path}", response_model=SuccessResponseModel)
+@router.delete(
+    path="/{todo_id:path}",
+    response_model=SuccessResponseModel,
+    status_code=HTTP_200_OK,
+    tags=[
+        "Cases",
+    ]
+)
 async def delete_todo(
         case_id: str = Path(..., description="Case ID"),
         todo_id: str = Path(..., description="Todo ID"),
