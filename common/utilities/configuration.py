@@ -5,7 +5,7 @@ import yaml
 class Configuration:
     def __init__(self, path: str):
         with open(path, "r") as file:
-            self.config_data = yaml.load(file, Loader=yaml.FullLoader)
+            self.config_data = yaml.safe_load(file)
 
     @staticmethod
     def get_default_value(*path: str) -> Any:
