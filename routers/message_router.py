@@ -19,7 +19,14 @@ router = APIRouter(prefix="/api/v3/messages", tags=["Messages"])
 
 
 
-@router.get("/{message_id:path}", response_model=MessageResponseModel)
+@router.get(
+    path="/{message_id:path}",
+    response_model=MessageResponseModel,
+    status_code=http_status.HTTP_200_OK,
+    tags=[
+        "Messages",
+    ]
+)
 async def get_single_message_from_case(
         message_id: str = Path(..., description="Message ID"),
         configuration=Depends(get_configuration),
