@@ -106,8 +106,9 @@ async def add_single_todo_to_single_case(
         )
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -179,8 +180,9 @@ async def update_todo_status(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -221,10 +223,11 @@ async def delete_todo(
 
         doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
 
-        doc['timeline'][str(uuid.uuid4())].append({
-            "type": "TODO",
-            "original_data": doc.get('todos', todo_id)
-        })
+        timeline_item_id, timeline_item_data = build_timeline_object(
+            originalType=TimelineEntryType.TODO,
+            originalData=doc.get('todos', todo_id)
+        )
+        doc['timeline'][timeline_item_id] = timeline_item_data
 
         todos = doc.get('todos', [])
         original_length = len(todos)
@@ -244,8 +247,9 @@ async def delete_todo(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

@@ -68,6 +68,11 @@ async def get_my_cases(
             config=configuration,
             couchdb=couchdb
         )
+
+    except HTTPException as e:
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -112,6 +117,11 @@ async def get_assigned_cases(
             config=configuration,
             couchdb=couchdb
         )
+
+    except HTTPException as e:
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -182,6 +192,11 @@ async def create_case(
             messages                = case_doc.get('messages'),
         )
 
+
+    except HTTPException as e:
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise e
@@ -237,9 +252,11 @@ async def search_cases(
             config=configuration,
             couchdb=couchdb
         )
+
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -294,8 +311,9 @@ async def upload_file(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -332,7 +350,9 @@ async def get_single_case(
         return build_case_response(doc)
 
     except HTTPException as e:
-        raise
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

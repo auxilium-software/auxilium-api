@@ -78,9 +78,11 @@ async def search_files(
             uploaded_by=couchdb_data.get('uploaded_by'),
             contents=get_file_contents(couchdb_data.get('_id'), configuration),
         )
+
     except HTTPException as e:
+        mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

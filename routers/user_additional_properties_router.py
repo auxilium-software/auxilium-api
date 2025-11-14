@@ -87,8 +87,9 @@ async def create_user_property(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -161,8 +162,9 @@ async def update_user_property(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -216,8 +218,9 @@ async def delete_user_property(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

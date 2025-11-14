@@ -71,8 +71,9 @@ async def change_password(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         mariadb.rollback()
         PRIMARY_LOGGER.exception(e)

@@ -72,8 +72,9 @@ async def get_single_message_from_case(
         )
 
     except HTTPException as e:
+        mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

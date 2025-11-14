@@ -134,8 +134,9 @@ async def remove_client_from_case(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -194,8 +195,9 @@ async def add_worker_to_case(
         return build_case_response(doc)
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
@@ -256,8 +258,9 @@ async def remove_worker_from_case(
         return SuccessResponseModel()
 
     except HTTPException as e:
+        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise
+        raise e
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(

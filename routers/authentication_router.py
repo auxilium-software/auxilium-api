@@ -122,6 +122,10 @@ async def register(
             email_address=request.email_address,
         )
 
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
@@ -221,6 +225,10 @@ async def login(
             expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
 
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
@@ -295,6 +303,10 @@ async def refresh(
             expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Convert minutes to seconds
         )
 
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
@@ -332,6 +344,10 @@ async def logout(
 
         return SuccessResponseModel()
 
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
     except Exception as e:
         mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
