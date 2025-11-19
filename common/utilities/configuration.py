@@ -1,11 +1,25 @@
+from http import HTTPStatus
 from typing import Optional, Any
 import yaml
+from fastapi import HTTPException
+from starlette import status
+
+from common.utilities.configuration_validator import ConfigurationValidator
 
 
 class Configuration:
     def __init__(self, path: str):
         with open(path, "r") as file:
             self.config_data = yaml.safe_load(file)
+
+            validator = ConfigurationValidator()
+
+            if not validator.validate_dict(self.config_data):
+                error_msg = "Configuration file validation failure:\n" + "\n".join(validator.errors)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error_msg
+                )
 
     @staticmethod
     def get_default_value(*path: str) -> Any:
@@ -31,7 +45,10 @@ class Configuration:
                     "BlockedConnectionTimeout": 300,
                 },
                 "ClickHouse": {
-                    "Port": 8123,
+                    'Ports': {
+                        "HTTP": 8123,
+                        "TCP": 9000,
+                    },
                     "Secure": False,
                     "Verify": True,
                     "Compression": True,

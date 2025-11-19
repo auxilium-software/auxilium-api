@@ -45,7 +45,7 @@ class ClickHouseLogHandler(logging.Handler):
         try:
             self.client = Client(
                 host                    = self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
-                port                    = self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
+                port                    = self.configuration.get_int('Databases', 'ClickHouse', 'Ports', 'TCP'),
                 user                    = self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
                 password                = self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
                 secure                  = self.configuration.get_bool('Databases', 'ClickHouse', 'Secure'),
@@ -94,7 +94,7 @@ class ClickHouseLogHandler(logging.Handler):
                 self.client.disconnect()
                 self.client = Client(
                     host                    = self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
-                    port                    = self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
+                    port                    = self.configuration.get_int('Databases', 'ClickHouse', 'Ports', 'TCP'),
                     database                = self.configuration.get_string('Databases', 'ClickHouse', 'Database'),
                     user                    = self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
                     password                = self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
@@ -287,12 +287,14 @@ class ClickHouseLogHandler(logging.Handler):
                     if self.client:
                         self.client.disconnect()
                         self.client = Client(
-                            host=self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
-                            port=self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
-                            database=self.database,
-                            user=self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
-                            password=self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
-                            settings={'use_numpy': False}
+                            host        = self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
+                            port        = self.configuration.get_int('Databases', 'ClickHouse', 'Ports', 'TCP'),
+                            database    = self.database,
+                            user        = self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
+                            password    = self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
+                            settings    = {
+                                'use_numpy': False,
+                            },
                         )
 
                 try:
@@ -304,12 +306,14 @@ class ClickHouseLogHandler(logging.Handler):
                     except:
                         pass
                     self.client = Client(
-                        host=self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
-                        port=self.configuration.get_int('Databases', 'ClickHouse', 'Port'),
-                        database=self.database,
-                        user=self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
-                        password=self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
-                        settings={'use_numpy': False}
+                        host        = self.configuration.get_string('Databases', 'ClickHouse', 'Host'),
+                        port        = self.configuration.get_int('Databases', 'ClickHouse', 'Ports', 'TCP'),
+                        database    = self.database,
+                        user        = self.configuration.get_string('Databases', 'ClickHouse', 'Username'),
+                        password    = self.configuration.get_string('Databases', 'ClickHouse', 'Password'),
+                        settings    = {
+                            'use_numpy': False,
+                        },
                     )
 
                 clean_batch = []
@@ -396,19 +400,19 @@ def initialize_clickhouse_database():
         configuration = get_configuration()
 
         host = configuration.get_string('Databases', 'ClickHouse', 'Host')
-        port = configuration.get_int('Databases', 'ClickHouse', 'Port')
+        port = configuration.get_int('Databases', 'ClickHouse', 'Ports', 'TCP')
         database = configuration.get_string('Databases', 'ClickHouse', 'Database')
-        username = configuration.get_string('Databases', 'ClickHouse', 'Username')
-        password = configuration.get_string('Databases', 'ClickHouse', 'Password')
 
         logger.info(f"Initializing ClickHouse database {database} at {host}:{port}")
 
         client = Client(
-            host=host,
-            port=port,
-            user=username,
-            password=password,
-            settings={'use_numpy': False}
+            host        = host,
+            port        = port,
+            user        = configuration.get_string('Databases', 'ClickHouse', 'Username'),
+            password    = configuration.get_string('Databases', 'ClickHouse', 'Password'),
+            settings    = {
+                'use_numpy': False,
+            },
         )
 
         try:
