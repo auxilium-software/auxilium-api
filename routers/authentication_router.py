@@ -6,7 +6,6 @@ from fastapi import HTTPException, Depends, status, APIRouter
 from sqlalchemy import text
 
 from common.captcha_helpers import _verify_recaptcha
-from common.clickhouse_log_handler import setup_clickhouse_logging
 from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency

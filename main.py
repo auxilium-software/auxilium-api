@@ -11,9 +11,9 @@ args = parser.parse_args()
 load_configuration(args.config)
 CONFIGURATION = get_configuration()
 
-from common.clickhouse_log_handler import setup_clickhouse_logging
 from common.utilities import logging_utilities
 
+from common.clickhouse_helpers import setup_clickhouse_logging
 logging_utilities.PRIMARY_LOGGER = setup_clickhouse_logging(
     logger_name='Auxilium 3 API Server',
     level=logging.DEBUG
