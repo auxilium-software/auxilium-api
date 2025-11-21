@@ -1,12 +1,11 @@
 import logging
-import traceback
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
 
-from fastapi import HTTPException, Query
+from fastapi import HTTPException
 from fastapi import status as http_status
 
-from common.utilities.parameters import MAX_FETCH_LIMIT
+from common.parameters import MAX_FETCH_LIMIT
 from models.cases.case_response_model import CaseResponseModel
 from models.cases.paginated_cases_response_model import PaginatedCasesResponse
 

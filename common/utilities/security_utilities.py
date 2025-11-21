@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
