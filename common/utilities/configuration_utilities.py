@@ -4,15 +4,15 @@ import yaml
 from fastapi import HTTPException
 from starlette import status
 
-from common.utilities.configuration_validator import ConfigurationValidator
+from common.utilities.case_validation_utilities import CaseValidationUtilities
 
 
-class Configuration:
+class ConfigurationUtilities:
     def __init__(self, path: str):
         with open(path, "r") as file:
             self.config_data = yaml.safe_load(file)
 
-            validator = ConfigurationValidator()
+            validator = CaseValidationUtilities()
 
             if not validator.validate_dict(self.config_data):
                 error_msg = "Configuration file validation failure:\n" + "\n".join(validator.errors)
@@ -139,15 +139,15 @@ class Configuration:
         return bool(value)
 
 
-_configuration: Optional[Configuration] = None
+_configuration: Optional[ConfigurationUtilities] = None
 
 
 def load_configuration(path: str) -> None:
     global _configuration
-    _configuration = Configuration(path)
+    _configuration = ConfigurationUtilities(path)
 
 
-def get_configuration() -> Configuration:
+def get_configuration() -> ConfigurationUtilities:
     if _configuration is None:
         raise RuntimeError("Configuration not loaded. Call load_configuration() first.")
     return _configuration

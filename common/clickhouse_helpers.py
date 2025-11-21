@@ -4,7 +4,7 @@ from typing import Optional
 from clickhouse_driver import Client
 
 from common.clickhouse_log_handler import logger, ClickHouseLogHandler
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 
 
 def initialize_clickhouse_database():

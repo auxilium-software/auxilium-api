@@ -10,7 +10,7 @@ from common.databases.couchdb_interactions import get_couchdb_connection, get_co
 from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import (
     get_current_user

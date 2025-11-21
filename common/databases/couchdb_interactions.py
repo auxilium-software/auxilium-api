@@ -4,7 +4,7 @@ from typing import Generator
 
 import couchdb3
 
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 
 logger = logging.getLogger(__name__)
 

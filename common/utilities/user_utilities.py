@@ -1,19 +1,14 @@
-import hashlib
 import logging
-import uuid
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import text
 from fastapi import status as http_status
 
-from common.utilities.parameters import MAX_FETCH_LIMIT
-from enumerators.property_type import PropertyType
+from common.parameters import MAX_FETCH_LIMIT
 from models.user.paginated_users_response_model import PaginatedUsersResponse
 from models.user.simplified_user_details_response_model import SimplifiedUserDetailsResponseModel
-from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)
 

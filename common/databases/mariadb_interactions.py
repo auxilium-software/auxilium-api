@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from starlette import status
 
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 
 logger = logging.getLogger(__name__)
 

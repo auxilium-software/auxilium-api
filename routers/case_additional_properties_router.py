@@ -1,25 +1,19 @@
-import json
 import logging
 from datetime import datetime
 from typing import Optional, Any
 
 from fastapi import HTTPException, Depends, status, APIRouter, Path, Body
-from fastapi.responses import Response, JSONResponse
 from starlette.status import HTTP_201_CREATED, HTTP_200_OK
 
-from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
-from common.databases.mariadb_interactions import get_mariadb_dependency
-from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
-from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.configuration import get_configuration
+from common.databases.couchdb_interactions import get_couchdb_dependency
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
-from common.utilities.property_name_handler import PropertyNameHandler
+from common.property_name_handler import PropertyNameHandler
 from common.utilities.security_utilities import (
     get_current_user
 )
 from common.utilities.case_utilities import get_single_case_and_handle_permissions, get_case_properties, \
     save_case_property
-from common.uuid_handling import UUIDHandling
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 

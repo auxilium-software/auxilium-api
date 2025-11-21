@@ -1,4 +1,5 @@
-class ConfigurationValidator:
+
+class CaseValidationUtilities:
     def __init__(self):
         self.expected_structure = {
             'Databases': {
@@ -20,6 +21,7 @@ class ConfigurationValidator:
                         'Files': str,
                         'Messages': str,
                         'Users': str,
+                        'Surveys': str,
                     }
                 },
                 'Redis': {
@@ -81,8 +83,11 @@ class ConfigurationValidator:
                 'AllowedOrigins': list,
                 'AllowedHosts': list,
             },
-            'AuxLFS': {
-                'RootStorageDirectory': str,
+            'FileSystem': {
+                "RootStorageDirectories": {
+                    'AuxLFS': str,
+                    'SecondaryLogs': str,
+                }
             },
             'Instance': {
                 'QualifiedDNS': str,
@@ -128,6 +133,7 @@ class ConfigurationValidator:
         self.errors = []
 
     def validate_structure(self, data: dict, expected: dict, path: str = '') -> bool:
+        # check for missing keys
         for key in expected:
             current_path = f"{path}.{key}" if path else key
 
@@ -138,6 +144,7 @@ class ConfigurationValidator:
             expected_value = expected[key]
             actual_value = data[key]
 
+            # If expected value is a dict, recurse
             if isinstance(expected_value, dict):
                 if not isinstance(actual_value, dict):
                     self.errors.append(
@@ -146,13 +153,17 @@ class ConfigurationValidator:
                 else:
                     self.validate_structure(actual_value, expected_value, current_path)
 
+            # If expected value is list type, check if actual is list
             elif expected_value is list:
                 if not isinstance(actual_value, list):
                     self.errors.append(
                         f"Expected list at {current_path}, got {type(actual_value).__name__}"
                     )
 
+            # For None, we just check that the key exists (value can be anything)
+            # This is already satisfied by the key being present
 
+        # check for extra keys
         for key in data:
             if key not in expected:
                 current_path = f"{path}.{key}" if path else key

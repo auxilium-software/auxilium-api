@@ -11,7 +11,7 @@ from common.databases.mariadb_interactions import get_mariadb_connection, get_ma
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
 from common.databases.redis_interactions import get_redis_dependency
 from common.password_helpers import get_password_hash, verify_password
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, \
     ACCESS_TOKEN_EXPIRE_MINUTES, \

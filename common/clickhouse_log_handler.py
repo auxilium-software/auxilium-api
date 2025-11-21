@@ -10,7 +10,7 @@ import socket
 
 from clickhouse_driver import Client
 
-from common.utilities.configuration import get_configuration, load_configuration
+from common.utilities.configuration_utilities import get_configuration, load_configuration
 
 logger = logging.getLogger(__name__)
 

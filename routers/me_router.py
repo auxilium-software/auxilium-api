@@ -10,7 +10,7 @@ from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
 from common.password_helpers import get_password_hash
 from common.utilities.case_utilities import get_single_case_and_handle_permissions
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.message_utilities import get_message_details
 from common.utilities.security_utilities import get_current_user

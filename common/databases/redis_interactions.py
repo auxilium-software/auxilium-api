@@ -5,7 +5,7 @@ from typing import Generator, Any, Optional, Union
 
 import redis
 
-from common.utilities.configuration import get_configuration
+from common.utilities.configuration_utilities import get_configuration
 
 logger = logging.getLogger(__name__)
 
