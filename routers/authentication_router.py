@@ -6,6 +6,10 @@ from fastapi import HTTPException, Depends, status, APIRouter
 from sqlalchemy import text
 
 from common.captcha_helpers import _verify_recaptcha
+from common.couchdb_document_structures.case_document import CaseDocument
+from common.couchdb_document_structures.enumerators.case_sensitivity_enum import CaseSensitivityEnum
+from common.couchdb_document_structures.enumerators.case_status_enum import CaseStatusEnum
+from common.couchdb_document_structures.user_document import UserDocument
 from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
@@ -84,6 +88,33 @@ async def register(
             }
         )
 
+        user_doc_builder = UserDocument()
+        user_doc_builder.set_required_properties(
+            _id=user_id,
+            created_by=user_id,
+
+            full_name=request.full_name,
+            full_address=request.full_address,
+            telephone_number=request.telephone_number,
+            gender=request.gender,
+            date_of_birth=request.date_of_birth,
+        )
+
+        case_doc_builder = CaseDocument()
+        case_doc_builder.set_required_properties(
+            _id=case_id,
+            created_by=user_id,
+
+            title=request.title,
+            description=request.description,
+            sensitivity=CaseSensitivityEnum.CONFIDENTIAL,
+            status=CaseStatusEnum.OPEN,
+        )
+        case_doc_builder.clients = [
+            user_id
+        ]
+
+
         user_doc = {
             "_id": user_id,
             "created_at": datetime.utcnow().isoformat(),
@@ -101,19 +132,14 @@ async def register(
             "last_updated_at": None,
             "migrations": {}
         }
-        case_doc = {
-            "_id": case_id,
-            "title": request.title,
-            "description": request.description,
-        }
         other = {
             "on_behalf_of": request.on_behalf_of,
             "data_processing_consent": request.data_processing_consent,
             "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
         }
 
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc)
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc)
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc_builder.to_json())
+        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc_builder.to_json())
         mariadb.commit()
 
         return UserRegistrationResponseModel(
