@@ -1,32 +1,87 @@
 import logging
-import mimetypes
-from datetime import datetime
 from typing import Optional
 
-from fastapi import HTTPException, Depends, status, APIRouter, Path, Query, UploadFile, File, Form
-from fastapi.responses import JSONResponse
-from starlette.responses import FileResponse
+from fastapi import HTTPException, Depends, status, APIRouter, Path, Request
+from fastapi.responses import Response
 
-from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
-from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
-from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
-from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.configuration import get_configuration
-from common.utilities.file_utilities import get_file_details, get_file_contents
+from common.databases.couchdb_interactions import get_couchdb_dependency
+from common.databases.mariadb_interactions import get_mariadb_dependency
+from common.utilities.configuration_utilities import get_configuration
+from common.utilities.file_utilities import get_file_details, get_file_contents, delete_file_from_lfs
 from common.utilities.logging_utilities import PRIMARY_LOGGER
-from common.utilities.parameters import pagination_params, sort_params, case_filter_params, user_filter_params
 from common.utilities.security_utilities import get_current_user
-from common.utilities.user_utilities import get_user_details, check_user_access, get_user_properties, save_user_property, find_shared_cases, get_users_with_filter
 from common.uuid_handling import UUIDHandling
-from enumerators.property_type import PropertyType
+import base64
+
 from models.file.file_details_response_model import FileDetailsResponseModel
-from models.user.paginated_users_response_model import PaginatedUsersResponse
-from models.user.simplified_user_details_response_model import SimplifiedUserDetailsResponseModel
-from models.user.user_details_response_model import UserDetailsResponseModel
+from models.success_response_model import SuccessResponseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/files", tags=["Files"])
 
+
+@router.get(
+    path="/{file_id:path}/render",
+    status_code=status.HTTP_200_OK,
+    tags=["Files"],
+    response_class=Response,
+)
+async def render_file(
+        file_id: str = Path(..., description="File ID"),
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+):
+    try:
+        if not UUIDHandling.is_valid(file_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions"
+            )
+
+        _, couchdb_data = get_file_details(
+            file_id, mariadb, couchdb, configuration
+        )
+
+        file_data = get_file_contents(couchdb_data.get('_id'), configuration)
+
+        if isinstance(file_data, str):
+            file_data = base64.b64decode(file_data)
+
+        file_size = len(file_data)
+        content_type = couchdb_data.get('content_type', 'application/octet-stream')
+        filename = couchdb_data.get('filename', 'file')
+
+        return Response(
+            content=file_data,
+            status_code=status.HTTP_200_OK,
+            headers={
+                'Accept-Ranges': 'bytes',
+                'Content-Length': str(file_size),
+                'Content-Type': content_type,
+                'Content-Disposition': f'inline; filename="{filename}"',
+                'Cache-Control': 'public, max-age=3600',
+            },
+            media_type=content_type,
+        )
+
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
+    except Exception as e:
+        PRIMARY_LOGGER.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to render file: {str(e)}"
+        )
 
 
 @router.get(
@@ -37,11 +92,8 @@ router = APIRouter(prefix="/api/v3/files", tags=["Files"])
         "Files",
     ]
 )
-async def search_files(
+async def get_file(
         file_id: str = Path(..., description="File ID"),
-        pagination=Depends(pagination_params),
-        filters=Depends(user_filter_params),
-        sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
         mariadb=Depends(get_mariadb_dependency),
@@ -76,7 +128,6 @@ async def search_files(
             size=couchdb_data.get('size'),
             uploaded_at=couchdb_data.get('uploaded_at'),
             uploaded_by=couchdb_data.get('uploaded_by'),
-            contents=get_file_contents(couchdb_data.get('_id'), configuration),
         )
 
     except HTTPException as e:
@@ -89,3 +140,5 @@ async def search_files(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
         )
+
+

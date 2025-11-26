@@ -14,10 +14,27 @@ def get_file_details(file_id: str, mariadb, couchdb, config):
     couchdb_data = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', 'Files')].get(file_id)
     return None, couchdb_data
 
+
 def get_file_contents(file_id: str, config):
-    Path(config.get_string("AuxLFS", "RootStorageDirectory")).mkdir(parents=True, exist_ok=True)
-    with open(config.get_string("AuxLFS", "RootStorageDirectory") + "/" + f"{file_id}.bin", "r") as f:
-        return f.read()
+    file_path = Path(config.get_string("FileSystem", "RootStorageDirectories", "AuxLFS")) / f"{file_id}.bin"
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="File not found"
+        )
+
+    with open(file_path, "rb") as f:
+        hex_data = f.read()
+
+    if isinstance(hex_data, bytes):
+        hex_string = hex_data.decode('utf-8')
+    else:
+        hex_string = hex_data
+
+    binary_data = bytes.fromhex(hex_string)
+
+    return binary_data
 
 
 def create_file(
@@ -26,8 +43,9 @@ def create_file(
         file_name: str,
         file_type: Any,
         uploaded_by: str,
-        file_contents: Any,
+        file_contents: Any,  # should be bytes
         description: str,
+
         couchdb,
         config
 ):
@@ -43,8 +61,13 @@ def create_file(
 
     file_id = UUIDHandling.v5s(object_type=DatabaseObjectType.FILE)
 
+    if isinstance(file_contents, str):
+        file_bytes = file_contents.encode('utf-8')
+    else:
+        file_bytes = file_contents
+
     hash_object = hashlib.sha1()
-    hash_object.update(file_contents.encode('utf-8'))
+    hash_object.update(file_bytes)
     file_hash = hash_object.hexdigest()
 
     files_doc = {
@@ -53,18 +76,23 @@ def create_file(
         'description': description,
         'content_type': file_type,
         "hash": file_hash,
-        'size': len(file_contents),
+        'size': len(file_bytes),
         'uploaded_at': datetime.utcnow().isoformat(),
         'uploaded_by': uploaded_by,
     }
 
-    main_doc['files'].append(f"auxlfs://%%default%%/{file_id}?size={len(file_contents)}&hash={file_hash}")
+    main_doc['files'].append(f"auxlfs://%%default%%/{file_id}?size={len(file_bytes)}&hash={file_hash}")
     main_doc['last_updated_at'] = datetime.utcnow().isoformat()
 
-    Path(config.get_string("AuxLFS", "RootStorageDirectory")).mkdir(parents=True, exist_ok=True)
-    with open(config.get_string("AuxLFS", "RootStorageDirectory") + "/" + f"{file_id}.bin", "w") as f:
-        f.write(file_contents)
+    # Create directory and write binary file
+    storage_path = Path(config.get_string("FileSystem", "RootStorageDirectories", "AuxLFS"))
+    storage_path.mkdir(parents=True, exist_ok=True)
+
+    file_path = storage_path / f"{file_id}.bin"
+    with open(file_path, "wb") as f:  # Write in binary mode
+        f.write(file_bytes)
 
     main_db.save(main_doc)
     files_db.save(files_doc)
     return main_doc
+

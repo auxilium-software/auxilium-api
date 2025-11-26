@@ -11,4 +11,3 @@ class FileDetailsResponseModel(BaseModel):
     size:           int
     uploaded_at:    datetime
     uploaded_by:    str
-    contents:       str
