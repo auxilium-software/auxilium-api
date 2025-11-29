@@ -19,6 +19,8 @@ class UserDocument:
     files:                  List[str]   = []
     migrations:             dict        = {}
 
+    how_did_you_find_out_about_our_service: str|None = None
+
 
     def set_required_properties(
             self,
@@ -61,4 +63,6 @@ class UserDocument:
             'additional_properties':    self.additional_properties,
             'files':                    self.files,
             'migrations':               self.migrations,
+
+            'how_did_you_find_out_about_our_service': self.how_did_you_find_out_about_our_service,
         }

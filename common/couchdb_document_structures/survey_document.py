@@ -36,7 +36,7 @@ class SurveyDocument:
     def to_json(self):
         return {
             '_id':          self._id,
-            # '_rev':       self._rev,
+            # '_rev':         self._rev,
             'created_at':   self.created_at,
             'created_by':   self.created_by,
             'updated_at':   self.updated_at,

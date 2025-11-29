@@ -16,12 +16,14 @@ class MessageDocument:
     def to_json(self):
         return {
             '_id':          self._id,
-            '_rev':         self._rev,
-            'created_at':   self.created_at,
+            # '_rev':         self._rev,
+            'created_at':   self.created_at.isoformat(),
+            'created_by':   self.created_by,
+            'updated_at':   self.updated_at.isoformat(),
+
             'subject':      self.subject,
             'content':      self.content,
             'sender_id':    self.sender_id,
             'is_urgent':    self.is_urgent,
             'read_by':      self.read_by,
-            'updated_at':   self.updated_at,
         }
