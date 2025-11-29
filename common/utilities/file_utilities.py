@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi import status as http_status
 
+from common.couchdb_document_structures.file_document import FileDocument
 from common.uuid_handling import UUIDHandling
 from enumerators.database_object_type import DatabaseObjectType
 
@@ -70,18 +71,18 @@ def create_file(
     hash_object.update(file_bytes)
     file_hash = hash_object.hexdigest()
 
-    files_doc = {
-        "_id": file_id,
-        'filename': file_name,
-        'description': description,
-        'content_type': file_type,
-        "hash": file_hash,
-        'size': len(file_bytes),
-        'uploaded_at': datetime.utcnow().isoformat(),
-        'uploaded_by': uploaded_by,
-    }
+    file_doc_builder = FileDocument()
+    file_doc_builder.set_required_properties(
+        _id=file_id,
+        created_by=uploaded_by,
+        filename=file_name,
+        description=description,
+        content_type=file_type,
+        hash=file_hash,
+        size=len(file_bytes),
+    )
 
-    main_doc['files'].append(f"auxlfs://%%default%%/{file_id}?size={len(file_bytes)}&hash={file_hash}")
+    main_doc['files'].append(f"auxlfs://localhost/{file_id}?size={len(file_bytes)}&hash={file_hash}")
     main_doc['last_updated_at'] = datetime.utcnow().isoformat()
 
     # Create directory and write binary file
@@ -93,6 +94,6 @@ def create_file(
         f.write(file_bytes)
 
     main_db.save(main_doc)
-    files_db.save(files_doc)
+    files_db.save(file_doc_builder.to_json())
     return main_doc
 
