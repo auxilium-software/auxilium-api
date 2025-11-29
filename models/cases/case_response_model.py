@@ -10,7 +10,7 @@ class CaseResponseModel(BaseModel):
     sensitivity:            str | None
     status:                 str | None
     case_referrer:          str | None
-    additional_properties:  Dict[str, Any]  = {}
+    additional_properties:  Dict[str, Any]
     workers:                List[str]
     clients:                List[str]
     todos:                  dict
