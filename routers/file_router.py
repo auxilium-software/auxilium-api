@@ -141,3 +141,56 @@ async def get_file(
         )
 
 
+@router.delete(
+    path="/{file_id:path}",
+    response_model=SuccessResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=[
+        "Files",
+    ]
+)
+async def delete_file(
+        file_id: str = Path(..., description="File ID"),
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
+):
+    try:
+        if not UUIDHandling.is_valid(file_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
+
+        if current_user.is_admin:
+            selector = {}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"wip lol"
+            )
+
+        success = delete_file_from_lfs(
+            document_type="",
+            document_id="",
+            file_id=file_id,
+
+            couchdb=couchdb,
+            config=configuration,
+        )
+
+        return SuccessResponseModel()
+
+    except HTTPException as e:
+        mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
+    except Exception as e:
+        PRIMARY_LOGGER.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cases: {str(e)}"
+        )
