@@ -64,23 +64,36 @@ class CaseDocumentTools(DocumentToolsInterface):
 
         case_doc['last_updated_at'] = datetime.utcnow().isoformat()
 
+        DocumentTools.get_collection_unsafe(
+            configuration=self.configuration,
+            couchdb=self.couchdb,
+            target_database_key='Cases'
+        ).save(case_doc)
+
 
 
     def build_response(self, doc: Dict) -> CaseResponseModel:
         return CaseResponseModel(
             id                      = doc['_id'],
-            sensitivity             = doc['sensitivity'],
+            created_at              = doc['created_at'],
+            created_by              = doc['created_by'],
+            last_updated_at         = doc['last_updated_at'],
+            last_updated_by         = doc['last_updated_by'],
+
             title                   = doc['title'],
-            status                  = doc['status'],
-            brief_description       = doc['brief_description'],
-            case_referrer           = doc['case_referrer'],
             description             = doc['description'],
+
+            sensitivity             = doc['sensitivity'],
+            status                  = doc['status'],
+
+            referrer                = doc['referrer'],
             workers                 = doc['workers'],
             clients                 = doc['clients'],
-            additional_properties   = doc['additional_properties'],
             todos                   = doc['todos'],
             timeline                = doc['timeline'],
             messages                = doc['messages'],
+
+            additional_properties   = doc['additional_properties'],
             files                   = doc['files'],
         )
 
@@ -102,7 +115,7 @@ class CaseDocumentTools(DocumentToolsInterface):
             order: str,
     ) -> PaginatedCasesResponse:
         try:
-            database = DocumentTools.get_collection_unsafe(
+            cases_collection = DocumentTools.get_collection_unsafe(
                 configuration=self.configuration,
                 couchdb=self.couchdb,
                 target_database_key='Cases'
@@ -114,7 +127,7 @@ class CaseDocumentTools(DocumentToolsInterface):
 
             skip = (page - 1) * page_size
 
-            count_result = database.find(
+            count_result = cases_collection.find(
                 selector=query_selector,
                 fields=['_id'],
                 limit=MAX_FETCH_LIMIT
@@ -124,7 +137,7 @@ class CaseDocumentTools(DocumentToolsInterface):
             total = len(count_docs)
             logger.info(f"Count query returned {total} documents")
 
-            result = database.find(
+            result = cases_collection.find(
                 selector=query_selector,
                 limit=page_size,
                 skip=skip,
@@ -139,7 +152,7 @@ class CaseDocumentTools(DocumentToolsInterface):
             total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
             has_more = page < total_pages
 
-            cases = [CaseDocumentTools.build_response(doc) for doc in docs]
+            cases = [self.build_response(doc) for doc in docs]
 
             logger.info(f"Returning {len(cases)} cases out of {total} total")
 

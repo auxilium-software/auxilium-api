@@ -41,8 +41,6 @@ from routers.case_additional_properties_router  import router as case_additional
 
 from routers.me_router                          import router as me_router
 
-from routers.message_router                     import router as message_router
-
 from routers.survey_router                      import router as survey_router
 
 from routers.test_router                        import router as test_router
@@ -149,8 +147,6 @@ def create_app() -> FastAPI:
         (case_messages_router,              '/api/v3/cases/{case_id}/messages'),
 
         (me_router,                         '/api/v3/me'),
-
-        (message_router,                    '/api/v3/messages'),
 
         (survey_router,                     '/api/v3/surveys'),
 

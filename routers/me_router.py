@@ -11,7 +11,6 @@ from common.password_helpers import get_password_hash
 from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
-from common.document_modification.user_document_tools import check_user_access
 from models.me.password_update_request_model import PasswordUpdateRequestModel
 from models.success_response_model import SuccessResponseModel
 
@@ -36,12 +35,6 @@ async def change_password(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        if not check_user_access(current_user, current_user.id, couchdb, configuration):
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to modify this user's properties"
-            )
-
         if request.current_password == request.new_password:
             raise HTTPException(
                 status_code=http_status.HTTP_409_CONFLICT,

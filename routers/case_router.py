@@ -336,7 +336,7 @@ async def upload_file(
         "Cases",
     ]
 )
-async def get_single_case(
+async def get_case_by_id(
         case_id: str = Path(..., description="Case ID"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),

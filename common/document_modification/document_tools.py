@@ -16,7 +16,7 @@ class DocumentTools:
         if not case_doc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Case not found"
+                detail="Document not found"
             )
 
         return case_doc
