@@ -17,9 +17,66 @@ from common.uuid_handling import UUIDHandling
 from enumerators.property_type import PropertyType
 from models.me.password_update_request_model import PasswordUpdateRequestModel
 from models.success_response_model import SuccessResponseModel
+from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/me", tags=["Account Management"])
+
+
+
+@router.get(
+    path="",
+    response_model=UserDetailsResponseModel,
+    status_code=http_status.HTTP_200_OK,
+    tags=[
+        "Me",
+    ]
+)
+async def get_details_about_myself(
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
+):
+    try:
+        doc_tools = UserDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        user_doc = doc_tools.build_response(
+            doc=doc_tools.get_document(
+                user_id=current_user.id,
+            )
+        )
+
+        mariadb_user_data = mariadb.execute(
+            text("""
+                SELECT * FROM users WHERE id=:user_id;
+            """),
+            {
+                "user_id": current_user.id,
+            }
+        ).fetchone()
+        user_doc.is_admin = mariadb_user_data.is_admin
+        user_doc.email_address = mariadb_user_data.email_address
+
+        return user_doc
+
+    except HTTPException as e:
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
+    except Exception as e:
+        PRIMARY_LOGGER.exception(e)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch case: {str(e)}"
+        )
+
 
 
 @router.post(
@@ -27,7 +84,7 @@ router = APIRouter(prefix="/api/v3/me", tags=["Account Management"])
     response_model=SuccessResponseModel,
     status_code=http_status.HTTP_200_OK,
     tags=[
-        "Users",
+        "Me",
     ]
 )
 async def upload_file(
@@ -51,7 +108,6 @@ async def upload_file(
         doc_tools = UserDocumentTools(
             configuration=configuration,
             couchdb=couchdb,
-            mariadb=mariadb,
             current_user=current_user,
         )
 
@@ -89,7 +145,7 @@ async def upload_file(
     response_model=SuccessResponseModel,
     status_code=http_status.HTTP_200_OK,
     tags=[
-        "Account Management",
+        "Me",
     ]
 )
 async def change_password(

@@ -5,9 +5,11 @@ from typing import List
 class UserDocument:
     _id:                    str
     _rev:                   str
+
     created_at:             datetime
     created_by:             str
-    updated_at:             datetime
+    last_updated_at:        datetime
+    last_updated_by:        str
 
     full_name:              str
     full_address:           str
@@ -17,7 +19,6 @@ class UserDocument:
 
     additional_properties:  dict        = {}
     files:                  List[str]   = []
-    migrations:             dict        = {}
 
     how_did_you_find_out_about_our_service: str|None = None
 

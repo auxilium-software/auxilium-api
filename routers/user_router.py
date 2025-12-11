@@ -2,6 +2,7 @@ import logging
 import mimetypes
 
 from fastapi import HTTPException, Depends, status, APIRouter, Path, Query, UploadFile, File, Form
+from sqlalchemy import text
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
@@ -45,7 +46,6 @@ async def search_users(
         doc_tools = UserDocumentTools(
             configuration=configuration,
             couchdb=couchdb,
-            mariadb=mariadb,
             current_user=current_user,
         )
 
@@ -103,17 +103,27 @@ async def get_user_by_id(
         doc_tools = UserDocumentTools(
             configuration=configuration,
             couchdb=couchdb,
-            mariadb=mariadb,
             current_user=current_user,
         )
 
-        doc = doc_tools.get_document(
-            user_id=user_id,
+        user_doc = doc_tools.build_response(
+            doc=doc_tools.get_document(
+                user_id=user_id,
+            )
         )
 
-        return doc_tools.build_response(
-            doc=doc
-        )
+        mariadb_user_data = mariadb.execute(
+            text("""
+                SELECT * FROM users WHERE id=:user_id;
+            """),
+            {
+                "user_id": user_id,
+            }
+        ).fetchone()
+        user_doc.is_admin = mariadb_user_data.is_admin
+        user_doc.email_address = mariadb_user_data.email_address
+
+        return user_doc
 
     except HTTPException as e:
         # mariadb.rollback()

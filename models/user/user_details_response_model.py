@@ -1,14 +1,29 @@
 from datetime import datetime
+from typing import List
 
 from pydantic import EmailStr, BaseModel
 
 
 class UserDetailsResponseModel(BaseModel):
     id:                     str
-    email_address:          EmailStr | None
-    full_name:              str
-    is_admin:               bool
-    additional_properties:  dict  # [str, dict[str, str|int|float|bool|None]]
-    files:                  list
+
     created_at:             datetime
-    last_updated_at:        datetime|None
+    created_by:             str
+    last_updated_at:        datetime
+    last_updated_by:        str
+
+    full_name:              str
+    full_address:           str
+    telephone_number:       str
+    gender:                 str
+    date_of_birth:          str
+
+    additional_properties:  dict        = {}
+    files:                  List[str]   = []
+
+    how_did_you_find_out_about_our_service: str|None = None
+
+
+    # properties stored in mariadb
+    email_address:          str|None = None
+    is_admin:               bool|None = None

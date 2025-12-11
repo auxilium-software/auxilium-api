@@ -10,16 +10,15 @@ from common.document_modification.document_tools import DocumentTools
 from common.document_modification.document_tools_interface import DocumentToolsInterface
 from common.parameters import MAX_FETCH_LIMIT
 from models.user.paginated_users_response_model import PaginatedUsersResponse
-from models.user.simplified_user_details_response_model import SimplifiedUserDetailsResponseModel
+from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)
 
 
 class UserDocumentTools(DocumentToolsInterface):
-    def __init__(self, configuration, couchdb, mariadb, current_user):
+    def __init__(self, configuration, couchdb, current_user):
         self.configuration = configuration
         self.couchdb = couchdb
-        self.mariadb = mariadb
         self.current_user = current_user
 
     def save_document(self, document_builder: UserDocument):
@@ -56,13 +55,50 @@ class UserDocumentTools(DocumentToolsInterface):
 
         return user_doc
 
-    def build_response(self, doc: Dict) -> SimplifiedUserDetailsResponseModel:
-        return SimplifiedUserDetailsResponseModel(
+    def build_response(self, doc: Dict) -> UserDetailsResponseModel:
+        if self.current_user.is_admin:
+            return UserDetailsResponseModel(
+                id=doc['_id'],
+                created_at=doc['created_at'],
+                created_by=doc['created_by'],
+                last_updated_at=doc['last_updated_at'],
+                last_updated_by=doc['last_updated_by'],
+                full_name=doc['full_name'],
+                full_address=doc['full_address'],
+                telephone_number=doc['telephone_number'],
+                gender=doc['gender'],
+                date_of_birth=doc['date_of_birth'],
+
+                additional_properties=doc['additional_properties'],
+                files=doc['files'],
+
+                how_did_you_find_out_about_our_service=doc['how_did_you_find_out_about_our_service'],
+
+                is_admin = None,
+                email_address = None,
+            )
+
+        return UserDetailsResponseModel(
             id=doc['_id'],
-            email_address=doc.get('email_address', 'example@example.example'),
-            full_name=doc.get('full_name'),
-            is_admin=doc.get('is_admin', False),
+            created_at=doc['created_at'],
+            created_by=doc['created_by'],
+            last_updated_at=doc['last_updated_at'],
+            last_updated_by=doc['last_updated_by'],
+            full_name=doc['full_name'],
+            full_address=None,
+            telephone_number=None,
+            gender=None,
+            date_of_birth=None,
+
+            additional_properties={},
+            files=[],
+
+            how_did_you_find_out_about_our_service=None,
+
+            is_admin = None,
+            email_address = None,
         )
+
 
     # ====================================================================================================
     # ADDITIONAL FUNCTIONS
