@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class UserDocumentTools(DocumentToolsInterface):
-    def __init__(self, configuration, couchdb, current_user):
+    def __init__(self, configuration, couchdb, mariadb, current_user):
         self.configuration = configuration
         self.couchdb = couchdb
+        self.mariadb = mariadb
         self.current_user = current_user
 
     def save_document(self, document_builder: UserDocument):

@@ -10,7 +10,8 @@ from common.document_modification.file_document_tools import create_file
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.parameters import pagination_params, sort_params, user_filter_params
 from common.utilities.security_utilities import get_current_user
-from common.document_modification.user_document_tools import get_user_details, check_user_access, get_user_properties, find_shared_cases, get_users_with_filter
+from common.document_modification.user_document_tools import UserDocumentTools
+from common.uuid_handling import UUIDHandling
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 from models.user.paginated_users_response_model import PaginatedUsersResponse
@@ -35,12 +36,19 @@ async def search_users(
         sorting=Depends(sort_params),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
+        mariadb=Depends(get_mariadb_dependency),
         couchdb=Depends(get_couchdb_dependency),
         # redis=Depends(get_redis_dependency),
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        doc_tools = UserDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            mariadb=mariadb,
+            current_user=current_user,
+        )
+
         if current_user.is_admin:
             selector = {}
         else:
@@ -49,13 +57,11 @@ async def search_users(
                 detail=f"wip lol"
             )
 
-        return await get_users_with_filter(
+        return await doc_tools.get_users_with_filter(
             selector=selector,
             **pagination,
             **filters,
             **sorting,
-            config=configuration,
-            couchdb=couchdb
         )
 
     except HTTPException as e:
@@ -80,7 +86,6 @@ async def search_users(
 )
 async def get_user_by_id(
         user_id: str = Path(..., description="User ID to fetch"),
-        include_properties: bool = Query(True, description="Include additional properties"),
         configuration=Depends(get_configuration),
         current_user=Depends(get_current_user),
         mariadb=Depends(get_mariadb_dependency),
@@ -89,98 +94,26 @@ async def get_user_by_id(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        if user_id == 'me':
-            user_id = current_user.id
-
-        if not check_user_access(current_user, user_id, couchdb, configuration):
+        if not UUIDHandling.is_valid(user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to view this user"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
             )
 
-        mariadb_data, couchdb_data = get_user_details(
-            user_id, mariadb, couchdb, configuration
-        )
-
-        if not mariadb_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        additional_properties = {}
-        if include_properties:
-            additional_properties = get_user_properties(user_id, couchdb, configuration)
-
-        return UserDetailsResponseModel(
-            id=mariadb_data.id,
-            email_address=mariadb_data.email_address,
-            full_name=couchdb_data.get('full_name') if couchdb_data else None,
-            is_admin=mariadb_data.is_admin,
-            additional_properties=additional_properties,
-            files=couchdb_data.get('files') if couchdb_data else [],
-            created_at=mariadb_data.created_at,
-            last_updated_at=couchdb_data.get('last_updated_at') if couchdb_data else None,
-        )
-
-    except HTTPException as e:
-        mariadb.rollback()
-        PRIMARY_LOGGER.exception(e)
-        raise e
-    except Exception as e:
-        PRIMARY_LOGGER.exception(e)
-        mariadb.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch user details"
-        )
-
-
-@router.post(
-    path="/{user_id:path}/upload",
-    response_model=SuccessResponseModel,
-    status_code=status.HTTP_200_OK,
-    tags=[
-        "Users",
-    ]
-)
-async def upload_file(
-        file: UploadFile = File(...),
-        description: str = Form(...),
-        user_id: str = Path(..., description="User ID"),
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        # redis=Depends(get_redis_dependency),
-        # rabbitmq=Depends(get_rabbitmq_dependency),
-):
-    try:
-        if user_id == 'me':
-            user_id = current_user.id
-
-        if not check_user_access(current_user, user_id, couchdb, configuration):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to upload files for this user"
-            )
-
-        content = await file.read()
-        content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or PropertyType.BINARY
-
-        create_file(
-            document_type="Users",
-            document_id=user_id,
-            file_name=file.filename,
-            file_type=content_type,
-            uploaded_by=current_user.id,
-            file_contents=content.hex() if isinstance(content, bytes) else content,
-            description=description,
+        doc_tools = UserDocumentTools(
+            configuration=configuration,
             couchdb=couchdb,
-            config=configuration,
+            mariadb=mariadb,
+            current_user=current_user,
         )
 
-        return SuccessResponseModel()
+        doc = doc_tools.get_document(
+            user_id=user_id,
+        )
+
+        return doc_tools.build_response(
+            doc=doc
+        )
 
     except HTTPException as e:
         # mariadb.rollback()
@@ -190,7 +123,5 @@ async def upload_file(
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload file"
+            detail=f"Failed to fetch case: {str(e)}"
         )
-
-

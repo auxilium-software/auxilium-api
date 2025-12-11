@@ -12,7 +12,7 @@ from common.property_name_handler import PropertyNameHandler
 from common.utilities.security_utilities import (
     get_current_user
 )
-from common.document_modification.user_document_tools import check_user_access, get_user_properties, save_user_property
+from common.uuid_handling import UUIDHandling
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 
@@ -42,8 +42,11 @@ async def create_user_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        if user_id == 'me':
-            user_id = current_user.id
+        if not UUIDHandling.is_valid(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
 
         if not check_user_access(current_user, user_id, couchdb, configuration):
             raise HTTPException(
@@ -113,8 +116,11 @@ async def update_user_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        if user_id == 'me':
-            user_id = current_user.id
+        if not UUIDHandling.is_valid(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
 
         if not check_user_access(current_user, user_id, couchdb, configuration):
             raise HTTPException(
@@ -186,8 +192,11 @@ async def delete_user_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        if user_id == 'me':
-            user_id = current_user.id
+        if not UUIDHandling.is_valid(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must provide a UUID."
+            )
 
         if not check_user_access(current_user, user_id, couchdb, configuration):
             raise HTTPException(
