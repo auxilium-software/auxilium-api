@@ -1,7 +1,6 @@
 import logging
-from datetime import datetime
 
-from fastapi import HTTPException, Depends, APIRouter, Path, Body
+from fastapi import HTTPException, Depends, APIRouter
 from fastapi import status as http_status
 from sqlalchemy import text
 from starlette.status import HTTP_200_OK
@@ -9,15 +8,11 @@ from starlette.status import HTTP_200_OK
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
 from common.password_helpers import get_password_hash
-from common.utilities.case_utilities import get_single_case_and_handle_permissions
 from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
-from common.utilities.message_utilities import get_message_details
 from common.utilities.security_utilities import get_current_user
-from common.utilities.user_utilities import check_user_access
-from common.uuid_handling import UUIDHandling
+from common.document_modification.user_document_tools import check_user_access
 from models.me.password_update_request_model import PasswordUpdateRequestModel
-from models.message.message_response_model import MessageResponseModel
 from models.success_response_model import SuccessResponseModel
 
 logger = logging.getLogger(__name__)

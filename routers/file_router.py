@@ -1,13 +1,12 @@
 import logging
-from typing import Optional
 
-from fastapi import HTTPException, Depends, status, APIRouter, Path, Request
+from fastapi import HTTPException, Depends, status, APIRouter, Path
 from fastapi.responses import Response
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.mariadb_interactions import get_mariadb_dependency
 from common.utilities.configuration_utilities import get_configuration
-from common.utilities.file_utilities import get_file_details, get_file_contents, delete_file_from_lfs
+from common.document_modification.file_document_tools import get_file_details, get_file_contents, delete_file_from_lfs
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
 from common.uuid_handling import UUIDHandling

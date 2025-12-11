@@ -3,7 +3,7 @@ import logging
 
 from redis.cluster import PRIMARY
 
-from common.utilities.configuration import load_configuration, get_configuration
+from common.utilities.configuration_utilities import load_configuration, get_configuration
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="The location of the config file")
@@ -23,7 +23,7 @@ logging_utilities.PRIMARY_LOGGER = setup_clickhouse_logging(
 import time
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware  # Use FastAPI's built-in CORS
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -42,6 +42,10 @@ from routers.case_additional_properties_router  import router as case_additional
 from routers.me_router                          import router as me_router
 
 from routers.message_router                     import router as message_router
+
+from routers.survey_router                      import router as survey_router
+
+from routers.test_router                        import router as test_router
 
 from routers.user_router                        import router as user_router
 from routers.user_additional_properties_router  import router as user_additional_properties_router
@@ -147,6 +151,10 @@ def create_app() -> FastAPI:
         (me_router,                         '/api/v3/me'),
 
         (message_router,                    '/api/v3/messages'),
+
+        (survey_router,                     '/api/v3/surveys'),
+
+        (test_router,                       '/api/v3/tests'),
 
         (user_router,                       '/api/v3/users'),
         (user_additional_properties_router, '/api/v3/users/{user_id}/additional_properties'),

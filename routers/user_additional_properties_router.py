@@ -12,7 +12,7 @@ from common.property_name_handler import PropertyNameHandler
 from common.utilities.security_utilities import (
     get_current_user
 )
-from common.utilities.user_utilities import check_user_access, get_user_properties, save_user_property
+from common.document_modification.user_document_tools import check_user_access, get_user_properties, save_user_property
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 

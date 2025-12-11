@@ -6,14 +6,13 @@ from fastapi import HTTPException, Depends, status, APIRouter, Path, Body
 from starlette.status import HTTP_201_CREATED, HTTP_200_OK
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
+from common.document_modification.case_document_tools import CaseDocumentTools
 from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.property_name_handler import PropertyNameHandler
 from common.utilities.security_utilities import (
     get_current_user
 )
-from common.utilities.case_utilities import get_single_case_and_handle_permissions, get_case_properties, \
-    save_case_property
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 
@@ -43,7 +42,15 @@ async def create_case_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        _ = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
 
         storage_key, auto_display_name = PropertyNameHandler.handle_property_name(property_name)
         final_display_name = display_name or auto_display_name
@@ -55,7 +62,9 @@ async def create_case_property(
             actual_content = content if content is not None else ""
             content_type = content_type or PropertyType.TEXT
 
-        properties = get_case_properties(case_id, couchdb, configuration)
+        properties = doc_tools.get_additional_properties(
+            case_id=case_id,
+        )
 
         if storage_key in properties:
             raise HTTPException(
@@ -70,7 +79,11 @@ async def create_case_property(
             current_user.id
         )
 
-        save_case_property(case_id, storage_key, property_data, couchdb, configuration)
+        doc_tools.save_additional_property(
+            case_id=case_id,
+            property_name=storage_key,
+            property_value=property_data,
+        )
 
         return SuccessResponseModel()
 
@@ -107,7 +120,15 @@ async def update_case_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        _ = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
 
         if isinstance(content, dict) and 'content' in content:
             actual_content = content['content']
@@ -116,7 +137,9 @@ async def update_case_property(
             actual_content = content if content is not None else ""
             content_type = content_type or PropertyType.TEXT
 
-        properties = get_case_properties(case_id, couchdb, configuration)
+        properties = doc_tools.get_additional_properties(
+            case_id=case_id,
+        )
 
         if property_name not in properties:
             raise HTTPException(
@@ -138,7 +161,11 @@ async def update_case_property(
                 'updated_by': current_user.id
             }
 
-        save_case_property(case_id, property_name, property_data, couchdb, configuration)
+        doc_tools.save_additional_property(
+            case_id=case_id,
+            property_name=property_name,
+            property_value=property_data,
+        )
 
         return SuccessResponseModel()
 
@@ -173,10 +200,15 @@ async def delete_case_property(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        _ = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
 
-        cases_db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
-        case_doc = cases_db.get(case_id)
+        case_doc = doc_tools.get_document(
+            case_id=case_id
+        )
 
         if not case_doc or property_name not in case_doc['additional_properties']:
             raise HTTPException(
@@ -184,10 +216,10 @@ async def delete_case_property(
                 detail=f"Property '{property_name}' not found"
             )
 
-        del case_doc['additional_properties'][property_name]
-        case_doc['updated_at'] = datetime.utcnow().isoformat()
-
-        cases_db.save(case_doc)
+        doc_tools.delete_additional_property(
+            case_id=case_id,
+            property_name=property_name,
+        )
 
         return SuccessResponseModel()
 

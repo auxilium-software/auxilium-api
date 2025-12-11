@@ -7,10 +7,9 @@ from common.couchdb_document_structures.case_document import CaseDocument
 from common.couchdb_document_structures.enumerators.case_sensitivity_enum import CaseSensitivityEnum
 from common.couchdb_document_structures.enumerators.case_status_enum import CaseStatusEnum
 from common.databases.couchdb_interactions import get_couchdb_dependency
-from common.utilities.case_utilities import get_cases_with_filter, build_case_response, \
-    get_single_case_and_handle_permissions
+from common.document_modification.case_document_tools import CaseDocumentTools
 from common.utilities.configuration_utilities import get_configuration
-from common.utilities.file_utilities import create_file
+from common.document_modification.file_document_tools import create_file
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.parameters import pagination_params, case_filter_params, sort_params
 from common.utilities.security_utilities import (
@@ -27,6 +26,69 @@ from models.success_response_model import SuccessResponseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/cases", tags=["Cases"])
+
+
+
+@router.post(
+    path="",
+    response_model=CaseResponseModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=[
+        "Cases"
+    ],
+)
+async def create_case(
+        request: CaseCreationRequestModel,
+        configuration=Depends(get_configuration),
+        current_user=Depends(get_current_user),
+        # mariadb=Depends(get_mariadb_dependency),
+        couchdb=Depends(get_couchdb_dependency),
+        # redis=Depends(get_redis_dependency),
+        # rabbitmq=Depends(get_rabbitmq_dependency),
+        client_ip: str = None,
+):
+    try:
+        case_doc_builder = CaseDocument()
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_id = UUIDHandling().v5s(object_type=DatabaseObjectType.CASE)
+
+        case_doc_builder.set_required_properties(
+            _id = case_id,
+            created_by=current_user.id,
+
+            title=request.title,
+            description=request.description,
+            sensitivity=CaseSensitivityEnum.CONFIDENTIAL,
+            status=CaseStatusEnum.OPEN
+        )
+        case_doc_builder.clients = [
+            current_user.id
+        ]
+        other = {
+            # "on_behalf_of": request.on_behalf_of,
+            # "data_processing_consent": request.data_processing_consent,
+            # "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
+        }
+
+        doc_tools.save_document(
+            document_builder=case_doc_builder
+        )
+
+        return doc_tools.get_document(case_id=case_id)
+
+
+    except HTTPException as e:
+        # mariadb.rollback()
+        PRIMARY_LOGGER.exception(e)
+        raise e
+    except Exception as e:
+        PRIMARY_LOGGER.exception(e)
+        raise e
 
 
 @router.get(
@@ -49,6 +111,12 @@ async def get_my_cases(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
         selector = {
             "clients": {
                 "$elemMatch": {
@@ -57,13 +125,11 @@ async def get_my_cases(
             }
         }
 
-        return await get_cases_with_filter(
+        return await doc_tools.get_cases_with_filter(
             selector=selector,
             **pagination,
             **filters,
             **sorting,
-            config=configuration,
-            couchdb=couchdb
         )
 
     except HTTPException as e:
@@ -98,6 +164,12 @@ async def get_assigned_cases(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
         selector = {
             "workers": {
                 "$elemMatch": {
@@ -105,14 +177,11 @@ async def get_assigned_cases(
                 }
             }
         }
-
-        return await get_cases_with_filter(
+        return await doc_tools.get_cases_with_filter(
             selector=selector,
             **pagination,
             **filters,
             **sorting,
-            config=configuration,
-            couchdb=couchdb
         )
 
     except HTTPException as e:
@@ -125,77 +194,6 @@ async def get_assigned_cases(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cases: {str(e)}"
         )
-
-
-@router.post(
-    path="",
-    response_model=CaseResponseModel,
-    status_code=status.HTTP_201_CREATED,
-    tags=[
-        "Cases"
-    ],
-)
-async def create_case(
-        request: CaseCreationRequestModel,
-        configuration=Depends(get_configuration),
-        current_user=Depends(get_current_user),
-        # mariadb=Depends(get_mariadb_dependency),
-        couchdb=Depends(get_couchdb_dependency),
-        # redis=Depends(get_redis_dependency),
-        # rabbitmq=Depends(get_rabbitmq_dependency),
-        client_ip: str = None,
-):
-    try:
-        case_id = UUIDHandling().v5s(object_type=DatabaseObjectType.CASE)
-
-
-        case_doc_builder = CaseDocument()
-        case_doc_builder.set_required_properties(
-            _id = case_id,
-            created_by=current_user.id,
-
-            title=request.title,
-            description=request.description,
-            sensitivity=CaseSensitivityEnum.CONFIDENTIAL,
-            status=CaseStatusEnum.OPEN
-        )
-        case_doc_builder.clients = [
-            current_user.id
-        ]
-
-        other = {
-            # "on_behalf_of": request.on_behalf_of,
-            # "data_processing_consent": request.data_processing_consent,
-            # "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
-        }
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc_builder.to_json())
-        case_doc = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].get(case_id)
-
-        return CaseResponseModel(
-            id                      = case_doc.get('_id'),
-            sensitivity             = case_doc.get('sensitivity'),
-            status                  = case_doc.get('status'),
-            case_referrer           = case_doc.get('case_referrer'),
-            title                   = case_doc.get('title'),
-            description             = case_doc.get('description'),
-            additional_properties   = case_doc.get('additional_properties'),
-            workers                 = case_doc.get('workers'),
-            clients                 = case_doc.get('clients'),
-            todos                   = case_doc.get('todos'),
-            timeline                = case_doc.get('timeline'),
-            messages                = case_doc.get('messages'),
-            files                   = case_doc.get('files'),
-        )
-
-
-    except HTTPException as e:
-        # mariadb.rollback()
-        PRIMARY_LOGGER.exception(e)
-        raise e
-    except Exception as e:
-        PRIMARY_LOGGER.exception(e)
-        raise e
 
 
 @router.get(
@@ -218,6 +216,12 @@ async def search_cases(
         # rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
         if current_user.is_admin:
             selector = {}
         else:
@@ -240,13 +244,11 @@ async def search_cases(
                 ]
             }
 
-        return await get_cases_with_filter(
+        return await doc_tools.get_cases_with_filter(
             selector=selector,
             **pagination,
             **filters,
             **sorting,
-            config=configuration,
-            couchdb=couchdb
         )
 
     except HTTPException as e:
@@ -287,7 +289,15 @@ async def upload_file(
                 detail="You must provide a UUID."
             )
 
-        _ = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        _ = doc_tools.get_document(
+            case_id=case_id
+        )
 
         content = await file.read()
         content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or PropertyType.BINARY
@@ -342,8 +352,19 @@ async def get_single_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
-        return build_case_response(doc)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        doc = doc_tools.get_document(
+            case_id=case_id
+        )
+
+        return doc_tools.build_response(
+            doc=doc
+        )
 
     except HTTPException as e:
         # mariadb.rollback()
@@ -377,8 +398,10 @@ async def update_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(
-            configuration, couchdb, current_user, case_id
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
         )
 
         update_data = request.model_dump(exclude_unset=True)
@@ -388,14 +411,19 @@ async def update_case(
                 detail="At least one field must be provided for update"
             )
 
-        for field, value in update_data.items():
-            doc[field] = value
 
-        db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
-        db.save(doc)
+        doc_tools.save_multiple_properties(
+            case_id=case_id,
+            properties=update_data,
+        )
 
-        updated_doc = db.get(case_id)
-        return build_case_response(updated_doc)
+        updated_doc = doc_tools.get_document(
+            case_id=case_id
+        )
+
+        return doc_tools.build_response(
+            doc=updated_doc
+        )
 
     except HTTPException as e:
         PRIMARY_LOGGER.exception(e)

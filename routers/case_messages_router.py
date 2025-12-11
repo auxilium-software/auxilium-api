@@ -7,8 +7,8 @@ from starlette.status import HTTP_201_CREATED
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
-from common.utilities.case_utilities import get_single_case_and_handle_permissions
-from common.utilities.configuration import get_configuration
+from common.document_modification.case_document_tools import CaseDocumentTools
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
 from common.uuid_handling import UUIDHandling
@@ -39,7 +39,15 @@ async def create_message_for_case(
         rabbitmq=Depends(get_rabbitmq_dependency),
 ):
     try:
-        case_doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
 
         message_id = UUIDHandling.v5s(DatabaseObjectType.MESSAGE)
 
@@ -57,7 +65,7 @@ async def create_message_for_case(
             'updated_at': None,
         }
 
-        case_doc['messages'].append(f"auxmsg://%%couchdb%%/{message_id}")
+        case_doc['messages'].append(f"auxmsg://%%default%%/{message_id}")
         case_doc['updated_at'] = datetime.utcnow().isoformat()
 
         cases_db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]

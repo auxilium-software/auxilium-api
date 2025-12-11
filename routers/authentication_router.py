@@ -88,7 +88,10 @@ async def register(
             }
         )
 
+
         user_doc_builder = UserDocument()
+        case_doc_builder = CaseDocument()
+
         user_doc_builder.set_required_properties(
             _id=user_id,
             created_by=user_id,
@@ -99,8 +102,7 @@ async def register(
             gender=request.gender,
             date_of_birth=request.date_of_birth,
         )
-
-        case_doc_builder = CaseDocument()
+        user_doc_builder.how_did_you_find_out_about_our_service = request.how_did_you_find_out_about_our_service
         case_doc_builder.set_required_properties(
             _id=case_id,
             created_by=user_id,
@@ -115,28 +117,11 @@ async def register(
         ]
 
 
-        user_doc = {
-            "_id": user_id,
-            "created_at": datetime.utcnow().isoformat(),
-            "created_by": user_id,
-            "email_address": request.email_address,
-            "password_hash": password_hash,
-            "full_name": request.full_name,
-            "telephone_number": request.telephone_number,
-            "full_address": request.full_address,
-            "gender": request.gender,
-            "date_of_birth": request.date_of_birth,
-            "case_referrer": None,
-            "additional_properties": {},
-            "files": [],
-            "last_updated_at": None,
-            "migrations": {}
-        }
         other = {
             "on_behalf_of": request.on_behalf_of,
             "data_processing_consent": request.data_processing_consent,
-            "how_did_you_find_out_about_our_service": request.how_did_you_find_out_about_our_service
         }
+        print(other)  # {'on_behalf_of': 'MYSELF', 'data_processing_consent': 'CONSENT_GIVEN'}
 
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Users')].save(user_doc_builder.to_json())
         couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(case_doc_builder.to_json())

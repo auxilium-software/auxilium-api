@@ -5,9 +5,9 @@ from typing import List
 class FileDocument:
     _id:            str
     _rev:           str
-    created_at:             datetime
-    created_by:             str
-    updated_at:             datetime
+    created_at:     datetime
+    created_by:     str
+    updated_at:     datetime
 
     filename:       str
     description:    str

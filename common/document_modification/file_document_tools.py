@@ -97,3 +97,26 @@ def create_file(
     files_db.save(file_doc_builder.to_json())
     return main_doc
 
+
+def delete_file_from_lfs(
+        document_type: str,
+        document_id: str,
+        file_id: str,
+
+        couchdb,
+        config
+) -> bool:
+    main_db = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', document_type)]
+    files_db = couchdb[config.get_string('Databases', 'CouchDB', 'Databases', "Files")]
+
+    main_doc = main_db.get(document_id)
+    successful_doc_deletion = files_db.delete(files_db.get(file_id))
+
+    # Delete the physical file
+    storage_path = Path(config.get_string("FileSystem", "RootStorageDirectories", "AuxLFS"))
+    file_path = storage_path / f"{file_id}.bin"
+
+    if file_path.exists():
+        file_path.unlink()
+
+    return successful_doc_deletion

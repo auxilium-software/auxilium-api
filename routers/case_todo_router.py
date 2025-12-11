@@ -7,16 +7,16 @@ from fastapi import HTTPException, Depends, APIRouter, Path, Body
 from fastapi import status as http_status
 from starlette.status import HTTP_201_CREATED, HTTP_200_OK
 
+from common.couchdb_document_structures.sub_structures.case_todo_object import CaseTodoObject
 from common.databases.couchdb_interactions import get_couchdb_dependency
-from common.databases.mariadb_interactions import get_mariadb_dependency
 from common.databases.rabbitmq_interactions import get_rabbitmq_dependency, publish_message
-from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.case_utilities import get_single_case_and_handle_permissions
-from common.utilities.configuration import get_configuration
+from common.document_modification.case_document_tools import CaseDocumentTools
+from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import get_current_user
 from common.utilities.timeline_utilities import build_timeline_object
 from common.uuid_handling import UUIDHandling
+from enumerators.database_object_type import DatabaseObjectType
 from enumerators.timeline_entry_type import TimelineEntryType
 from enumerators.todo_status import TodoStatus
 from models.cases.todo_creation_request_model import TodoCreationRequestModel
@@ -52,36 +52,41 @@ async def add_single_todo_to_single_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
 
-        todo_id = str(uuid.uuid4())
+        case_doc = doc_tools.get_document(
+            case_id=case_id
+        )
 
-        if 'todos' not in doc:
-            doc['todos'] = []
+        todo_id = UUIDHandling.v5s(
+            object_type=DatabaseObjectType.CASE_TODO_ITEM
+        )
 
-        todo_entry = {
-            'summary': todo_request.summary,
-            'description': todo_request.description,
-            'status': TodoStatus.NEEDS_ACTION,
-            'priority': todo_request.priority,
-            'created_at': datetime.utcnow().isoformat(),
-            'created_by': current_user.id,
-            'due_date': todo_request.due_date.isoformat(),
-            'completed_at': None,
-            'assigned_to': todo_request.assigned_to,
-            'reminders': [],
-        }
+        todo_entry = CaseTodoObject()
+        todo_entry.set_required_properties(
+            created_at      = datetime.utcnow(),
+            created_by      = current_user.id,
+
+            summary         = todo_request.summary,
+            description     = todo_request.description,
+            status          = TodoStatus.NEEDS_ACTION,
+            priority        = todo_request.priority,
+
+            due_date        = todo_request.due_date,
+            completed_at    = None,
+            assigned_to     = todo_request.assigned_to,
+        )
 
         if todo_request.reminder:
-            todo_entry['reminders'].append(todo_request.reminder.isoformat())
+            todo_entry.set_reminder()  # todo_request.reminder.isoformat())
 
-        doc['todos'][todo_id] = todo_entry
-        doc['updated_at'] = datetime.utcnow().isoformat()
 
-        cases_db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
-        cases_db.save(doc)
 
-        if todo_request.assigned_to:
+        if todo_request.assigned_to:  # and todo_request.assigned_to != current_user.id:
             publish_message(
                 connection=rabbitmq,
                 queue_key="Notifications",
@@ -90,6 +95,11 @@ async def add_single_todo_to_single_case(
                     "todo_id": todo_id,
                 },
             )
+
+        todo_doc = doc_tools.add_todo(
+            case_id=case_id,
+            todo_object=todo_entry
+        )
 
         return TodoResponseModel(
             id=todo_id,
@@ -143,39 +153,47 @@ async def update_todo_status(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="You must provide a UUID."
             )
-        if not UUIDHandling.is_valid(todo_id):
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="You must provide a UUID."
-            )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
 
-        todos = doc.get('todos', [])
-        todo_index = next((i for i, t in enumerate(todos) if t['id'] == todo_id), None)
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
+        todo_object = doc_tools.get_todo(
+            case_id=case_id,
+            todo_id=todo_id,
+        )
 
-        if todo_index is None:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Todo not found"
-            )
-
-        todo = todos[todo_index]
-        todo['status'] = status
-        todo['updated_at'] = datetime.utcnow().isoformat()
-        todo['updated_by'] = current_user.id
+        doc_tools.update_todo_properties(
+            case_id=case_id,
+            todo_id=todo_id,
+            properties={
+                'status': status,
+            }
+        )
 
         if status == TodoStatus.COMPLETED:
-            todo['completed_at'] = datetime.utcnow().isoformat()
-            todo['completed_by'] = current_user.id
+            doc_tools.update_todo_properties(
+                case_id=case_id,
+                todo_id=todo_id,
+                properties={
+                    'completed_at': datetime.utcnow().isoformat(),
+                    'completed_by': current_user.id,
+                }
+            )
+
             if notes:
-                todo['completion_notes'] = notes
-
-        doc['updated_at'] = datetime.utcnow().isoformat()
-
-        # Save
-        cases_db = couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')]
-        cases_db.save(doc)
+                doc_tools.update_todo_properties(
+                    case_id=case_id,
+                    todo_id=todo_id,
+                    properties={
+                        'completion_notes': notes,
+                    }
+                )
 
         return SuccessResponseModel()
 
@@ -215,34 +233,17 @@ async def delete_todo(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="You must provide a UUID."
             )
-        if not UUIDHandling.is_valid(todo_id):
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="You must provide a UUID."
-            )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
-
-        timeline_item_id, timeline_item_data = build_timeline_object(
-            originalType=TimelineEntryType.TODO,
-            originalData=doc.get('todos', todo_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
         )
-        doc['timeline'][timeline_item_id] = timeline_item_data
 
-        todos = doc.get('todos', [])
-        original_length = len(todos)
-
-        del todos[todo_id]
-
-        if len(doc['todos']) == original_length:
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Todo not found"
-            )
-
-        doc['updated_at'] = datetime.utcnow().isoformat()
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
+        doc_tools.delete_todo(
+            case_id=case_id,
+            todo_id=todo_id,
+        )
 
         return SuccessResponseModel()
 

@@ -1,26 +1,19 @@
 import logging
 import mimetypes
-from datetime import datetime
-from typing import Optional
 
 from fastapi import HTTPException, Depends, status, APIRouter, Path, Query, UploadFile, File, Form
-from fastapi.responses import JSONResponse
 
-from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
-from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
-from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
-from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.configuration import get_configuration
-from common.utilities.file_utilities import create_file
+from common.databases.couchdb_interactions import get_couchdb_dependency
+from common.databases.mariadb_interactions import get_mariadb_dependency
+from common.utilities.configuration_utilities import get_configuration
+from common.document_modification.file_document_tools import create_file
 from common.utilities.logging_utilities import PRIMARY_LOGGER
-from common.utilities.parameters import pagination_params, sort_params, case_filter_params, user_filter_params
+from common.parameters import pagination_params, sort_params, user_filter_params
 from common.utilities.security_utilities import get_current_user
-from common.utilities.user_utilities import get_user_details, check_user_access, get_user_properties, save_user_property, find_shared_cases, get_users_with_filter
-from common.uuid_handling import UUIDHandling
+from common.document_modification.user_document_tools import get_user_details, check_user_access, get_user_properties, find_shared_cases, get_users_with_filter
 from enumerators.property_type import PropertyType
 from models.success_response_model import SuccessResponseModel
 from models.user.paginated_users_response_model import PaginatedUsersResponse
-from models.user.simplified_user_details_response_model import SimplifiedUserDetailsResponseModel
 from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)

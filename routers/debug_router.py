@@ -1,26 +1,9 @@
 import logging
-import mimetypes
-from datetime import datetime
-from typing import Optional
 
-from fastapi import HTTPException, Depends, status, APIRouter, Path, Query, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, status, APIRouter
 
-from common.databases.couchdb_interactions import get_couchdb_connection, get_couchdb_dependency
-from common.databases.mariadb_interactions import get_mariadb_connection, get_mariadb_dependency
-from common.databases.rabbitmq_interactions import get_rabbitmq_dependency
-from common.databases.redis_interactions import get_redis_dependency
-from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
-from common.utilities.security_utilities import (
-    get_current_user
-)
-from common.utilities.user_utilities import get_user_details, check_user_access, get_user_properties, \
-    save_user_property, find_shared_cases
-from enumerators.property_type import PropertyType
 from models.debug.ping_response_model import PingResponseModel
-from models.user.simplified_user_details_response_model import SimplifiedUserDetailsResponseModel
-from models.user.user_details_response_model import UserDetailsResponseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v3/server", tags=["Debug"])

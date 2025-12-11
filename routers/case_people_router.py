@@ -4,8 +4,7 @@ import logging
 from fastapi import HTTPException, Depends, status, APIRouter, Path
 
 from common.databases.couchdb_interactions import get_couchdb_dependency
-from common.utilities.case_utilities import build_case_response, \
-    get_single_case_and_handle_permissions
+from common.document_modification.case_document_tools import CaseDocumentTools
 from common.utilities.configuration_utilities import get_configuration
 from common.utilities.logging_utilities import PRIMARY_LOGGER
 from common.utilities.security_utilities import (
@@ -45,29 +44,42 @@ async def add_client_to_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
 
-        if "clients" not in doc:
-            doc["clients"] = []
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
+
+        if "clients" not in case_doc:
+            case_doc["clients"] = []
 
         if not current_user.is_admin:
-            if current_user.id not in doc['workers']:
+            if current_user.id not in case_doc['workers']:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You have not got permissions to do this action"
                 )
 
-        if person_to_add.user_id in doc["clients"]:
+        if person_to_add.user_id in case_doc["clients"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Client is already added to this case"
             )
 
-        doc["clients"].append(person_to_add.user_id)
+        doc_tools.add_client(
+            case_id=case_id,
+            user_id=person_to_add.user_id,
+        )
 
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
-
-        return build_case_response(doc)
+        return doc_tools.build_response(
+            doc=doc_tools.get_document(
+                case_id=case_id
+            )
+        )
 
     except HTTPException as e:
         PRIMARY_LOGGER.exception(e)
@@ -105,24 +117,27 @@ async def remove_client_from_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
 
         if not current_user.is_admin:
-            if current_user.id not in doc['workers']:
+            if current_user.id not in case_doc['workers']:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You have not got permissions to do this action"
                 )
 
-        if "clients" not in doc or client_id not in doc["clients"]:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Client not found in this case"
-            )
-
-        doc["clients"].remove(client_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
+        doc_tools.remove_client(
+            case_id=case_id,
+            user_id=client_id,
+        )
 
         return SuccessResponseModel()
 
@@ -163,39 +178,51 @@ async def add_worker_to_case(
                 detail="You must provide a UUID."
             )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
+
+        if "workers" not in case_doc:
+            case_doc["workers"] = []
 
         if not current_user.is_admin:
-            if current_user.id not in doc['workers']:
+            if current_user.id not in case_doc['workers']:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You have not got permissions to do this action"
                 )
 
-        if "workers" not in doc:
-            doc["workers"] = []
-
-        if person_to_add.user_id in doc["workers"]:
+        if person_to_add.user_id in case_doc["workers"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Worker is already assigned to this case"
+                detail="Client is already added to this case"
             )
 
-        doc["workers"].append(person_to_add.user_id)
+        doc_tools.add_case_worker(
+            case_id=case_id,
+            user_id=person_to_add.user_id,
+        )
 
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
-
-        return build_case_response(doc)
+        return doc_tools.build_response(
+            doc=doc_tools.get_document(
+                case_id=case_id
+            )
+        )
 
     except HTTPException as e:
-        # mariadb.rollback()
         PRIMARY_LOGGER.exception(e)
-        raise e
+        raise
     except Exception as e:
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add worker: {str(e)}"
+            detail=f"Failed to add client: {str(e)}"
         )
 
 
@@ -223,30 +250,28 @@ async def remove_worker_from_case(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You must provide a UUID."
             )
-        if not UUIDHandling.is_valid(worker_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You must provide a UUID."
-            )
 
-        doc = get_single_case_and_handle_permissions(configuration, couchdb, current_user, case_id)
+        doc_tools = CaseDocumentTools(
+            configuration=configuration,
+            couchdb=couchdb,
+            current_user=current_user,
+        )
+
+        case_doc = doc_tools.get_document(
+            case_id=case_id,
+        )
 
         if not current_user.is_admin:
-            if current_user.id not in doc['workers']:
+            if current_user.id not in case_doc['workers']:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You have not got permissions to do this action"
                 )
 
-        if "workers" not in doc or worker_id not in doc["workers"]:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Worker not found in this case"
-            )
-
-        doc["workers"].remove(worker_id)
-
-        couchdb[configuration.get_string('Databases', 'CouchDB', 'Databases', 'Cases')].save(doc)
+        doc_tools.remove_case_worker(
+            case_id=case_id,
+            user_id=worker_id,
+        )
 
         return SuccessResponseModel()
 
@@ -258,5 +283,5 @@ async def remove_worker_from_case(
         PRIMARY_LOGGER.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to remove worker: {str(e)}"
+            detail=f"Failed to remove client: {str(e)}"
         )
