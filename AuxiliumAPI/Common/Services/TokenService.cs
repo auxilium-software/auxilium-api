@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace AuxiliumAPI.Common.Services.Implementations
+namespace AuxiliumAPI.Common.Services
 {
     public class TokenService : ITokenService
     {
