@@ -59,7 +59,7 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures
             string fullAddress,
             string telephoneNumber,
             string gender,
-            DateTime dateOfBirth
+            DateOnly dateOfBirth
             )
         {
             var now = DateTime.UtcNow;
