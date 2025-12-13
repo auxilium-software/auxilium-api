@@ -69,11 +69,11 @@ namespace AuxiliumAPI.Models.User
 
 
         [Required]
-        [JsonPropertyName("email_address")]
+        [JsonPropertyName("emailAddress")]
         public required string EmailAddress { get; set; }
 
         [Required]
-        [JsonPropertyName("is_admin")]
+        [JsonPropertyName("isAdmin")]
         public required bool IsAdmin { get; set; } = false;
     }
 }
