@@ -27,7 +27,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(swaggerGen =>
 {
-    swaggerGen.SwaggerDoc("V3", new OpenApiInfo
+    swaggerGen.SwaggerDoc("v3", new OpenApiInfo
     {
         Title = "Auxilium API",
         Version = "V3"
