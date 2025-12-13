@@ -6,6 +6,7 @@ using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using AuxiliumAPI.Models.UserLogin;
+using AuxiliumAPI.Models.UserRefresh;
 using AuxiliumAPI.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
@@ -19,7 +20,7 @@ using System.Threading.Tasks;
 namespace Auxilium.API.Controllers;
 
 [ApiController]
-[Route("api/v3/authentication")]
+[Route("/api/v3/authentication")]
 [Tags("Authentication")]
 public class AuthenticationController : ControllerBase
 {
@@ -211,7 +212,7 @@ public class AuthenticationController : ControllerBase
             );
 
             // store the newly created refresh token in mariadb
-            var tokenHash = ComputeSha256Hash(refreshToken);
+            var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
             var expiresAt = DateTime.UtcNow.AddDays(ConfigurationUtilities.GetInteger("JWT", "RefreshTokenExpireDays"));
             await _mariaDb.ExecuteAsync(
                 """
@@ -247,14 +248,14 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserLoginResponseModel>> Refresh(
-        [FromBody] RefreshRequest request)
+        [FromBody] UserRefreshTokenRequestModel request)
     {
         await using var transaction = await _mariaDb.BeginTransactionAsync();
 
         try
         {
             // hash the provided refresh token
-            var tokenHash = ComputeSha256Hash(request.RefreshToken);
+            var tokenHash = HashingUtilities.SHA256Hash(request.RefreshToken);
 
             // verify refresh token and get user from mariadb
             var user = await _mariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
@@ -282,7 +283,7 @@ public class AuthenticationController : ControllerBase
             var newRefreshToken = _tokenService.CreateRefreshToken(userData);
 
             // update the refresh token in mariadb
-            var newTokenHash = ComputeSha256Hash(newRefreshToken);
+            var newTokenHash = HashingUtilities.SHA256Hash(newRefreshToken);
             var newExpiresAt = DateTime.UtcNow.AddDays(ConfigurationUtilities.GetInteger("JWT", "RefreshTokenExpireDays"));
             await _mariaDb.ExecuteAsync(
                 """

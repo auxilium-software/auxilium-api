@@ -1,6 +1,7 @@
 ﻿using AuxiliumAPI.Common.Services;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Common.Utilities;
+using AuxiliumAPI.Filters;
 using AuxiliumAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -56,6 +57,8 @@ builder.Services.AddSwaggerGen(swaggerGen =>
             Array.Empty<string>()
         }
     });
+
+    swaggerGen.OperationFilter<FileUploadOperationFilter>();
 });
 
 
