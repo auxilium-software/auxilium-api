@@ -1,10 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace AuxiliumAPI.Models
 {
     public class SuccessResponseModel
     {
         [Required]
-        public string Status { get; init; } = "success";
+        [JsonPropertyName("status")]
+        public string Status { get; } = "success";
     }
 }
