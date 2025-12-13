@@ -78,7 +78,11 @@ namespace AuxiliumAPI.Common.Utilities
                 },
                 ["JWT"] = new Dictionary<object, object>
                 {
-                    ["Algorithm"] = "HS256"
+                    ["Algorithm"] = "HS256",
+                    ["AccessTokenExpiryMinutes"] = 15,
+                    ["RefreshTokenExpiryDays"] = 7,
+                    ["ValidIssuer"] = "Auxilium API",
+                    ["ValidAudience"] = "Auxilium 3"
                 }
             };
         }
