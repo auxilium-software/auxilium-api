@@ -17,7 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Auxilium.API.Controllers;
+namespace AuxiliumAPI.Controllers;
 
 [ApiController]
 [Route("/api/v3/authentication")]
