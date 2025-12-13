@@ -1,0 +1,37 @@
+﻿using System.Text.Json.Serialization;
+
+namespace AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures
+{
+    public class AdditionalPropertyStructure
+    {
+        [JsonPropertyName("createdAt")]
+        public required DateTime CreatedAt { get; set; }
+
+        [JsonPropertyName("createdBy")]
+        public required Guid CreatedBy { get; set; }
+
+        [JsonPropertyName("updatedAt")]
+        public DateTime? UpdatedAt { get; set; }
+
+        [JsonPropertyName("lastUpdatedBy")]
+        public Guid? LastUpdatedBy { get; set; }
+
+
+
+
+        [JsonPropertyName("originalName")]
+        public required string OriginalName { get; set; }
+
+        [JsonPropertyName("prettyName")]
+        public required string PrettyName { get; set; }
+
+        [JsonPropertyName("urlSlug")]
+        public required string UrlSlug { get; set; }
+
+        [JsonPropertyName("content")]
+        public required string Content { get; set; }
+
+        [JsonPropertyName("contentType")]
+        public required string contentType { get; set; }
+    }
+}

@@ -1,0 +1,79 @@
+﻿using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace AuxiliumAPI.Models.User
+{
+    public class UserDetailsResponseModel
+    {
+        [Required]
+        [JsonPropertyName("id")]
+        public required string Id { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("createdAt")]
+        public required DateTime CreatedAt { get; set; }
+
+        [Required]
+        [JsonPropertyName("createdBy")]
+        public required string CreatedBy { get; set; }
+
+        [Required]
+        [JsonPropertyName("lastUpdatedAt")]
+        public required DateTime? LastUpdatedAt { get; set; }
+
+        [Required]
+        [JsonPropertyName("lastUpdatedBy")]
+        public required string? LastUpdatedBy { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("fullName")]
+        public required string FullName { get; set; }
+
+        [Required]
+        [JsonPropertyName("fullAddress")]
+        public required string FullAddress { get; set; }
+
+        [Required]
+        [JsonPropertyName("telephoneNumber")]
+        public required string TelephoneNumber { get; set; }
+
+        [Required]
+        [JsonPropertyName("gender")]
+        public required string Gender { get; set; }
+
+        [Required]
+        [JsonPropertyName("dateOfBirth")]
+        public required DateOnly? DateOfBirth { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("additionalProperties")]
+        public required Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; }
+
+        [Required]
+        [JsonPropertyName("files")]
+        public required List<string> Files { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("howDidYouFindOutAboutOurService")]
+        public required string? HowDidYouFindOutAboutOurService { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("email_address")]
+        public required string EmailAddress { get; set; }
+
+        [Required]
+        [JsonPropertyName("is_admin")]
+        public required bool IsAdmin { get; set; } = false;
+    }
+}
