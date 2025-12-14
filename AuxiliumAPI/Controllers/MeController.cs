@@ -24,14 +24,14 @@ namespace AuxiliumAPI.Controllers;
 public class MeController : LoggedInControllerBase
 {
     private readonly IConfiguration Configuration;
-    private readonly ILogger<CasesController> _logger;
+    private readonly ILogger<MeController> _logger;
     private readonly ICouchDbService _couchDb;
     private readonly IMariaDbService _mariaDb;
     private readonly IPasswordService _passwordService;
 
     public MeController(
         IConfiguration configuration,
-        ILogger<CasesController> logger,
+        ILogger<MeController> logger,
         ICouchDbService couchDb,
         IMariaDbService mariaDb,
         IPasswordService passwordService
@@ -45,10 +45,10 @@ public class MeController : LoggedInControllerBase
     }
 
     [HttpGet("")]
-    [ProducesResponseType(typeof(UserDetailsResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserDetailsResponseModel>> GetDetailsAboutMyself()
+    public async Task<ActionResult<UserResponseModel>> GetDetailsAboutMyself()
     {
         try
         {
@@ -69,9 +69,9 @@ public class MeController : LoggedInControllerBase
             }
 
             // build response with both mariadb and couchdb data
-            var response = new UserDetailsResponseModel
+            var response = new UserResponseModel
             {
-                Id = user.id,
+                ID = user.id,
                 CreatedAt = userDoc.CreatedAt,
                 CreatedBy = userDoc.CreatedBy,
                 LastUpdatedAt = userDoc.CreatedAt,
