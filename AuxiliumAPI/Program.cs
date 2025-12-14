@@ -13,6 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 
+var configPath = Environment.GetEnvironmentVariable("AUXILIUM_CONFIG_PATH")
+    ?? builder.Configuration["ConfigPath"]
+    ?? "\\\\files.wraitheon.net\\Projects\\Auxilium\\aux3-dev.yaml";
+
+builder.Configuration.AddYamlFile(
+    configPath,
+    optional: false,
+    reloadOnChange: true
+);
+
+
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -23,14 +35,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 builder.Services.AddEndpointsApiExplorer();
-
-
-
-builder.Configuration.AddYamlFile(
-    "",
-    optional: false,
-    reloadOnChange: true
-);
 
 
 
