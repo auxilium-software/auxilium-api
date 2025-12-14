@@ -7,7 +7,11 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 public class FileDocumentStructure : CouchDocument
 {
     [JsonPropertyName("_id")]
-    public required string Id { get; set; }
+    public new string Id
+    {
+        get => base.Id;
+        set => base.Id = value;
+    }
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
