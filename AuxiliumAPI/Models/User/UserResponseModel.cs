@@ -4,11 +4,11 @@ using System.Text.Json.Serialization;
 
 namespace AuxiliumAPI.Models.User
 {
-    public class UserDetailsResponseModel
+    public class UserResponseModel
     {
         [Required]
         [JsonPropertyName("id")]
-        public required Guid Id { get; set; }
+        public required Guid ID { get; set; }
 
 
 
