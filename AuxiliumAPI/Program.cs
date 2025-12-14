@@ -93,11 +93,8 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        var origins = builder.Configuration!["API:CORS:AllowedOrigins"]!
-            ?.Cast<object>()
-            .Select(o => o.ToString())
-            .Where(s => !string.IsNullOrEmpty(s))
-            .ToArray() ?? Array.Empty<string>();
+        var originsSection = builder.Configuration.GetSection("API:CORS:AllowedOrigins");
+        var origins = originsSection.Get<string[]>() ?? Array.Empty<string>();
 
         policy.WithOrigins(origins)
               .AllowAnyMethod()
