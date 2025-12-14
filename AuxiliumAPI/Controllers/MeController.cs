@@ -116,10 +116,20 @@ public class MeController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // Validate file
+            // check there is a file
             if (request.File == null || request.File.Length == 0)
             {
                 return BadRequest(new FailureResponseModel() { Detail = "No file provided" });
+            }
+
+            // grab the case doc from couchdb
+            var userDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
+                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                user.id.ToString()
+            );
+            if (userDoc == null)
+            {
+                return NotFound(new { detail = "Case not found" });
             }
 
             // read file contents
@@ -151,7 +161,21 @@ public class MeController : LoggedInControllerBase
                 Size = fileBytes.Length,
             };
 
+            // update the case document to include a reference to the file
+            userDoc.Files ??= new List<string>();
+            userDoc.Files.Add($"auxlfs://localhost/file/{fileId.ToString()}?size={fileBytes.Length}&hash={fileHash}");
+            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.LastUpdatedBy = user.id;
+
+            // save file to lfs
+            string path = ConfigurationUtilities.GetString("FileSystem", "RootStorageDirectories", "AuxLFS") + $"/{fileId.ToString()}.bin";
+            System.IO.File.WriteAllBytes(path, fileBytes);
+
             // save to couchdb
+            await _couchDb.SaveDocumentAsync(
+                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Users"),
+                userDoc
+            );
             await _couchDb.SaveDocumentAsync(
                 ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Files"),
                 fileDoc
@@ -170,9 +194,7 @@ public class MeController : LoggedInControllerBase
         }
     }
 
-    /// <summary>
-    /// Change the current user's password
-    /// </summary>
+
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
