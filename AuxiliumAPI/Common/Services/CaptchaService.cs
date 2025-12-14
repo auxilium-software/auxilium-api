@@ -14,7 +14,8 @@ namespace AuxiliumAPI.Common.Services
             HttpClient httpClient
             )
         {
-            _httpClient = httpClient;
+            this._configuration = configuration;
+            this._httpClient = httpClient;
         }
 
         public async Task VerifyRecaptchaAsync(string token, string? clientIp)
