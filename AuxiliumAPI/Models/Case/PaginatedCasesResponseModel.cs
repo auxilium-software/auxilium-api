@@ -23,10 +23,10 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("totalPages")]
-        public required int totalPages { get; init; }
+        public required int TotalPages { get; init; }
 
         [Required]
         [JsonPropertyName("hasMore")]
-        public required bool hasMore { get; init; }
+        public required bool HasMore { get; init; }
     }
 }

@@ -6,9 +6,9 @@ namespace AuxiliumAPI.Models.Case
     public class CaseUpdateRequestModel
     {
         [JsonPropertyName("title")]
-        public string Title { get; init; }
+        public string? Title { get; init; }
 
         [JsonPropertyName("description")]
-        public string Description { get; init; }
+        public string? Description { get; init; }
     }
 }

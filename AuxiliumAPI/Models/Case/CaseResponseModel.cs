@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace AuxiliumAPI.Models.Case
@@ -7,7 +9,7 @@ namespace AuxiliumAPI.Models.Case
     {
         [Required]
         [JsonPropertyName("id")]
-        public required string ID { get; init; }
+        public required Guid ID { get; init; }
 
         [Required]
         [JsonPropertyName("createdAt")]
@@ -19,11 +21,11 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("lastUpdatedAt")]
-        public required DateTime LastUpdatedAt { get; init; }
+        public required DateTime? LastUpdatedAt { get; init; } = null;
 
         [Required]
         [JsonPropertyName("lastUpdatedBy")]
-        public required Guid LastUpdatedBy { get; init; }
+        public required Guid? LastUpdatedBy { get; init; } = null;
 
 
 
@@ -48,16 +50,18 @@ namespace AuxiliumAPI.Models.Case
 
 
         [Required]
-        [JsonPropertyName("referrer")]
-        public required string? Referrer { get; init; }
-
-        [Required]
         [JsonPropertyName("workers")]
-        public required List<string> Workers { get; init; }
+        public required List<Guid> Workers { get; init; }
 
         [Required]
         [JsonPropertyName("clients")]
-        public required List<string> Clients { get; init; }
+        public required List<Guid> Clients { get; init; }
+
+
+
+        [Required]
+        [JsonPropertyName("referrer")]
+        public required string? Referrer { get; init; }
 
         [Required]
         [JsonPropertyName("todos")]
@@ -75,10 +79,10 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("additionalProperties")]
-        public required Dictionary<string, object> AdditionalProperties { get; init; }
+        public required Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; init; }
 
         [Required]
         [JsonPropertyName("files")]
-        public required List<string> Files { get; init; }
+        public required List<FileDocumentStructure> Files { get; init; }
     }
 }

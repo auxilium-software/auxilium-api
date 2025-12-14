@@ -7,7 +7,7 @@ namespace AuxiliumAPI.Models.UserRegistration
     {
         [Required]
         [JsonPropertyName("id")]
-        public required string Id { get; init; }
+        public required Guid Id { get; init; }
 
 
         [Required]
