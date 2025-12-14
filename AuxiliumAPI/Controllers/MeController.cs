@@ -1,4 +1,5 @@
-﻿using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+﻿using AuxiliumAPI.Common.ControllerBases;
+using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
@@ -20,23 +21,23 @@ namespace AuxiliumAPI.Controllers;
 [Route("/api/v3/me")]
 [Tags("Account Management")]
 [Authorize]
-public class MeController : ControllerBase
+public class MeController : LoggedInControllerBase
 {
-    private readonly ILogger<MeController> _logger;
-    private readonly IMariaDbService _mariaDb;
+    private readonly ILogger<CasesController> _logger;
     private readonly ICouchDbService _couchDb;
+    private readonly IMariaDbService _mariaDb;
     private readonly IPasswordService _passwordService;
 
     public MeController(
-        ILogger<MeController> logger,
-        IMariaDbService mariaDb,
+        ILogger<CasesController> logger,
         ICouchDbService couchDb,
+        IMariaDbService mariaDb,
         IPasswordService passwordService
-        )
+        ) : base(mariaDb, logger)
     {
         _logger = logger;
-        _mariaDb = mariaDb;
         _couchDb = couchDb;
+        _mariaDb = mariaDb;
         _passwordService = passwordService;
     }
 
@@ -48,33 +49,14 @@ public class MeController : ControllerBase
     {
         try
         {
-            // get current user id from token
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new FailureResponseModel() { Detail = "User ID not found in token" });
-            }
-            if (!Guid.TryParse(userId, out _))
-            {
-                return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            }
-
-            // get user from mariadb using the user id from the token
-            var mariaDbUser = await _mariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
-                "SELECT * FROM users WHERE id = @userId",
-                new { userId }
-            );
-
-            // if the user is not found, return not found
-            if (mariaDbUser == null)
-            {
-                return NotFound(new FailureResponseModel() { Detail = "User not found" });
-            }
+            // enforce login and get current user details
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
 
             // get user document from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
                 ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Users"),
-                userId
+                user.id.ToString()
             );
 
             // if the user doc is not found, return not found
@@ -86,7 +68,7 @@ public class MeController : ControllerBase
             // build response with both mariadb and couchdb data
             var response = new UserDetailsResponseModel
             {
-                Id = userId,
+                Id = user.id,
                 CreatedAt = userDoc.CreatedAt,
                 CreatedBy = userDoc.CreatedBy,
                 LastUpdatedAt = userDoc.CreatedAt,
@@ -95,8 +77,8 @@ public class MeController : ControllerBase
                 AdditionalProperties = userDoc.AdditionalProperties,
                 Files = userDoc.Files,
 
-                EmailAddress = mariaDbUser.email_address,
-                IsAdmin = mariaDbUser.is_admin,
+                EmailAddress = user.email_address,
+                IsAdmin = user.is_admin,
                 FullName = userDoc.FullName,
                 FullAddress = userDoc.FullAddress,
                 TelephoneNumber = userDoc.TelephoneNumber,
@@ -130,16 +112,9 @@ public class MeController : ControllerBase
     {
         try
         {
-            // get current user id from token
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new FailureResponseModel() { Detail = "User ID not found in token" });
-            }
-            if (!Guid.TryParse(userId, out _))
-            {
-                return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            }
+            // enforce login and get current user details
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
 
             // Validate file
             if (request.File == null || request.File.Length == 0)
@@ -156,7 +131,7 @@ public class MeController : ControllerBase
             var contentType = request.File.ContentType ?? "application/octet-stream";
 
             // create file ID
-            var fileId = UUIDUtilities.GenerateV5String(DatabaseObjectType.File);
+            Guid fileId = UUIDUtilities.GenerateV5(DatabaseObjectType.File);
 
             // get file hash (SHA256)
             var fileHash = HashingUtilities.SHA256Hash(fileBytes);
@@ -164,10 +139,11 @@ public class MeController : ControllerBase
             // create document for the file for couchdb
             var fileDoc = new FileDocumentStructure
             {
-                Id = fileId,
-                CreatedBy = userId,
+                Id = fileId.ToString(),
+                CreatedBy = user.id,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
+                LastUpdatedBy = user.id,
+                LastUpdatedAt = DateTime.UtcNow,
                 Filename = request.File.FileName,
                 Description = request.Description,
                 ContentType = contentType,
@@ -209,32 +185,14 @@ public class MeController : ControllerBase
 
         try
         {
-            // get current user id from token
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new FailureResponseModel() { Detail = "User ID not found in token" });
-            }
-            if (!Guid.TryParse(userId, out _))
-            {
-                return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            }
+            // enforce login and get current user details
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
 
             // check if new password value is same as old password value
             if (request.CurrentPassword == request.NewPassword)
             {
                 return Conflict(new FailureResponseModel() { Detail = "New password may not be the same as the old password" });
-            }
-
-            // get user data from mariadb
-            var user = await _mariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
-                "SELECT * FROM users WHERE id = @userId",
-                new { userId },
-                transaction
-            );
-            if (user == null)
-            {
-                return NotFound(new FailureResponseModel() { Detail = "User not found" });
             }
 
             // verify current password
@@ -256,7 +214,7 @@ public class MeController : ControllerBase
                 new
                 {
                     newPasswordHash,
-                    userId
+                    user.id
                 },
                 transaction
             );

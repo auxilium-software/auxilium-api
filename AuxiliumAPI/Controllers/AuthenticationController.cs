@@ -1,6 +1,7 @@
 ﻿using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
+using AuxiliumAPI.Common.Services;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
@@ -81,8 +82,8 @@ public class AuthenticationController : ControllerBase
             }
 
             // generate uuids
-            string userID = UUIDUtilities.GenerateV5String(DatabaseObjectType.User);
-            string caseID = UUIDUtilities.GenerateV5String(DatabaseObjectType.Case);
+            Guid userID = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
+            Guid caseID = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
 
             // hash psssword
             var passwordHash = _passwordService.HashPassword(request.RawPassword);
@@ -104,7 +105,7 @@ public class AuthenticationController : ControllerBase
             // create the user and case documents
             var userDoc = new UserDocumentStructure
             {
-                Id = userID,
+                Id = userID.ToString(),
                 CreatedBy = userID,
                 FullName = request.FullName,
                 FullAddress = request.FullAddress,
@@ -115,13 +116,13 @@ public class AuthenticationController : ControllerBase
             };
             var caseDoc = new CaseDocumentStructure
             {
-                Id = caseID,
+                Id = caseID.ToString(),
                 CreatedBy = userID,
                 Title = request.CaseTitle,
                 Description = request.CaseDescription,
                 Sensitivity = CaseSensitivityEnum.Confidential,
                 Status = CaseStatusEnum.Open,
-                Clients = new List<string> { userID }
+                Clients = new List<Guid> { userID }
             };
 
             // save documents to couchdb
@@ -325,12 +326,15 @@ public class AuthenticationController : ControllerBase
 
         try
         {
-            // grab the user id (sub) from the access token
+            // get current user id from token
             var userId = User.FindFirst("sub")?.Value;
-
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized(new FailureResponseModel() { Detail = "User ID not found in token" });
+            }
+            if (!Guid.TryParse(userId, out _))
+            {
+                return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             }
 
             // remove all refresh tokens from mariadb for that user
