@@ -11,7 +11,7 @@ namespace AuxiliumAPI.Common.Services;
 
 public class CouchDbService : ICouchDbService
 {
-    private readonly IConfiguration Configuration;
+    private readonly IConfiguration _configuration;
     private readonly ICouchClient _client;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _baseUrl;
@@ -23,14 +23,14 @@ public class CouchDbService : ICouchDbService
             IHttpClientFactory httpClientFactory
         )
     {
-        this.Configuration = configuration;
+        this._configuration = configuration;
         _httpClientFactory = httpClientFactory;
 
-        string protocol = this.Configuration!["Databases:CouchDB:Protocol"]!;
-        string hostname = this.Configuration!["Databases:CouchDB:Host"]!;
-        int port = this.Configuration!.GetValue<int>("Databases:CouchDB:Port");
-        _username = this.Configuration!["Databases:CouchDB:Username"]!;
-        _password = this.Configuration!["Databases:CouchDB:Password"]!;
+        string protocol = this._configuration!["Databases:CouchDB:Protocol"]!;
+        string hostname = this._configuration!["Databases:CouchDB:Host"]!;
+        int port = this._configuration!.GetValue<int>("Databases:CouchDB:Port");
+        _username = this._configuration!["Databases:CouchDB:Username"]!;
+        _password = this._configuration!["Databases:CouchDB:Password"]!;
 
         _baseUrl = $"{protocol}://{hostname}:{port}";
 

@@ -8,20 +8,20 @@ namespace AuxiliumAPI.Common.Services
 {
     public class MariaDbService : IMariaDbService
     {
-        private readonly IConfiguration Configuration;
+        private readonly IConfiguration _configuration;
         private readonly string _connectionString;
 
         public MariaDbService(
             IConfiguration configuration
             )
         {
-            this.Configuration = configuration;
+            this._configuration = configuration;
 
-            string hostname = this.Configuration!["Databases:MariaDB:Host"]!;
-            int port = this.Configuration!.GetValue<int>("Databases:MariaDB:Port");
-            string username = this.Configuration!["Databases:MariaDB:Username"]!;
-            string password = this.Configuration!["Databases:MariaDB:Password"]!;
-            string database = this.Configuration!["Databases:MariaDB:Database"]!;
+            string hostname = this._configuration!["Databases:MariaDB:Host"]!;
+            int port = this._configuration!.GetValue<int>("Databases:MariaDB:Port");
+            string username = this._configuration!["Databases:MariaDB:Username"]!;
+            string password = this._configuration!["Databases:MariaDB:Password"]!;
+            string database = this._configuration!["Databases:MariaDB:Database"]!;
 
             _connectionString = $"Server={hostname};Port={port};Database={database};User ID={username};Password={password};";
         }

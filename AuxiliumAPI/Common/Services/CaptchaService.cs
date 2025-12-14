@@ -6,7 +6,7 @@ namespace AuxiliumAPI.Common.Services
 {
     public class CaptchaService : ICaptchaService
     {
-        private readonly IConfiguration Configuration;
+        private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
 
         public CaptchaService(
@@ -21,7 +21,7 @@ namespace AuxiliumAPI.Common.Services
         {
             var parameters = new Dictionary<string, string>
             {
-                ["secret"]   = this.Configuration["ReCAPTCHA:SecretKey"]!,
+                ["secret"]   = this._configuration["ReCAPTCHA:SecretKey"]!,
                 ["response"] = token
             };
 
