@@ -75,14 +75,14 @@ namespace AuxiliumAPI.Models.Case
         [JsonPropertyName("messages")]
         public required List<string> Messages { get; init; }
 
+        [Required]
+        [JsonPropertyName("files")]
+        public required List<string> Files { get; init; }
+
 
 
         [Required]
         [JsonPropertyName("additionalProperties")]
         public required Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; init; }
-
-        [Required]
-        [JsonPropertyName("files")]
-        public required List<FileDocumentStructure> Files { get; init; }
     }
 }
