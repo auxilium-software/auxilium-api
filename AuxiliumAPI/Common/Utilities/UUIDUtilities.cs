@@ -19,14 +19,15 @@ namespace AuxiliumAPI.Common.Utilities
             [DatabaseObjectType.Message]            = "/auxilium/3/database_object/couchdb/message",
         };
 
-        public static string GenerateV5String(DatabaseObjectType objectType)
+        public static Guid GenerateV5(DatabaseObjectType objectType)
         {
             var namespaceId = Guid.Parse(Namespaces[objectType]);
             var name = $"{objectType}_{DateTime.UtcNow.Ticks}_{Guid.NewGuid()}";
 
-            return GenerateV5(namespaceId, name).ToString();
+            return GenerateV5(namespaceId, name);
         }
-        private static Guid GenerateV5(Guid namespaceId, string name)
+
+        public static Guid GenerateV5(Guid namespaceId, string name)
         {
             var namespaceBytes = namespaceId.ToByteArray();
             var nameBytes = Encoding.UTF8.GetBytes(name);
