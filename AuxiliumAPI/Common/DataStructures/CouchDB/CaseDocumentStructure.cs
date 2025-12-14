@@ -3,7 +3,7 @@ using AuxiliumAPI.Models.Case;
 using CouchDB.Driver.Types;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+namespace AuxiliumAPI.Common.DataStructures.CouchDB;
 
 
 public class CaseDocumentStructure : CouchDocument
@@ -45,16 +45,16 @@ public class CaseDocumentStructure : CouchDocument
     public string? Referrer { get; set; }
 
     [JsonPropertyName("workers")]
-    public List<Guid> Workers { get; set; } = new();
+    public List<Guid> Workers { get; set; } = [];
 
     [JsonPropertyName("clients")]
-    public List<Guid> Clients { get; set; } = new();
+    public List<Guid> Clients { get; set; } = [];
 
     [JsonPropertyName("messages")]
-    public List<string> Messages { get; set; } = new();
+    public List<string> Messages { get; set; } = [];
 
     [JsonPropertyName("files")]
-    public List<string> Files { get; set; } = new();
+    public List<string> Files { get; set; } = [];
 
     [JsonPropertyName("todos")]
     public Dictionary<string, object> Todos { get; set; } = new();

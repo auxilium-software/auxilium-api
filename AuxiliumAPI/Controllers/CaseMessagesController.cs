@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;

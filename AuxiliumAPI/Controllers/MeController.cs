@@ -1,5 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
@@ -166,12 +166,12 @@ public class MeController : LoggedInControllerBase
 
             // update the case document to include a reference to the file
             userDoc.Files ??= new List<string>();
-            userDoc.Files.Add($"auxlfs://localhost/file/{fileId.ToString()}?size={fileBytes.Length}&hash={fileHash}");
+            userDoc.Files.Add($"auxlfs://localhost/file/{fileId}?size={fileBytes.Length}&hash={fileHash}");
             userDoc.LastUpdatedAt = DateTime.UtcNow;
             userDoc.LastUpdatedBy = user.id;
 
             // save file to lfs
-            string path = this.Configuration!["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId.ToString()}.bin";
+            string path = this.Configuration!["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId}.bin";
             System.IO.File.WriteAllBytes(path, fileBytes);
 
             // save to couchdb

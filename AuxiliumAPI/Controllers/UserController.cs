@@ -1,5 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.User;
@@ -69,7 +69,7 @@ public class UserController : LoggedInControllerBase
                 selector,
                 limit: pageSize,
                 skip: skip,
-                sort: new[] { $"{{{sortBy}:\"{sortOrder}\"}}" }
+                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
             );
 
             var total = await _couchDb.CountAsync<UserDocumentStructure>(
@@ -111,7 +111,7 @@ public class UserController : LoggedInControllerBase
             else
             {
                 // non-admins get a reduced amount of data
-                users = result.Documents.Select(userDoc => new UserResponseModel
+                users = [.. result.Documents.Select(userDoc => new UserResponseModel
                 {
                     ID = Guid.Parse(userDoc.Id),
                     CreatedAt = userDoc.CreatedAt,
@@ -132,7 +132,7 @@ public class UserController : LoggedInControllerBase
 
                     EmailAddress = "[REDACTED]",
                     IsAdmin = false,
-                }).ToList();
+                })];
             }
 
             var response = new PaginatedUsersResponseModel

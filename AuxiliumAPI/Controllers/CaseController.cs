@@ -1,5 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
+using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
@@ -158,7 +158,7 @@ public class CaseController : LoggedInControllerBase
                 selector,
                 limit: pageSize,
                 skip: skip,
-                sort: new[] { $"{{{sortBy}:\"{sortOrder}\"}}" }
+                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
             );
 
             // get total count
@@ -350,7 +350,7 @@ public class CaseController : LoggedInControllerBase
                 selector,
                 limit: pageSize,
                 skip: skip,
-                sort: new[] { $"{{{sortBy}:\"{sortOrder}\"}}" }
+                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
             );
             var total = await _couchDb.CountAsync<CaseDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
@@ -456,13 +456,13 @@ public class CaseController : LoggedInControllerBase
             };
 
             // update the case document to include a reference to the file
-            caseDoc.Files ??= new List<string>();
-            caseDoc.Files.Add($"auxlfs://localhost/file/{fileId.ToString()}?size={fileBytes.Length}&hash={fileHash}");
+            caseDoc.Files ??= [];
+            caseDoc.Files.Add($"auxlfs://localhost/file/{fileId}?size={fileBytes.Length}&hash={fileHash}");
             caseDoc.LastUpdatedAt = DateTime.UtcNow;
             caseDoc.LastUpdatedBy = user.id;
 
             // save file to lfs
-            string path = this.Configuration["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId.ToString()}.bin";
+            string path = this.Configuration["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId}.bin";
             System.IO.File.WriteAllBytes(path, fileBytes);
 
             // save the updated case document

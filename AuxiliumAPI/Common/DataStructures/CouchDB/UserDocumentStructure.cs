@@ -2,7 +2,7 @@
 using CouchDB.Driver.Types;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures
+namespace AuxiliumAPI.Common.DataStructures.CouchDB
 {
     public class UserDocumentStructure : CouchDocument
     {
@@ -56,6 +56,6 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures
         public Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; } = new();
 
         [JsonPropertyName("files")]
-        public List<string> Files { get; set; } = new();
+        public List<string> Files { get; set; } = [];
     }
 }
