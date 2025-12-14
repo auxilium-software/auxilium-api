@@ -8,9 +8,6 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class CaseDocumentStructure : CouchDocument
 {
-    [JsonPropertyName("_id")]
-    public Guid ID { get; set; }
-
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
@@ -50,7 +47,7 @@ public class CaseDocumentStructure : CouchDocument
     public List<string> Messages { get; set; } = new();
 
     [JsonPropertyName("files")]
-    public List<FileDocumentStructure> Files { get; set; } = new();
+    public List<string> Files { get; set; } = new();
 
     [JsonPropertyName("todos")]
     public Dictionary<string, object> Todos { get; set; } = new();

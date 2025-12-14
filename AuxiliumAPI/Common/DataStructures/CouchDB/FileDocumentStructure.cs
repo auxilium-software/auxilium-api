@@ -6,9 +6,6 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class FileDocumentStructure : CouchDocument
 {
-    [JsonPropertyName("_id")]
-    public Guid ID { get; set; }
-
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
