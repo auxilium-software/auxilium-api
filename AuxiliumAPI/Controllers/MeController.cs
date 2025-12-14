@@ -23,22 +23,25 @@ namespace AuxiliumAPI.Controllers;
 [Authorize]
 public class MeController : LoggedInControllerBase
 {
+    private readonly IConfiguration Configuration;
     private readonly ILogger<CasesController> _logger;
     private readonly ICouchDbService _couchDb;
     private readonly IMariaDbService _mariaDb;
     private readonly IPasswordService _passwordService;
 
     public MeController(
+        IConfiguration configuration,
         ILogger<CasesController> logger,
         ICouchDbService couchDb,
         IMariaDbService mariaDb,
         IPasswordService passwordService
         ) : base(mariaDb, logger)
     {
-        _logger = logger;
-        _couchDb = couchDb;
-        _mariaDb = mariaDb;
-        _passwordService = passwordService;
+        this.Configuration = configuration;
+        this._logger = logger;
+        this._couchDb = couchDb;
+        this._mariaDb = mariaDb;
+        this._passwordService = passwordService;
     }
 
     [HttpGet("")]
@@ -55,7 +58,7 @@ public class MeController : LoggedInControllerBase
 
             // get user document from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Users"),
+                this.Configuration!["Databases:CouchDB:Databases:Users"]!,
                 user.id.ToString()
             );
 
@@ -122,9 +125,9 @@ public class MeController : LoggedInControllerBase
                 return BadRequest(new FailureResponseModel() { Detail = "No file provided" });
             }
 
-            // grab the case doc from couchdb
+            // grab the user doc from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Users"]!,
                 user.id.ToString()
             );
             if (userDoc == null)
@@ -168,16 +171,16 @@ public class MeController : LoggedInControllerBase
             userDoc.LastUpdatedBy = user.id;
 
             // save file to lfs
-            string path = ConfigurationUtilities.GetString("FileSystem", "RootStorageDirectories", "AuxLFS") + $"/{fileId.ToString()}.bin";
+            string path = this.Configuration!["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId.ToString()}.bin";
             System.IO.File.WriteAllBytes(path, fileBytes);
 
             // save to couchdb
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Users"),
+                this.Configuration!["Databases:CouchDB:Databases:Users"]!,
                 userDoc
             );
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Files"),
+                this.Configuration!["Databases:CouchDB:Databases:Files"]!,
                 fileDoc
             );
 

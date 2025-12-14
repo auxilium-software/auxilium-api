@@ -11,6 +11,7 @@ namespace AuxiliumAPI.Common.Services;
 
 public class CouchDbService : ICouchDbService
 {
+    private readonly IConfiguration Configuration;
     private readonly ICouchClient _client;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _baseUrl;
@@ -18,16 +19,18 @@ public class CouchDbService : ICouchDbService
     private readonly string _password;
 
     public CouchDbService(
-        IHttpClientFactory httpClientFactory
+            IConfiguration configuration,
+            IHttpClientFactory httpClientFactory
         )
     {
+        this.Configuration = configuration;
         _httpClientFactory = httpClientFactory;
 
-        string protocol = ConfigurationUtilities.GetString("Databases", "CouchDB", "Protocol");
-        string hostname = ConfigurationUtilities.GetString("Databases", "CouchDB", "Host");
-        int port = ConfigurationUtilities.GetInteger("Databases", "CouchDB", "Port");
-        _username = ConfigurationUtilities.GetString("Databases", "CouchDB", "Username");
-        _password = ConfigurationUtilities.GetString("Databases", "CouchDB", "Password");
+        string protocol = this.Configuration!["Databases:CouchDB:Protocol"]!;
+        string hostname = this.Configuration!["Databases:CouchDB:Host"]!;
+        int port = this.Configuration!.GetValue<int>("Databases:CouchDB:Port");
+        _username = this.Configuration!["Databases:CouchDB:Username"]!;
+        _password = this.Configuration!["Databases:CouchDB:Password"]!;
 
         _baseUrl = $"{protocol}://{hostname}:{port}";
 
@@ -122,7 +125,7 @@ public class CouchDbService : ICouchDbService
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            // POST to _find endpoint
+            // POST request on the "_find" endpoint
             var url = $"{_baseUrl}/{databaseName}/_find";
             var content = new StringContent(queryJson, Encoding.UTF8, "application/json");
 

@@ -22,19 +22,22 @@ namespace AuxiliumAPI.Controllers;
 [Authorize]
 public class CasesController : LoggedInControllerBase
 {
+    private readonly IConfiguration Configuration;
     private readonly ILogger<CasesController> _logger;
     private readonly ICouchDbService _couchDb;
     private readonly IMariaDbService _mariaDb;
 
     public CasesController(
+        IConfiguration configuration,
         ILogger<CasesController> logger,
         ICouchDbService couchDb,
         IMariaDbService mariaDb
         ) : base(mariaDb, logger)
     {
-        _logger = logger;
-        _couchDb = couchDb;
-        _mariaDb = mariaDb;
+        this.Configuration = configuration;
+        this._logger = logger;
+        this._couchDb = couchDb;
+        this._mariaDb = mariaDb;
     }
 
     [HttpPost("")]
@@ -76,7 +79,7 @@ public class CasesController : LoggedInControllerBase
 
             // save to couchdb
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseDoc
             );
 
@@ -151,7 +154,7 @@ public class CasesController : LoggedInControllerBase
 
             // query couchdb
             var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector,
                 limit: pageSize,
                 skip: skip,
@@ -160,7 +163,7 @@ public class CasesController : LoggedInControllerBase
 
             // get total count
             var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector
             );
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
@@ -241,7 +244,7 @@ public class CasesController : LoggedInControllerBase
 
             // query couchdb
             var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector,
                 limit: pageSize,
                 skip: skip,
@@ -250,7 +253,7 @@ public class CasesController : LoggedInControllerBase
 
             // get total count
             var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector
             );
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
@@ -343,14 +346,14 @@ public class CasesController : LoggedInControllerBase
 
             // query couchdb
             var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector,
                 limit: pageSize,
                 skip: skip,
                 sort: new[] { $"{{{sortBy}:\"{sortOrder}\"}}" }
             );
             var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 selector
             );
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
@@ -418,7 +421,7 @@ public class CasesController : LoggedInControllerBase
             // grab the case document from couchdb
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseId
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
@@ -459,16 +462,16 @@ public class CasesController : LoggedInControllerBase
             caseDoc.LastUpdatedBy = user.id;
 
             // save file to lfs
-            string path = ConfigurationUtilities.GetString("FileSystem", "RootStorageDirectories", "AuxLFS") + $"/{fileId.ToString()}.bin";
+            string path = this.Configuration["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId.ToString()}.bin";
             System.IO.File.WriteAllBytes(path, fileBytes);
 
             // save the updated case document
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseDoc
             );
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Files"),
+                this.Configuration!["Databases:CouchDB:Databases:Files"]!,
                 fileStructure
             );
 
@@ -498,7 +501,7 @@ public class CasesController : LoggedInControllerBase
             // grab the case document from couchdb
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseId
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
@@ -558,7 +561,7 @@ public class CasesController : LoggedInControllerBase
             // grab the case document from couchdb
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseId
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
@@ -575,7 +578,7 @@ public class CasesController : LoggedInControllerBase
 
             // save the updated case document
             await _couchDb.SaveDocumentAsync(
-                ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"),
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
                 caseDoc
             );
 

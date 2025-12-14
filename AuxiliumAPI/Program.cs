@@ -26,6 +26,14 @@ builder.Services.AddEndpointsApiExplorer();
 
 
 
+builder.Configuration.AddYamlFile(
+    "",
+    optional: false,
+    reloadOnChange: true
+);
+
+
+
 builder.Services.AddSwaggerGen(swaggerGen =>
 {
     swaggerGen.SwaggerDoc("v3", new OpenApiInfo
@@ -72,9 +80,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = ConfigurationUtilities.GetString("JWT", "ValidIssuer"),
-            ValidAudience = ConfigurationUtilities.GetString("JWT", "ValidAudience"),
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ConfigurationUtilities.GetString("JWT", "SecretKey")))
+            ValidIssuer = builder.Configuration!["JWT:ValidIssuer"]!,
+            ValidAudience = builder.Configuration!["JWT:ValidAudience"]!,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration!["JWT:SecretKey"]!))
         };
     });
 builder.Services.AddAuthorization();
@@ -85,7 +93,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        var origins = ConfigurationUtilities.GetArray("API", "CORS", "AllowedOrigins")
+        var origins = builder.Configuration!["API:CORS:AllowedOrigins"]!
             ?.Cast<object>()
             .Select(o => o.ToString())
             .Where(s => !string.IsNullOrEmpty(s))

@@ -25,6 +25,7 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Authentication")]
 public class AuthenticationController : ControllerBase
 {
+    private readonly IConfiguration Configuration;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly IMariaDbService _mariaDb;
     private readonly ICouchDbService _couchDb;
@@ -33,6 +34,7 @@ public class AuthenticationController : ControllerBase
     private readonly ITokenService _tokenService;
 
     public AuthenticationController(
+        IConfiguration configuration,
         ILogger<AuthenticationController> logger,
         IMariaDbService mariaDb,
         ICouchDbService couchDb,
@@ -41,12 +43,13 @@ public class AuthenticationController : ControllerBase
         ITokenService tokenService
         )
     {
-        _logger = logger;
-        _mariaDb = mariaDb;
-        _couchDb = couchDb;
-        _captchaService = captchaService;
-        _passwordService = passwordService;
-        _tokenService = tokenService;
+        this.Configuration = configuration;
+        this._logger = logger;
+        this._mariaDb = mariaDb;
+        this._couchDb = couchDb;
+        this._captchaService = captchaService;
+        this._passwordService = passwordService;
+        this._tokenService = tokenService;
     }
 
     [HttpPost("register")]
@@ -126,8 +129,8 @@ public class AuthenticationController : ControllerBase
             };
 
             // save documents to couchdb
-            await _couchDb.SaveDocumentAsync(ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Users"), userDoc);
-            await _couchDb.SaveDocumentAsync(ConfigurationUtilities.GetString("Databases", "CouchDB", "Databases", "Cases"), caseDoc);
+            await _couchDb.SaveDocumentAsync(this.Configuration!["Databases:CouchDB:Databases:Users"]!, userDoc);
+            await _couchDb.SaveDocumentAsync(this.Configuration!["Databases:CouchDB:Databases:Cases"]!, caseDoc);
 
             // commit mariadb transaction
             await transaction.CommitAsync();
@@ -214,7 +217,7 @@ public class AuthenticationController : ControllerBase
 
             // store the newly created refresh token in mariadb
             var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
-            var expiresAt = DateTime.UtcNow.AddDays(ConfigurationUtilities.GetInteger("JWT", "RefreshTokenExpireDays"));
+            var expiresAt = DateTime.UtcNow.AddDays(this.Configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
             await _mariaDb.ExecuteAsync(
                 """
                 INSERT INTO refresh_tokens (user_id, token_hash, expires_at) 
@@ -234,7 +237,7 @@ public class AuthenticationController : ControllerBase
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = ConfigurationUtilities.GetInteger("JWT", "AccessTokenExpireMinutes") * 60
+                ExpiresIn = this.Configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
             });
         }
         catch (Exception ex)
@@ -285,7 +288,7 @@ public class AuthenticationController : ControllerBase
 
             // update the refresh token in mariadb
             var newTokenHash = HashingUtilities.SHA256Hash(newRefreshToken);
-            var newExpiresAt = DateTime.UtcNow.AddDays(ConfigurationUtilities.GetInteger("JWT", "RefreshTokenExpireDays"));
+            var newExpiresAt = DateTime.UtcNow.AddDays(this.Configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
             await _mariaDb.ExecuteAsync(
                 """
                 UPDATE refresh_tokens
@@ -306,7 +309,7 @@ public class AuthenticationController : ControllerBase
             {
                 AccessToken = accessToken,
                 RefreshToken = newRefreshToken,
-                ExpiresIn = ConfigurationUtilities.GetInteger("JWT", "AccessTokenExpireMinutes") * 60
+                ExpiresIn = this.Configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
             });
         }
         catch (Exception ex)
