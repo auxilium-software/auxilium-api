@@ -9,12 +9,7 @@ namespace AuxiliumAPI.Models.File
         [JsonPropertyName("file")]
         public required IFormFile File { get; set; }
 
-        [Required]
         [JsonPropertyName("description")]
-        public required string Description { get; set; }
-
-        [Required]
-        [JsonPropertyName("userId")]
-        public required string UserId { get; set; }
+        public string? Description { get; set; } = null;
     }
 }
