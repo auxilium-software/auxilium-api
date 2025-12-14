@@ -5,17 +5,20 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class MessageDocumentStructure : CouchDocument
 {
+    [JsonPropertyName("_id")]
+    public Guid ID { get; set; }
+
     [JsonPropertyName("createdAt")]
-    public required DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("createdBy")]
-    public required string CreatedBy { get; set; }
+    public required Guid CreatedBy { get; set; }
 
     [JsonPropertyName("updatedAt")]
-    public DateTime UpdatedAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
 
     [JsonPropertyName("lastUpdatedBy")]
-    public string? LastUpdatedBy { get; set; }
+    public Guid? LastUpdatedBy { get; set; }
 
 
 
@@ -33,29 +36,4 @@ public class MessageDocumentStructure : CouchDocument
 
     [JsonPropertyName("readBy")]
     public required Dictionary<string, DateTime> ReadBy { get; set; } = new();
-
-    public static MessageDocumentStructure Create(
-        string id,
-        string createdBy,
-        string subject,
-        string content,
-        string senderId,
-        bool isUrgent = false
-        )
-    {
-        var now = DateTime.UtcNow;
-
-        return new MessageDocumentStructure
-        {
-            Id = id,
-            CreatedBy = createdBy,
-            CreatedAt = now,
-            UpdatedAt = now,
-            Subject = subject,
-            Content = content,
-            SenderId = senderId,
-            IsUrgent = isUrgent,
-            ReadBy = new()
-        };
-    }
 }

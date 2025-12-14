@@ -8,17 +8,20 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class CaseDocumentStructure : CouchDocument
 {
+    [JsonPropertyName("_id")]
+    public Guid ID { get; set; }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("createdBy")]
-    public required string CreatedBy { get; set; }
+    public required Guid CreatedBy { get; set; }
 
     [JsonPropertyName("updatedAt")]
-    public DateTime UpdatedAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
 
     [JsonPropertyName("lastUpdatedBy")]
-    public string? LastUpdatedBy { get; set; }
+    public Guid? LastUpdatedBy { get; set; }
 
 
 
@@ -38,16 +41,16 @@ public class CaseDocumentStructure : CouchDocument
     public string? Referrer { get; set; }
 
     [JsonPropertyName("workers")]
-    public List<string> Workers { get; set; } = new();
+    public List<Guid> Workers { get; set; } = new();
 
     [JsonPropertyName("clients")]
-    public List<string> Clients { get; set; } = new();
+    public List<Guid> Clients { get; set; } = new();
 
     [JsonPropertyName("messages")]
     public List<string> Messages { get; set; } = new();
 
     [JsonPropertyName("files")]
-    public List<string> Files { get; set; } = new();
+    public List<FileDocumentStructure> Files { get; set; } = new();
 
     [JsonPropertyName("todos")]
     public Dictionary<string, object> Todos { get; set; } = new();
@@ -73,9 +76,9 @@ public class CaseDocumentStructure : CouchDocument
         return new CaseDocumentStructure
         {
             Id = id,
-            CreatedBy = createdBy,
+            CreatedBy = Guid.Parse(createdBy),
             CreatedAt = now,
-            UpdatedAt = now,
+            LastUpdatedAt = now,
             Title = title,
             Description = description,
             Sensitivity = sensitivity,

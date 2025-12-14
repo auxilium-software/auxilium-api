@@ -6,17 +6,20 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class FileDocumentStructure : CouchDocument
 {
+    [JsonPropertyName("_id")]
+    public Guid ID { get; set; }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("createdBy")]
-    public required string CreatedBy { get; set; }
+    public required Guid CreatedBy { get; set; }
 
     [JsonPropertyName("updatedAt")]
-    public DateTime UpdatedAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
 
     [JsonPropertyName("lastUpdatedBy")]
-    public string? LastUpdatedBy { get; set; }
+    public Guid? LastUpdatedBy { get; set; }
 
 
 
@@ -35,32 +38,4 @@ public class FileDocumentStructure : CouchDocument
 
     [JsonPropertyName("size")]
     public long Size { get; set; }
-
-
-
-    public static FileDocumentStructure Create(
-        string id,
-        string createdBy,
-        string filename,
-        string description,
-        string contentType,
-        string hash,
-        long size
-        )
-    {
-        var now = DateTime.UtcNow;
-
-        return new FileDocumentStructure
-        {
-            Id = id,
-            CreatedBy = createdBy,
-            CreatedAt = now,
-            UpdatedAt = now,
-            Filename = filename,
-            Description = description,
-            ContentType = contentType,
-            Hash = hash,
-            Size = size
-        };
-    }
 }

@@ -6,17 +6,20 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures
 {
     public class UserDocumentStructure : CouchDocument
     {
+        [JsonPropertyName("_id")]
+        public Guid ID { get; set; }
+
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; }
 
         [JsonPropertyName("createdBy")]
-        public required string CreatedBy { get; set; }
+        public required Guid CreatedBy { get; set; }
 
         [JsonPropertyName("updatedAt")]
-        public DateTime UpdatedAt { get; set; }
+        public DateTime LastUpdatedAt { get; set; }
 
         [JsonPropertyName("lastUpdatedBy")]
-        public string? LastUpdatedBy { get; set; }
+        public Guid? LastUpdatedBy { get; set; }
 
 
 
@@ -50,32 +53,5 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures
 
         [JsonPropertyName("files")]
         public List<string> Files { get; set; } = new();
-
-
-        public static UserDocumentStructure Create(
-            string id,
-            string createdBy,
-            string fullName,
-            string fullAddress,
-            string telephoneNumber,
-            string gender,
-            DateOnly dateOfBirth
-            )
-        {
-            var now = DateTime.UtcNow;
-
-            return new UserDocumentStructure
-            {
-                Id = id,
-                CreatedBy = createdBy,
-                CreatedAt = now,
-                UpdatedAt = now,
-                FullName = fullName,
-                FullAddress = fullAddress,
-                TelephoneNumber = telephoneNumber,
-                Gender = gender,
-                DateOfBirth = dateOfBirth
-            };
-        }
     }
 }
