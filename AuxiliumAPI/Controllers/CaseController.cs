@@ -20,16 +20,16 @@ namespace AuxiliumAPI.Controllers;
 [Route("/api/v3/cases")]
 [Tags("Cases")]
 [Authorize]
-public class CasesController : LoggedInControllerBase
+public class CaseController : LoggedInControllerBase
 {
     private readonly IConfiguration Configuration;
-    private readonly ILogger<CasesController> _logger;
+    private readonly ILogger<CaseController> _logger;
     private readonly ICouchDbService _couchDb;
     private readonly IMariaDbService _mariaDb;
 
-    public CasesController(
+    public CaseController(
         IConfiguration configuration,
-        ILogger<CasesController> logger,
+        ILogger<CaseController> logger,
         ICouchDbService couchDb,
         IMariaDbService mariaDb
         ) : base(mariaDb, logger)
@@ -325,12 +325,12 @@ public class CasesController : LoggedInControllerBase
 
             if (user.is_admin)
             {
-                // Admin sees all cases
+                // admins see all cases
                 selector = new { };
             }
             else
             {
-                // Regular users see cases where they are client OR worker
+                // regular users see cases where they are client OR worker
                 selector = new
                 {
                     or = new object[]
