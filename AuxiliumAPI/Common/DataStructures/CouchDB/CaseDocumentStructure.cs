@@ -8,6 +8,9 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class CaseDocumentStructure : CouchDocument
 {
+    [JsonPropertyName("_id")]
+    public required string Id { get; set; }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
@@ -57,29 +60,4 @@ public class CaseDocumentStructure : CouchDocument
 
     [JsonPropertyName("additionalProperties")]
     public Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; } = new();
-
-
-    public static CaseDocumentStructure Create(
-        string id,
-        string createdBy,
-        string title,
-        string description,
-        CaseSensitivityEnum sensitivity,
-        CaseStatusEnum status
-        )
-    {
-        var now = DateTime.UtcNow;
-
-        return new CaseDocumentStructure
-        {
-            Id = id,
-            CreatedBy = Guid.Parse(createdBy),
-            CreatedAt = now,
-            LastUpdatedAt = now,
-            Title = title,
-            Description = description,
-            Sensitivity = sensitivity,
-            Status = status
-        };
-    }
 }

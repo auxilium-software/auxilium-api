@@ -506,7 +506,7 @@ public class CasesController : LoggedInControllerBase
             // build response model
             var response = new CaseResponseModel
             {
-                ID = Guid.Parse(caseDoc.Id),
+                ID = Guid.Parse(caseId),
                 CreatedAt = caseDoc.CreatedAt,
                 CreatedBy = caseDoc.CreatedBy,
                 LastUpdatedAt = caseDoc.LastUpdatedAt,

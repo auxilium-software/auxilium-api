@@ -5,6 +5,9 @@ namespace AuxiliumAPI.Common.CouchDbDocumentConstruction.Structures;
 
 public class MessageDocumentStructure : CouchDocument
 {
+    [JsonPropertyName("_id")]
+    public required string Id { get; set; }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
