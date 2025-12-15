@@ -7,6 +7,6 @@ namespace AuxiliumAPI.Models.Case
     {
         [Required]
         [JsonPropertyName("userId")]
-        public required string UserID { get; init; }
+        public required Guid UserID { get; init; }
     }
 }
