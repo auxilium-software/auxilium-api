@@ -57,12 +57,12 @@ public class CouchDbService : ICouchDbService
         }
     }
 
-    public async Task<T?> GetDocumentAsync<T>(string databaseName, string documentId) where T : CouchDocument
+    public async Task<T?> GetDocumentAsync<T>(string databaseName, Guid documentId) where T : CouchDocument
     {
         try
         {
             var db = _client.GetDatabase<T>(databaseName);
-            var document = await db.FindAsync(documentId);
+            var document = await db.FindAsync(documentId.ToString());
 
             return document;
         }
@@ -76,12 +76,12 @@ public class CouchDbService : ICouchDbService
         }
     }
 
-    public async Task DeleteDocumentAsync(string databaseName, string documentId)
+    public async Task DeleteDocumentAsync(string databaseName, Guid documentId)
     {
         try
         {
             var db = _client.GetDatabase<CouchDocument>(databaseName);
-            var doc = await db.FindAsync(documentId);
+            var doc = await db.FindAsync(documentId.ToString());
             if (doc != null)
             {
                 await db.RemoveAsync(doc);

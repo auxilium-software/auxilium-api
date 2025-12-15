@@ -202,7 +202,7 @@ public class UserController : LoggedInControllerBase
             // grab the user document from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
                 _configuration["Databases:CouchDB:Databases:Users"]!,
-                userId
+                Guid.Parse(userId)
             );
 
             if (userDoc == null)

@@ -434,7 +434,7 @@ public class CaseController : LoggedInControllerBase
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseId
+                Guid.Parse(caseId)
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
 
@@ -517,7 +517,7 @@ public class CaseController : LoggedInControllerBase
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseId
+                Guid.Parse(caseId)
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
 
@@ -580,7 +580,7 @@ public class CaseController : LoggedInControllerBase
             if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
             var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseId
+                Guid.Parse(caseId)
             );
             if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
 

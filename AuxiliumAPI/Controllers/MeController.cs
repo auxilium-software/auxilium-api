@@ -59,7 +59,7 @@ public class MeController : LoggedInControllerBase
             // get user document from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Users"]!,
-                user.id.ToString()
+                user.id
             );
 
             // if the user doc is not found, return not found
@@ -128,7 +128,7 @@ public class MeController : LoggedInControllerBase
             // grab the user doc from couchdb
             var userDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
                 this.Configuration!["Databases:CouchDB:Databases:Users"]!,
-                user.id.ToString()
+                user.id
             );
             if (userDoc == null)
             {
