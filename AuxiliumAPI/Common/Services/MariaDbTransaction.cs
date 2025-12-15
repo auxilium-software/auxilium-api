@@ -1,5 +1,4 @@
 ﻿using MySqlConnector;
-using System.Data;
 
 namespace AuxiliumAPI.Common.Services
 {

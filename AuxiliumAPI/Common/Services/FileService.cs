@@ -1,8 +1,6 @@
 ﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models.File;
-using Microsoft.Extensions.Configuration;
-using System.Drawing;
 
 namespace AuxiliumAPI.Common.Services
 {

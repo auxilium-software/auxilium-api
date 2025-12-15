@@ -1,9 +1,7 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
 using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Enumerators;
-using AuxiliumAPI.Common.Services;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
@@ -11,8 +9,6 @@ using AuxiliumAPI.Models.Case;
 using AuxiliumAPI.Models.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -637,7 +633,7 @@ public class CaseController : LoggedInControllerBase
             _logger.LogError(ex, "Failed to update case {CaseId}", caseId);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new FailureResponseModel{ Detail = $"Failed to update case: {ex.Message}" }
+                new FailureResponseModel { Detail = $"Failed to update case: {ex.Message}" }
             );
         }
     }

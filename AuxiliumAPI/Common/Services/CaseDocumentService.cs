@@ -1,9 +1,7 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.CouchDB;
+﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
+using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
-using Microsoft.Extensions.Configuration;
 
 namespace AuxiliumAPI.Common.Services
 {
@@ -94,7 +92,7 @@ namespace AuxiliumAPI.Common.Services
 
         public async Task DeleteAdditionalPropertyAsync(Guid caseId, string propertyName)
         {
-            var caseDoc = await GetDocumentAsync(caseId)?? throw new KeyNotFoundException($"Case {caseId} not found");
+            var caseDoc = await GetDocumentAsync(caseId) ?? throw new KeyNotFoundException($"Case {caseId} not found");
 
             caseDoc.AdditionalProperties.Remove(propertyName);
             await SaveDocumentAsync(caseDoc);

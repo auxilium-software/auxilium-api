@@ -1,5 +1,4 @@
-﻿using AuxiliumAPI.Models.Case;
-using AuxiliumAPI.Models.File;
+﻿using AuxiliumAPI.Models.File;
 using CouchDB.Driver.Types;
 using System.Text.Json.Serialization;
 
@@ -33,7 +32,7 @@ public class FileDocumentStructure : CouchDocument
     public required FileParentTypeEnum ParentType { get; set; }
 
     [JsonPropertyName("parentId")]
-    public required Guid ParentId{ get; set; }
+    public required Guid ParentId { get; set; }
 
 
 

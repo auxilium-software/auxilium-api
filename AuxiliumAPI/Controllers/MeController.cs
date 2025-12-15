@@ -1,19 +1,11 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
 using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
-using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.File;
 using AuxiliumAPI.Models.Me;
 using AuxiliumAPI.Models.User;
-using AuxiliumAPI.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Win32;
-using System.Security.Claims;
 
 namespace AuxiliumAPI.Controllers;
 

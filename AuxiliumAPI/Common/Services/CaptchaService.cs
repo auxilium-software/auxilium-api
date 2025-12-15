@@ -1,6 +1,5 @@
 ﻿using AuxiliumAPI.Common.DataStructures.Internal;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 
 namespace AuxiliumAPI.Common.Services
 {

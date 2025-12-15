@@ -1,8 +1,6 @@
 ﻿using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using Dapper;
 using MySqlConnector;
-using System.Data;
 
 namespace AuxiliumAPI.Common.Services
 {

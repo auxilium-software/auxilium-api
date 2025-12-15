@@ -1,6 +1,4 @@
-﻿using System.Data;
-
-namespace AuxiliumAPI.Common.Services.Interfaces
+﻿namespace AuxiliumAPI.Common.Services.Interfaces
 {
     public interface IMariaDbService
     {
