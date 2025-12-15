@@ -32,6 +32,6 @@ namespace AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures
         public required string Content { get; set; }
 
         [JsonPropertyName("contentType")]
-        public required string contentType { get; set; }
+        public required string ContentType { get; set; }
     }
 }
