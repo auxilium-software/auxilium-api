@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Models.Case;
+using AuxiliumAPI.Models.File;
 using CouchDB.Driver.Types;
 using System.Text.Json.Serialization;
 
@@ -24,6 +25,15 @@ public class FileDocumentStructure : CouchDocument
 
     [JsonPropertyName("lastUpdatedBy")]
     public Guid? LastUpdatedBy { get; set; }
+
+
+
+
+    [JsonPropertyName("parentType")]
+    public required FileParentTypeEnum ParentType { get; set; }
+
+    [JsonPropertyName("parentId")]
+    public required Guid ParentId{ get; set; }
 
 
 

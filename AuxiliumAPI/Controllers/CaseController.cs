@@ -465,6 +465,8 @@ public class CaseController : LoggedInControllerBase
                 Size = fileBytes.Length,
                 CreatedBy = user.id,
                 CreatedAt = DateTime.UtcNow,
+                ParentType = FileParentTypeEnum.Case,
+                ParentId = Guid.Parse(caseId),
             };
 
             // update the case document to include a reference to the file

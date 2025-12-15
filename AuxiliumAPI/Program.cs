@@ -113,7 +113,10 @@ builder.Services.AddScoped<IMariaDbService, MariaDbService>();
 builder.Services.AddScoped<ICouchDbService, CouchDbService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
 builder.Services.AddScoped<ICaseDocumentService, CaseDocumentService>();
+builder.Services.AddScoped<IUserDocumentService, UserDocumentService>();
+builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
 
