@@ -121,7 +121,10 @@ public class CaseController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create case");
-            return StatusCode(500, new { detail = $"Failed to create case: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to create case: {ex.Message}" }
+            );
         }
     }
 
@@ -211,7 +214,10 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { detail = $"Failed to fetch cases: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
+            );
         }
     }
 
@@ -301,7 +307,10 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { detail = $"Failed to fetch cases: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
+            );
         }
     }
 
@@ -400,7 +409,10 @@ public class CaseController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to search cases");
-            return StatusCode(500, new { detail = $"Failed to fetch cases: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
+            );
         }
     }
 
@@ -481,7 +493,10 @@ public class CaseController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to upload file");
-            return StatusCode(500, new { detail = "Failed to upload file" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to upload file" }
+            );
         }
     }
 
@@ -539,7 +554,10 @@ public class CaseController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
-            return StatusCode(500, new { detail = $"Failed to fetch case: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch case: {ex.Message}" }
+            );
         }
     }
 
@@ -615,7 +633,10 @@ public class CaseController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update case {CaseId}", caseId);
-            return StatusCode(500, new { detail = $"Failed to update case: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel{ Detail = $"Failed to update case: {ex.Message}" }
+            );
         }
     }
 }
