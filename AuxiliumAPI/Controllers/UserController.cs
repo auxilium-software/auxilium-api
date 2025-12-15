@@ -1,5 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
 using AuxiliumAPI.Common.DataStructures.CouchDB;
+using AuxiliumAPI.Common.DataStructures.MariaDB;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.User;
@@ -79,34 +80,56 @@ public class UserController : LoggedInControllerBase
 
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
 
+            // get all the user ids from the result and feed it into a mariadb query
+            var userIds = result.Documents.Select(d => d.Id).ToList();
+            var mariaDbUsers = new Dictionary<string, UserRowStructure>();
+            if (userIds.Count != 0)
+            {
+                var mariaDbData = await MariaDb.QueryAsync<UserRowStructure>(
+                    "SELECT id, email_address, is_admin FROM users WHERE id IN @userIds",
+                    new { userIds }
+                );
+
+                mariaDbUsers = mariaDbData.ToDictionary(
+                    u => u.id.ToString(),
+                    u => u
+                );
+            }
+
             // build response models
             List<UserResponseModel> users;
 
             if (user.is_admin)
             {
                 // admins get all the data
-                users = result.Documents.Select(userDoc => new UserResponseModel
+                users = [.. result.Documents.Select(userDoc =>
                 {
-                    ID = Guid.Parse(userDoc.Id),
-                    CreatedAt = userDoc.CreatedAt,
-                    CreatedBy = userDoc.CreatedBy,
-                    LastUpdatedAt = userDoc.LastUpdatedAt,
-                    LastUpdatedBy = userDoc.LastUpdatedBy,
+                    // get mariadb data for this user
+                    mariaDbUsers.TryGetValue(userDoc.Id, out var mariaDbUser);
 
-                    FullName = userDoc.FullName,
-                    FullAddress = userDoc.FullAddress,
-                    TelephoneNumber = userDoc.TelephoneNumber,
-                    Gender = userDoc.Gender,
-                    DateOfBirth = userDoc.DateOfBirth,
+                    return new UserResponseModel
+                    {
+                        ID = Guid.Parse(userDoc.Id),
+                        CreatedAt = userDoc.CreatedAt,
+                        CreatedBy = userDoc.CreatedBy,
+                        LastUpdatedAt = userDoc.LastUpdatedAt,
+                        LastUpdatedBy = userDoc.LastUpdatedBy,
 
-                    AdditionalProperties = userDoc.AdditionalProperties,
-                    Files = userDoc.Files,
+                        FullName = userDoc.FullName,
+                        FullAddress = userDoc.FullAddress,
+                        TelephoneNumber = userDoc.TelephoneNumber,
+                        Gender = userDoc.Gender,
+                        DateOfBirth = userDoc.DateOfBirth,
 
-                    HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
+                        AdditionalProperties = userDoc.AdditionalProperties,
+                        Files = userDoc.Files,
 
-                    EmailAddress = "", // TODO: Add from MariaDB
-                    IsAdmin = false,  // TODO: Add from MariaDB
-                }).ToList();
+                        HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
+
+                        EmailAddress = mariaDbUser?.email_address ?? "[UNKNOWN]",
+                        IsAdmin = mariaDbUser?.is_admin ?? false,
+                    };
+                })];
             }
             else
             {
@@ -150,7 +173,10 @@ public class UserController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to search users");
-            return StatusCode(500, new { detail = $"Failed to fetch users: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch users: {ex.Message}" }
+            );
         }
     }
 
@@ -167,7 +193,7 @@ public class UserController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // validate UUID
+            // validate uuid
             if (!Guid.TryParse(userId, out _))
             {
                 return BadRequest(new FailureResponseModel { Detail = "You must provide a valid UUID" });
@@ -183,6 +209,12 @@ public class UserController : LoggedInControllerBase
             {
                 return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
+
+            // fetch mariadb data for this user
+            var mariaDbUser = await MariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
+                "SELECT id, email_address, is_admin FROM users WHERE id = @userId",
+                new { userId = Guid.Parse(userId) }
+            );
 
             // build response model
             UserResponseModel response;
@@ -209,8 +241,8 @@ public class UserController : LoggedInControllerBase
 
                     HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
 
-                    EmailAddress = "", // TODO: Add from MariaDB
-                    IsAdmin = false,  // TODO: Add from MariaDB
+                    EmailAddress = mariaDbUser?.email_address ?? "[UNKNOWN]",
+                    IsAdmin = mariaDbUser?.is_admin ?? false,
                 };
             }
             else
@@ -245,7 +277,10 @@ public class UserController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch user {UserId}", userId);
-            return StatusCode(500, new { detail = $"Failed to fetch user: {ex.Message}" });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch user: {ex.Message}" }
+            );
         }
     }
 }
