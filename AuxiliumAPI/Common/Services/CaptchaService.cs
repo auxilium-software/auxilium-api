@@ -22,7 +22,7 @@ namespace AuxiliumAPI.Common.Services
 
         public async Task<bool> VerifyRecaptchaAsync(string token, string? clientIp)
         {
-            var parameters = new Dictionary<string, string>
+            try
             {
                 ["secret"]   = this._configuration["ReCAPTCHA:SecretKey"]!,
                 ["response"] = token
