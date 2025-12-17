@@ -20,7 +20,7 @@ namespace AuxiliumAPI.Common.Services
             this._httpClient = httpClient;
         }
 
-        public async Task VerifyRecaptchaAsync(string token, string? clientIp)
+        public async Task<bool> VerifyRecaptchaAsync(string token, string? clientIp)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -28,21 +28,50 @@ namespace AuxiliumAPI.Common.Services
                 ["response"] = token
             };
 
-            if (!string.IsNullOrEmpty(clientIp))
-            {
-                parameters["remoteip"] = clientIp;
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("secret", this._configuration["ReCAPTCHA:SecretKey"]!),
+                    new KeyValuePair<string, string>("response", token),
+                    new KeyValuePair<string, string>("remoteip", clientIp)
+                });
+
+                var response = await _httpClient.PostAsync(
+                    "https://www.google.com/recaptcha/api/siteverify",
+                    content
+                );
+
+                response.EnsureSuccessStatusCode();
+
+                var jsonResponse = await response.Content.ReadFromJsonAsync<RecaptchaResponse>();
+
+                if (jsonResponse == null)
+                {
+                    _logger.LogError("Failed to parse reCAPTCHA response");
+                    return false;
+                }
+
+                if (!jsonResponse.Success)
+                {
+                    _logger.LogWarning(
+                        "reCAPTCHA verification failed. Errors: {Errors}",
+                        string.Join(", ", jsonResponse.ErrorCodes ?? Array.Empty<string>())
+                    );
+                    return false;
+                }
+
+
+                _logger.LogInformation("reCAPTCHA verification successful");
+                return true;
             }
-
-            var response = await _httpClient.PostAsync(
-                "https://www.google.com/recaptcha/api/siteverify",
-                new FormUrlEncodedContent(parameters)
-            );
-
-            var jsonResponse = await response.Content.ReadFromJsonAsync<RecaptchaResponse>();
-
-            if (jsonResponse?.Success != true)
+            catch (HttpRequestException ex)
             {
-                throw new HttpRequestException("reCAPTCHA verification failed");
+                _logger.LogError(ex, "Failed to contact reCAPTCHA service");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during reCAPTCHA verification");
+                return false;
             }
         }
     }
