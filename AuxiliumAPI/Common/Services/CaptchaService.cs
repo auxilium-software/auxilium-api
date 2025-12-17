@@ -6,14 +6,17 @@ namespace AuxiliumAPI.Common.Services
     public class CaptchaService : ICaptchaService
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<CaptchaService> _logger;
         private readonly HttpClient _httpClient;
 
         public CaptchaService(
             IConfiguration configuration,
+            ILogger<CaptchaService> logger,
             HttpClient httpClient
             )
         {
             this._configuration = configuration;
+            this._logger = logger;
             this._httpClient = httpClient;
         }
 
