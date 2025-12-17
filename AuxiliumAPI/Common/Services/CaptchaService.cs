@@ -24,9 +24,6 @@ namespace AuxiliumAPI.Common.Services
         {
             try
             {
-                ["secret"]   = this._configuration["ReCAPTCHA:SecretKey"]!,
-                ["response"] = token
-            };
 
                 var content = new FormUrlEncodedContent(new[]
                 {
