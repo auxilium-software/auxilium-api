@@ -15,7 +15,8 @@ namespace AuxiliumAPI.Common.Services
         public FileService(
             ICouchDbService couchDb,
             IConfiguration configuration,
-            ILogger<FileService> logger)
+            ILogger<FileService> logger
+            )
         {
             _couchDb = couchDb;
             _configuration = configuration;

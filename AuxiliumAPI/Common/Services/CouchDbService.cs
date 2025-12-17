@@ -1,7 +1,9 @@
 ﻿using AuxiliumAPI.Common.DataStructures.Internal;
 using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumAPI.Common.Utilities;
 using CouchDB.Driver;
 using CouchDB.Driver.Types;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 

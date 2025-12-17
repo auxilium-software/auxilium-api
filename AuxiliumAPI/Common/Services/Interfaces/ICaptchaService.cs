@@ -2,6 +2,6 @@
 {
     public interface ICaptchaService
     {
-        Task VerifyRecaptchaAsync(string token, string? clientIp);
+        Task<bool> VerifyRecaptchaAsync(string token, string? clientIp);
     }
 }

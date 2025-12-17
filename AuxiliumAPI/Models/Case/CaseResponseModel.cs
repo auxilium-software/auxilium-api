@@ -1,4 +1,5 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
+using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
