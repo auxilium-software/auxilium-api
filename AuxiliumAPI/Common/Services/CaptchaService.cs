@@ -56,6 +56,14 @@ namespace AuxiliumAPI.Common.Services
                     return false;
                 }
 
+                if (jsonResponse.Score.HasValue && jsonResponse.Score < this._configuration!.GetValue<float>("ReCAPTCHA:ScoreThreshold"))
+                {
+                    _logger.LogWarning(
+                        "reCAPTCHA score too low: {Score}",
+                        jsonResponse.Score
+                    );
+                    return false;
+                }
 
                 _logger.LogInformation("reCAPTCHA verification successful");
                 return true;
