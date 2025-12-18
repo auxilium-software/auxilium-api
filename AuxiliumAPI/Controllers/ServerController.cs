@@ -6,7 +6,7 @@ namespace AuxiliumAPI.Controllers
 {
     [ApiController]
     [Route("/api/v3/server")]
-    [Tags("Debug")]
+    [Tags("Server")]
     public class ServerController : ControllerBase
     {
         private readonly ILogger<ServerController> _logger;
