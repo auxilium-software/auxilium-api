@@ -416,6 +416,67 @@ public class CaseController : LoggedInControllerBase
         }
     }
 
+    [HttpGet("{caseId}")]
+    [ProducesResponseType(typeof(CaseResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<CaseResponseModel>> GetCaseById(string caseId)
+    {
+        try
+        {
+            // enforce login and get current user details
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            // grab the case document from couchdb
+            if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
+            var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
+                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
+                Guid.Parse(caseId)
+            );
+            if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
+
+            // build response model
+            var response = new CaseResponseModel
+            {
+                ID = Guid.Parse(caseId),
+                CreatedAt = caseDoc.CreatedAt,
+                CreatedBy = caseDoc.CreatedBy,
+                LastUpdatedAt = caseDoc.LastUpdatedAt,
+                LastUpdatedBy = caseDoc.LastUpdatedBy,
+
+                Title = caseDoc.Title,
+                Description = caseDoc.Description,
+
+                Sensitivity = caseDoc.Sensitivity,
+                Status = caseDoc.Status,
+
+                Clients = caseDoc.Clients,
+                Workers = caseDoc.Workers,
+
+                Referrer = caseDoc.Referrer,
+                Todos = caseDoc.Todos,
+                Timeline = caseDoc.Timeline,
+                Messages = caseDoc.Messages,
+
+                AdditionalProperties = caseDoc.AdditionalProperties,
+                Files = caseDoc.Files,
+            };
+
+            // return
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new FailureResponseModel { Detail = $"Failed to fetch case: {ex.Message}" }
+            );
+        }
+    }
+
     [HttpPost("{caseId}/upload")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -498,67 +559,6 @@ public class CaseController : LoggedInControllerBase
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
                 new FailureResponseModel { Detail = $"Failed to upload file" }
-            );
-        }
-    }
-
-    [HttpGet("{caseId}")]
-    [ProducesResponseType(typeof(CaseResponseModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<CaseResponseModel>> GetCaseById(string caseId)
-    {
-        try
-        {
-            // enforce login and get current user details
-            var (user, error) = await GetCurrentUserAsync();
-            if (error != null) return error;
-
-            // grab the case document from couchdb
-            if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                Guid.Parse(caseId)
-            );
-            if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
-
-            // build response model
-            var response = new CaseResponseModel
-            {
-                ID = Guid.Parse(caseId),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
-
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
-
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
-
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            };
-
-            // return
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch case: {ex.Message}" }
             );
         }
     }
