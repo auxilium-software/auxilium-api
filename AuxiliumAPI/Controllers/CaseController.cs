@@ -89,8 +89,8 @@ public class CaseController : LoggedInControllerBase
                 ID = Guid.Parse(caseDoc.Id),
                 CreatedAt = caseDoc.CreatedAt,
                 CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+                LastUpdatedAt = null,
+                LastUpdatedBy = null,
 
                 Title = caseDoc.Title,
                 Description = caseDoc.Description,
