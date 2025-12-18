@@ -24,6 +24,12 @@ namespace AuxiliumAPI.Common.Services
         {
             try
             {
+                // WARNING WARNING WARNING WARNING WARNING
+                if (this._configuration["Development:DisableRecaptcha"] == "true")
+                {
+                    return true;
+                }
+                // WARNING WARNING WARNING WARNING WARNING
 
                 var content = new FormUrlEncodedContent(new[]
                 {
