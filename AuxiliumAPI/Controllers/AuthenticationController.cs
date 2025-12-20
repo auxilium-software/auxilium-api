@@ -134,7 +134,6 @@ public class AuthenticationController : ControllerBase
                 new UserRegistrationResponseModel
                 {
                     Id = userID,
-                    EmailAddress = request.EmailAddress
                 }
             );
         }
