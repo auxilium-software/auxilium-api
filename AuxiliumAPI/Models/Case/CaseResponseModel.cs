@@ -21,11 +21,11 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("lastUpdatedAt")]
-        public required DateTime? LastUpdatedAt { get; init; } = null;
+        public required DateTime? LastUpdatedAt { get; init; }
 
         [Required]
         [JsonPropertyName("lastUpdatedBy")]
-        public required Guid? LastUpdatedBy { get; init; } = null;
+        public required Guid? LastUpdatedBy { get; init; }
 
 
 
