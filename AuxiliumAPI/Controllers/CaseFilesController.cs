@@ -11,12 +11,12 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases", "Files")]
 public class CaseFilesController : LoggedInControllerBase
 {
-    private readonly IFileService _fileService;
+    private readonly IFileDocumentService _fileService;
     private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CaseFilesController> _logger;
 
     public CaseFilesController(
-        IFileService fileService,
+        IFileDocumentService fileService,
         ICaseDocumentService caseDocService,
         ILogger<CaseFilesController> logger,
         IMariaDbService mariaDb)

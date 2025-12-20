@@ -7,15 +7,15 @@ namespace AuxiliumAPI.Models.File
     {
         [Required]
         [JsonPropertyName("id")]
-        public required Guid? Id { get; init; }
+        public required Guid Id { get; init; }
 
         [Required]
         [JsonPropertyName("createdAt")]
-        public required DateTime? CreatedAt { get; init; }
+        public required DateTime CreatedAt { get; init; }
 
         [Required]
         [JsonPropertyName("createdBy")]
-        public required Guid? CreatedBy { get; init; }
+        public required Guid CreatedBy { get; init; }
 
 
 
@@ -31,14 +31,14 @@ namespace AuxiliumAPI.Models.File
 
         [Required]
         [JsonPropertyName("contentType")]
-        public required string? ContentType { get; init; }
+        public required string ContentType { get; init; }
 
         [Required]
         [JsonPropertyName("hash")]
-        public required string? Hash { get; init; }
+        public required string Hash { get; init; }
 
         [Required]
         [JsonPropertyName("size")]
-        public required long? Size { get; init; }
+        public required long Size { get; init; }
     }
 }

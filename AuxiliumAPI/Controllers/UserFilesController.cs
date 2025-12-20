@@ -11,12 +11,12 @@ namespace AuxiliumAPI.Controllers
     [Tags("Users", "Files")]
     public class UserFilesController : LoggedInControllerBase
     {
-        private readonly IFileService _fileService;
+        private readonly IFileDocumentService _fileService;
         private readonly IUserDocumentService _userDocService;
         private readonly ILogger<UserFilesController> _logger;
 
         public UserFilesController(
-            IFileService fileService,
+            IFileDocumentService fileService,
             IUserDocumentService userDocService,
             ILogger<UserFilesController> logger,
             IMariaDbService mariaDb

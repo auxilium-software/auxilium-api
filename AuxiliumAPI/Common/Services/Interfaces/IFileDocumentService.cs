@@ -3,7 +3,7 @@ using AuxiliumAPI.Models.File;
 
 namespace AuxiliumAPI.Common.Services.Interfaces
 {
-    public interface IFileService
+    public interface IFileDocumentService
     {
         Task<FileDocumentStructure?> GetFileMetadataAsync(Guid fileId);
         Task<byte[]?> GetFileContentsAsync(Guid fileId);

@@ -4,18 +4,18 @@ using AuxiliumAPI.Models.File;
 
 namespace AuxiliumAPI.Common.Services
 {
-    public class FileService : IFileService
+    public class FileDocumentService : IFileDocumentService
     {
         private readonly ICouchDbService _couchDb;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<FileService> _logger;
+        private readonly ILogger<FileDocumentService> _logger;
         private readonly string _filesDatabaseName;
         private readonly string _lfsBasePath;
 
-        public FileService(
+        public FileDocumentService(
             ICouchDbService couchDb,
             IConfiguration configuration,
-            ILogger<FileService> logger
+            ILogger<FileDocumentService> logger
             )
         {
             _couchDb = couchDb;

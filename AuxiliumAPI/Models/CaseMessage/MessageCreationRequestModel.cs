@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.Case
+namespace AuxiliumAPI.Models.CaseMessage
 {
     public class MessageCreationRequestModel
     {
@@ -15,6 +15,6 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("isUrgent")]
-        public required string IsUrgent { get; init; }
+        public required bool IsUrgent { get; init; }
     }
 }

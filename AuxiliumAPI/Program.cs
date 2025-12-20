@@ -115,7 +115,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddScoped<ICaseDocumentService, CaseDocumentService>();
 builder.Services.AddScoped<IUserDocumentService, UserDocumentService>();
-builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IFileDocumentService, FileDocumentService>();
+builder.Services.AddScoped<IMessageDocumentService, MessageDocumentService>();
 
 builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
 

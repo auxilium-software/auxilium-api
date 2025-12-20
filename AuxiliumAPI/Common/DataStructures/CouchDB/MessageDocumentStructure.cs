@@ -1,4 +1,5 @@
-﻿using CouchDB.Driver.Types;
+﻿using AuxiliumAPI.Models.File;
+using CouchDB.Driver.Types;
 using System.Text.Json.Serialization;
 
 namespace AuxiliumAPI.Common.DataStructures.CouchDB;
@@ -18,11 +19,20 @@ public class MessageDocumentStructure : CouchDocument
     [JsonPropertyName("createdBy")]
     public required Guid CreatedBy { get; set; }
 
-    [JsonPropertyName("updatedAt")]
-    public DateTime LastUpdatedAt { get; set; }
+    [JsonPropertyName("lastUpdatedAt")]
+    public DateTime? LastUpdatedAt { get; set; }
 
     [JsonPropertyName("lastUpdatedBy")]
     public Guid? LastUpdatedBy { get; set; }
+
+
+
+
+    [JsonPropertyName("parentType")]
+    public required MessageParentTypeEnum ParentType { get; set; }
+
+    [JsonPropertyName("parentId")]
+    public required Guid ParentId { get; set; }
 
 
 
@@ -33,11 +43,11 @@ public class MessageDocumentStructure : CouchDocument
     public required string Content { get; set; }
 
     [JsonPropertyName("senderId")]
-    public required string SenderId { get; set; }
+    public required Guid SenderId { get; set; }
 
     [JsonPropertyName("isUrgent")]
     public required bool IsUrgent { get; set; }
 
     [JsonPropertyName("readBy")]
-    public required Dictionary<string, DateTime> ReadBy { get; set; } = new();
+    public required Dictionary<Guid, DateTime> ReadBy { get; set; } = new();
 }
