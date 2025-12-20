@@ -53,7 +53,7 @@ namespace AuxiliumAPI.Common.DataStructures.CouchDB
 
 
         [JsonPropertyName("additionalProperties")]
-        public Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; } = new();
+        public Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; set; } = new();
 
         [JsonPropertyName("files")]
         public List<string> Files { get; set; } = [];

@@ -63,5 +63,5 @@ public class CaseDocumentStructure : CouchDocument
     public Dictionary<string, object> Timeline { get; set; } = new();
 
     [JsonPropertyName("additionalProperties")]
-    public Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; } = new();
+    public Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; set; } = new();
 }

@@ -2,8 +2,11 @@
 
 namespace AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures
 {
-    public class AdditionalPropertyStructure
+    public class AdditionalPropertySubStructure
     {
+        [JsonPropertyName("id")]
+        public required Guid Id { get; set; }
+
         [JsonPropertyName("createdAt")]
         public required DateTime CreatedAt { get; set; }
 

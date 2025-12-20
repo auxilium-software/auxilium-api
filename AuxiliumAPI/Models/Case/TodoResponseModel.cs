@@ -7,11 +7,11 @@ namespace AuxiliumAPI.Models.Case
     {
         [Required]
         [JsonPropertyName("id")]
-        public required Guid ID { get; init; }
+        public required Guid Id { get; init; }
 
         [Required]
         [JsonPropertyName("caseId")]
-        public required Guid CaseID { get; init; }
+        public required Guid CaseId { get; init; }
 
         [Required]
         [JsonPropertyName("createdAt")]
@@ -44,9 +44,15 @@ namespace AuxiliumAPI.Models.Case
         public DateTime? DueDate { get; init; }
 
         [JsonPropertyName("completedAt")]
-        public DateTime? completedAt { get; init; }
+        public DateTime? CompletedAt { get; init; }
+
+        [JsonPropertyName("completedBy")]
+        public Guid? CompletedBy { get; init; }
+
+        [JsonPropertyName("completionNote")]
+        public string? CompletionNote { get; init; }
 
         [JsonPropertyName("assignedTo")]
-        public Guid? assignedTo { get; init; }
+        public Guid? AssignedTo { get; init; }
     }
 }

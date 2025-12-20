@@ -15,13 +15,13 @@ namespace AuxiliumAPI.Models.Case
         public string? Description { get; init; }
 
         [JsonPropertyName("priority")]
-        public TodoPriorityEnum? Priority { get; init; }
+        public TodoPriorityEnum Priority { get; init; }
 
         [JsonPropertyName("dueDate")]
         public DateTime? DueDate { get; init; }
 
         [JsonPropertyName("assignedTo")]
-        public string? AssignedTo { get; init; }
+        public Guid? AssignedTo { get; init; }
 
         [JsonPropertyName("reminder")]
         public DateTime? Reminder { get; init; }

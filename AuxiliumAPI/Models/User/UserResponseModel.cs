@@ -54,7 +54,7 @@ namespace AuxiliumAPI.Models.User
 
         [Required]
         [JsonPropertyName("additionalProperties")]
-        public required Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; set; }
+        public required Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; set; }
 
         [Required]
         [JsonPropertyName("files")]

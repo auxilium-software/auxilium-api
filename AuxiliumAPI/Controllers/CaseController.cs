@@ -74,7 +74,7 @@ public class CaseController : LoggedInControllerBase
                 Files = new List<string>(),
                 Messages = new List<string>(),
 
-                AdditionalProperties = new Dictionary<string, AdditionalPropertyStructure>()
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>()
             };
 
             // save to couchdb

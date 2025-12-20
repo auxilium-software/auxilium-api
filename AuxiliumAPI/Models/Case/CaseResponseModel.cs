@@ -83,6 +83,6 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("additionalProperties")]
-        public required Dictionary<string, AdditionalPropertyStructure> AdditionalProperties { get; init; }
+        public required Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; init; }
     }
 }

@@ -1,7 +1,10 @@
 ﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
 using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
 using AuxiliumAPI.Common.DataStructures.MariaDB;
+using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumAPI.Common.Utilities;
+using AuxiliumAPI.Models.Case;
 
 namespace AuxiliumAPI.Common.Services
 {
@@ -24,6 +27,10 @@ namespace AuxiliumAPI.Common.Services
             _casesDatabaseName = _configuration["Databases:CouchDB:Databases:Cases"]!;
         }
 
+
+
+
+
         public async Task<CaseDocumentStructure?> GetDocumentAsync(Guid caseId)
         {
             return await _couchDb.GetDocumentAsync<CaseDocumentStructure>(_casesDatabaseName, caseId);
@@ -34,6 +41,10 @@ namespace AuxiliumAPI.Common.Services
             caseDoc.LastUpdatedAt = DateTime.UtcNow;
             await _couchDb.SaveDocumentAsync(_casesDatabaseName, caseDoc);
         }
+
+
+
+
 
         public async Task AddClientAsync(Guid caseId, Guid userId)
         {
@@ -73,6 +84,10 @@ namespace AuxiliumAPI.Common.Services
             await SaveDocumentAsync(caseDoc);
         }
 
+
+
+
+
         public async Task<Dictionary<string, object>> GetAdditionalPropertiesAsync(Guid caseId)
         {
             var caseDoc = await GetDocumentAsync(caseId) ?? throw new KeyNotFoundException($"Case {caseId} not found");
@@ -83,7 +98,7 @@ namespace AuxiliumAPI.Common.Services
             );
         }
 
-        public async Task SaveAdditionalPropertyAsync(Guid caseId, string propertyName, AdditionalPropertyStructure propertyStructure)
+        public async Task SaveAdditionalPropertyAsync(Guid caseId, string propertyName, AdditionalPropertySubStructure propertyStructure)
         {
             var caseDoc = await GetDocumentAsync(caseId) ?? throw new KeyNotFoundException($"Case {caseId} not found");
             caseDoc.AdditionalProperties[propertyName] = propertyStructure;
@@ -97,6 +112,76 @@ namespace AuxiliumAPI.Common.Services
             caseDoc.AdditionalProperties.Remove(propertyName);
             await SaveDocumentAsync(caseDoc);
         }
+
+
+
+
+
+        public async Task<CaseTodoSubStructure> CreateTodoAsync(
+            Guid caseId,
+            string summary,
+            string? description,
+            TodoPriorityEnum priority,
+            Guid createdBy,
+            DateTime? dueDate = null,
+            Guid? assignedTo = null,
+            DateTime? reminder = null
+            )
+        {
+            try
+            {
+                // grab the case doc
+                var caseDoc = await this.GetDocumentAsync(caseId)
+                    ?? throw new KeyNotFoundException($"Case {caseId} not found");
+
+                // generate a uuid for the todo
+                Guid todoId = UUIDUtilities.GenerateV5(DatabaseObjectType.CaseTodoItem);
+
+                // create the todo sub-doc
+                CaseTodoSubStructure todoSubDoc = new()
+                {
+                    Id = todoId,
+                    Summary = summary,
+                    Description = description,
+                    Status = TodoStatusEnum.NeedsAction,
+                    Priority = priority,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = createdBy,
+                    DueDate = dueDate,
+                    AssignedTo = assignedTo,
+                    Reminder = reminder,
+                    CompletedAt = null,
+                    CompletedBy = null,
+                    CompletionNote = null,
+                    UpdatedAt = null
+                };
+
+                // add the todo to the parent case doc
+                caseDoc.Todos ??= new Dictionary<string, object>();
+                caseDoc.Todos[todoId.ToString()] = todoSubDoc!;
+                caseDoc.LastUpdatedAt = DateTime.UtcNow;
+
+                // save the updated case doc
+                await _couchDb.SaveDocumentAsync(_casesDatabaseName, caseDoc);
+
+                _logger.LogInformation(
+                    "Created todo {TodoId} in case {CaseId}",
+                    todoId, caseId
+                );
+
+                // return
+                return todoSubDoc;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
+                throw;
+            }
+        }
+
+
+
+
 
         public async Task<bool> CheckUserAccessAsync(Guid caseId, UserRowStructure currentUser)
         {

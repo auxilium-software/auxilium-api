@@ -44,7 +44,7 @@ namespace AuxiliumAPI.Common.Services
             );
         }
 
-        public async Task SaveAdditionalPropertyAsync(Guid userId, string propertyName, AdditionalPropertyStructure propertyStructure)
+        public async Task SaveAdditionalPropertyAsync(Guid userId, string propertyName, AdditionalPropertySubStructure propertyStructure)
         {
             var userDoc = await GetDocumentAsync(userId) ?? throw new KeyNotFoundException($"User {userId} not found");
             userDoc.AdditionalProperties[propertyName] = propertyStructure;
