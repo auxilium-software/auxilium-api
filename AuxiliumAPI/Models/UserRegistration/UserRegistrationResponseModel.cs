@@ -8,11 +8,5 @@ namespace AuxiliumAPI.Models.UserRegistration
         [Required]
         [JsonPropertyName("id")]
         public required Guid Id { get; init; }
-
-
-        [Required]
-        [EmailAddress]
-        [JsonPropertyName("emailAddress")]
-        public required string EmailAddress { get; init; }
     }
 }
