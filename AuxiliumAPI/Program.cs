@@ -30,7 +30,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
 
-        options.JsonSerializerOptions.WriteIndented = false;
+        options.JsonSerializerOptions.WriteIndented = true;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 builder.Services.AddEndpointsApiExplorer();
