@@ -1,19 +1,21 @@
-﻿namespace AuxiliumAPI.Common.EntityModels
+﻿using AuxiliumAPI.Models.Case;
+
+namespace AuxiliumAPI.Common.EntityModels
 {
     public class CaseModel
     {
-        public string Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string CreatedBy { get; set; }
+        public Guid CreatedBy { get; set; }
         public DateTime LastUpdatedAt { get; set; }
-        public string LastUpdatedBy { get; set; }
+        public Guid LastUpdatedBy { get; set; }
 
 
 
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; }
         public string? Description { get; set; }
-        public string Sensitivity { get; set; } = "confidential";
-        public string Status { get; set; } = "open";
+        public CaseSensitivityEnum Sensitivity { get; set; } = CaseSensitivityEnum.Confidential;
+        public CaseStatusEnum Status { get; set; } = CaseStatusEnum.Open;
 
 
 
@@ -24,5 +26,6 @@
         public ICollection<CaseAdditionalPropertyModel> AdditionalProperties { get; set; }
         public ICollection<CaseMessageModel> Messages { get; set; }
         public ICollection<CaseFileModel> Files { get; set; }
+        public ICollection<CaseTodoModel> CaseTodos { get; set; }
     }
 }
