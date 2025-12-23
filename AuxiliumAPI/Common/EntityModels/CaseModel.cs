@@ -21,7 +21,7 @@
         public UserModel? LastUpdatedByUser { get; set; }
         public ICollection<CaseWorkerModel> Workers { get; set; }
         public ICollection<CaseClientModel> Clients { get; set; }
-        public ICollection<CaseAdditionalProperty> AdditionalProperties { get; set; }
+        public ICollection<CaseAdditionalPropertyModel> AdditionalProperties { get; set; }
         public ICollection<CaseMessageModel> Messages { get; set; }
         public ICollection<CaseFileModel> Files { get; set; }
     }

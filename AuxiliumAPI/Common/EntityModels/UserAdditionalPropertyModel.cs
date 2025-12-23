@@ -1,6 +1,6 @@
 ﻿namespace AuxiliumAPI.Common.EntityModels
 {
-    public class UserAdditionalProperty
+    public class UserAdditionalPropertyModel
     {
         public Guid Id { get; set; }
         public DateTime CreatedAt { get; set; }
