@@ -21,6 +21,7 @@ public class AuxiliumDbContext : DbContext
     public DbSet<UserAdditionalPropertyModel> UserAdditionalProperties { get; set; }
     public DbSet<CaseMessageModel> CaseMessages { get; set; }
     public DbSet<CaseFileModel> CaseFiles { get; set; }
+    public DbSet<CaseTodoModel> CaseTodos { get; set; }
 
 
 
@@ -224,7 +225,7 @@ public class AuxiliumDbContext : DbContext
         {
             entity.ToTable("case_messages");
             entity.HasKey(e => e.Id);
-            
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
@@ -251,6 +252,51 @@ public class AuxiliumDbContext : DbContext
             entity.HasOne(e => e.Sender)
                   .WithMany()
                   .HasForeignKey(e => e.SenderId);
+        });
+
+        // case_todos
+        modelBuilder.Entity<CaseTodoModel>(entity =>
+        {
+            entity.ToTable("case_todos");
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+
+            entity.Property(e => e.Summary)         .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Status)          .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.Priority)        .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.DueDate)         .HasColumnType("datetime")      .HasDefaultValue(false);
+            entity.Property(e => e.AssignedTo)      .HasColumnType("char(36)")      .HasDefaultValue(false);
+            entity.Property(e => e.Reminder)        .HasColumnType("datetime")      .HasDefaultValue(false);
+            entity.Property(e => e.CompletedAt)     .HasColumnType("datetime")      .HasDefaultValue(false);
+            entity.Property(e => e.CompletedBy)     .HasColumnType("char(36)")      .HasDefaultValue(false);
+            entity.Property(e => e.CompletionNote)  .HasColumnType("text")          .HasDefaultValue(false);
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.LastUpdatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)
+                  .WithMany()
+                  .HasForeignKey(e => e.CaseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedToUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.AssignedTo)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CompletedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CompletedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // case_files
