@@ -26,6 +26,7 @@ namespace AuxiliumAPI.Common.EntityModels
         public ICollection<CaseAdditionalPropertyModel> AdditionalProperties { get; set; }
         public ICollection<CaseMessageModel> Messages { get; set; }
         public ICollection<CaseFileModel> Files { get; set; }
-        public ICollection<CaseTodoModel> CaseTodos { get; set; }
+        public ICollection<CaseTodoModel> Todos { get; set; }
+        public ICollection<CaseTimelineItemModel> Timeline { get; set; }
     }
 }

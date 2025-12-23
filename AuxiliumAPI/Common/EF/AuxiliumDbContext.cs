@@ -22,6 +22,7 @@ public class AuxiliumDbContext : DbContext
     public DbSet<CaseMessageModel> CaseMessages { get; set; }
     public DbSet<CaseFileModel> CaseFiles { get; set; }
     public DbSet<CaseTodoModel> CaseTodos { get; set; }
+    public DbSet<CaseTimelineItemModel> CaseTimeline { get; set; }
 
 
 
@@ -296,6 +297,28 @@ public class AuxiliumDbContext : DbContext
             entity.HasOne(e => e.CompletedByUser)
                   .WithMany()
                   .HasForeignKey(e => e.CompletedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // case_timeline
+        modelBuilder.Entity<CaseTimelineItemModel>(entity =>
+        {
+            entity.ToTable("case_timeline");
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.LastUpdatedBy)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
