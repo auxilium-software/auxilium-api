@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Common.DataStructures.Internal;
+﻿using AuxiliumAPI.Common.DataStructures;
 using AuxiliumAPI.Common.Services.Interfaces;
 
 namespace AuxiliumAPI.Common.Services

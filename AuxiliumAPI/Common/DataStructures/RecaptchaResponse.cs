@@ -1,4 +1,4 @@
-﻿namespace AuxiliumAPI.Common.DataStructures.Internal
+﻿namespace AuxiliumAPI.Common.DataStructures
 {
     internal class RecaptchaResponse
     {
