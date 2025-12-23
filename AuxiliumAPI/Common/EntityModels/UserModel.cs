@@ -2,11 +2,11 @@
 {
     public class UserModel
     {
-        public string Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string CreatedBy { get; set; }
+        public Guid CreatedBy { get; set; }
         public DateTime LastUpdatedAt { get; set; }
-        public string LastUpdatedBy { get; set; }
+        public Guid LastUpdatedBy { get; set; }
 
 
 
@@ -22,6 +22,6 @@
         public UserModel User { get; set; }
         public ICollection<CaseWorkerModel> WorkerOnCases { get; set; }
         public ICollection<CaseClientModel> ClientOnCases { get; set; }
-        public ICollection<UserAdditionalProperty> AdditionalProperties { get; set; }
+        public ICollection<UserAdditionalPropertyModel> AdditionalProperties { get; set; }
     }
 }

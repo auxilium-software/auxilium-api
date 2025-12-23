@@ -11,10 +11,12 @@
 
 
         public Guid CaseId { get; set; }
+        public string PropertyKey { get; set; }
         public string OriginalName { get; set; }
         public string PrettyName { get; set; }
         public string URLSlug { get; set; }
         public string ContentType { get; set; }
+        public string Content { get; set; }
 
 
 
