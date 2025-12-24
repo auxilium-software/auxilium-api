@@ -339,7 +339,7 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)");
             entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.Size)            .HasColumnType("long")                                                                                                          .IsRequired();
+            entity.Property(e => e.Size)            .HasColumnType("bigint")                                                                                                        .IsRequired();
             entity.Property(e => e.Hash)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
