@@ -10,5 +10,11 @@ namespace AuxiliumAPI.Models.Case
 
         [JsonPropertyName("description")]
         public string? Description { get; init; }
+
+        [JsonPropertyName("status")]
+        public CaseStatusEnum? Status { get; init; }
+
+        [JsonPropertyName("sensitivity")]
+        public CaseSensitivityEnum? Sensitivity { get; init; }
     }
 }
