@@ -21,8 +21,10 @@ public class AuxiliumDbContext : DbContext
     public DbSet<UserAdditionalPropertyModel> UserAdditionalProperties { get; set; }
     public DbSet<CaseMessageModel> CaseMessages { get; set; }
     public DbSet<CaseFileModel> CaseFiles { get; set; }
+    public DbSet<UserFileModel> UserFiles { get; set; }
     public DbSet<CaseTodoModel> CaseTodos { get; set; }
     public DbSet<CaseTimelineItemModel> CaseTimeline { get; set; }
+    public DbSet<RefreshTokenModel> RefreshTokens { get; set; }
 
 
 
@@ -354,6 +356,58 @@ public class AuxiliumDbContext : DbContext
                   .WithMany(c => c.Files)
                   .HasForeignKey(e => e.CaseId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // user_files
+        modelBuilder.Entity<UserFileModel>(entity =>
+        {
+            entity.ToTable("user_files");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+
+            entity.Property(e => e.UserId)          .HasColumnType("char(36)");
+            entity.Property(e => e.Filename)        .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.Size)            .HasColumnType("long")                                                  .IsRequired();
+            entity.Property(e => e.Hash)            .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("text")                                                  .IsRequired();
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.LastUpdatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)
+                  .WithMany(c => c.Files)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // refresh_tokens
+        modelBuilder.Entity<RefreshTokenModel>(entity =>
+        {
+            entity.ToTable("refresh_tokens");
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+
+            entity.Property(e => e.TokenHash)       .HasColumnType("text");
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
                   .HasForeignKey(e => e.CreatedByUser)

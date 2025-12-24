@@ -22,6 +22,8 @@
         public UserModel User { get; set; }
         public ICollection<CaseWorkerModel> WorkerOnCases { get; set; }
         public ICollection<CaseClientModel> ClientOnCases { get; set; }
+        public ICollection<UserFileModel> Files { get; set; }
         public ICollection<UserAdditionalPropertyModel> AdditionalProperties { get; set; }
+        public ICollection<RefreshTokenModel> RefreshTokens { get; set; }
     }
 }
