@@ -1,9 +1,21 @@
 ﻿namespace AuxiliumAPI.Common.EntityModels
 {
+    /// <summary>
+    /// Represents an assignment of a case worker to a case.
+    /// </summary>
     public class CaseWorkerModel
     {
+        /**
+         * The unique identifier for the additional property.
+         */
         public Guid Id { get; set; }
+        /**
+         * The timestamp when the additional property was created.
+         */
         public DateTime CreatedAt { get; set; }
+        /**
+         * The unique identifier of the user who created the additional property.
+         */
         public Guid CreatedBy { get; set; }
 
 
