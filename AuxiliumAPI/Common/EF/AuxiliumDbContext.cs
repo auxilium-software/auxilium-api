@@ -408,10 +408,6 @@ public class AuxiliumDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.CreatedBy)
                   .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedByUser)
-                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
