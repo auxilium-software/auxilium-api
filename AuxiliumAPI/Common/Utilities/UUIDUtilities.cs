@@ -8,12 +8,12 @@ namespace AuxiliumAPI.Common.Utilities
     {
         private static readonly Dictionary<DatabaseObjectType, string> NamespacePaths = new()
         {
-            [DatabaseObjectType.User]               = "/auxilium/3/database_object/couchdb/user",
-            [DatabaseObjectType.Case]               = "/auxilium/3/database_object/couchdb/case",
-            [DatabaseObjectType.CaseTimelineItem]   = "/auxilium/3/database_object/couchdb/case/timeline_item",
-            [DatabaseObjectType.CaseTodoItem]       = "/auxilium/3/database_object/couchdb/case/todo_item",
-            [DatabaseObjectType.File]               = "/auxilium/3/database_object/couchdb/file",
-            [DatabaseObjectType.Message]            = "/auxilium/3/database_object/couchdb/message",
+            [DatabaseObjectType.User]               = "/auxilium/3/database_object/mariadb/user",
+            [DatabaseObjectType.Case]               = "/auxilium/3/database_object/mariadb/case",
+            [DatabaseObjectType.CaseTimelineItem]   = "/auxilium/3/database_object/mariadb/case/timeline_item",
+            [DatabaseObjectType.CaseTodoItem]       = "/auxilium/3/database_object/mariadb/case/todo_item",
+            [DatabaseObjectType.File]               = "/auxilium/3/database_object/mariadb/file",
+            [DatabaseObjectType.Message]            = "/auxilium/3/database_object/mariadb/message",
         };
 
         private static readonly Dictionary<DatabaseObjectType, Guid> NamespaceUuids =
