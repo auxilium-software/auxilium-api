@@ -27,7 +27,6 @@ public class FileDocumentService : IFileDocumentService
     }
 
     #region case file operations
-
     public async Task<CaseFileModel?> GetCaseFileMetadataAsync(Guid fileId)
     {
         try
@@ -160,10 +159,9 @@ public class FileDocumentService : IFileDocumentService
             throw;
         }
     }
-
     #endregion
-    #region user file operations
 
+    #region user file operations
     public async Task<UserFileModel?> GetUserFileMetadataAsync(Guid fileId)
     {
         try
@@ -296,10 +294,9 @@ public class FileDocumentService : IFileDocumentService
             throw;
         }
     }
-
     #endregion
-    #region shared file operations
 
+    #region shared file operations
     public async Task<byte[]?> GetFileContentsAsync(Guid fileId)
     {
         try
