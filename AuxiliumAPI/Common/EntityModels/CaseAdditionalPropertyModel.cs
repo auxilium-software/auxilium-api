@@ -37,19 +37,19 @@
         /**
          * The unique identifier of the case this additional property is for.
          */
-        public Guid CaseId { get; set; }
-        public string PropertyKey { get; set; }
-        public string OriginalName { get; set; }
-        public string PrettyName { get; set; }
-        public string URLSlug { get; set; }
+        public required Guid CaseId { get; set; }
+        /**
+         * The name of the additional property.
+         */
+        public required string Name { get; set; }
         /**
          * The MIME type of the additional property (e.g., "text/plain", "application/json").
          */
-        public string ContentType { get; set; }
+        public required string ContentType { get; set; }
         /**
          * The actual content of the additional property.
          */
-        public string Content { get; set; }
+        public required string Content { get; set; }
 
 
 

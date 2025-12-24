@@ -25,13 +25,22 @@
 
 
 
-        public Guid UserId { get; set; }
-        public string PropertyKey { get; set; }
-        public string OriginalName { get; set; }
-        public string PrettyName { get; set; }
-        public string URLSlug { get; set; }
-        public string ContentType { get; set; }
-        public string Content { get; set; }
+        /**
+         * The unique identifier of the user this additional property is for.
+         */
+        public required  Guid UserId { get; set; }
+        /**
+         * The name of the additional property.
+         */
+        public required string Name { get; set; }
+        /**
+         * The MIME type of the additional property (e.g., "text/plain", "application/json").
+         */
+        public required string ContentType { get; set; }
+        /**
+         * The actual content of the additional property.
+         */
+        public required string Content { get; set; }
 
 
 

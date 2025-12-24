@@ -162,10 +162,7 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.Property(e => e.CaseId)          .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
@@ -182,7 +179,7 @@ public class AuxiliumDbContext : DbContext
 
             entity.HasIndex(e => new {
                 e.CaseId,
-                e.PropertyKey
+                e.Name
             }).IsUnique();
         });
 
@@ -199,10 +196,7 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.Property(e => e.UserId)          .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
@@ -219,7 +213,7 @@ public class AuxiliumDbContext : DbContext
 
             entity.HasIndex(e => new {
                 e.UserId,
-                e.PropertyKey
+                e.Name
             }).IsUnique();
         });
 
