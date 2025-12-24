@@ -38,16 +38,16 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.EmailAddress)    .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.PasswordHash)    .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.IsAdmin)         .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                 .IsRequired();
-            entity.Property(e => e.IsCaseWorker)    .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                 .IsRequired();
+            entity.Property(e => e.EmailAddress)    .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.PasswordHash)    .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.IsAdmin)         .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
+            entity.Property(e => e.IsCaseWorker)    .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
 
             entity.HasIndex(e => e.EmailAddress)    .IsUnique();
         });
@@ -58,16 +58,16 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("cases");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.Title)           .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Description)     .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Status)          .HasColumnType("text")          .HasDefaultValueSql("open")             .IsRequired();
-            entity.Property(e => e.Sensitivity)     .HasColumnType("text")          .HasDefaultValueSql("confidential")     .IsRequired();
+            entity.Property(e => e.Title)           .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Status)          .HasColumnType("text")          .HasDefaultValueSql("open")                                                                     .IsRequired();
+            entity.Property(e => e.Sensitivity)     .HasColumnType("text")          .HasDefaultValueSql("confidential")                                                             .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -105,12 +105,12 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_workers");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -130,12 +130,12 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_clients");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -155,18 +155,18 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_additional_properties");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.CaseId)          .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -192,18 +192,18 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("user_additional_properties");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.UserId)          .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.UserId)          .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.PropertyKey)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.OriginalName)    .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.PrettyName)      .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.URLSlug)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -229,17 +229,17 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_messages");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.SenderId)        .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.Subject)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Content)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.IsUrgent)        .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                 .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.SenderId)        .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.Subject)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.IsUrgent)        .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -263,16 +263,16 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_todos");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.Summary)         .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.Description)     .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.Status)          .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Priority)        .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.Summary)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Status)          .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Priority)        .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.DueDate)         .HasColumnType("datetime")      .HasDefaultValue(false);
             entity.Property(e => e.AssignedTo)      .HasColumnType("char(36)")      .HasDefaultValue(false);
             entity.Property(e => e.Reminder)        .HasColumnType("datetime")      .HasDefaultValue(false);
@@ -308,11 +308,11 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_timeline");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -330,19 +330,19 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_files");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)");
-            entity.Property(e => e.Filename)        .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Size)            .HasColumnType("long")                                                  .IsRequired();
-            entity.Property(e => e.Hash)            .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Description)     .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Size)            .HasColumnType("long")                                                                                                          .IsRequired();
+            entity.Property(e => e.Hash)            .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -364,19 +364,19 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("user_files");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.UserId)          .HasColumnType("char(36)");
-            entity.Property(e => e.Filename)        .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Size)            .HasColumnType("long")                                                  .IsRequired();
-            entity.Property(e => e.Hash)            .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                  .IsRequired();
-            entity.Property(e => e.Description)     .HasColumnType("text")                                                  .IsRequired();
+            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s));
+            entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Size)            .HasColumnType("long")                                                                                                          .IsRequired();
+            entity.Property(e => e.Hash)            .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -398,11 +398,11 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("refresh_tokens");
             entity.HasKey(e => e.Id);
             
-            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .IsRequired();
-            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")  .IsRequired();
-            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .IsRequired();
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.TokenHash)       .HasColumnType("text");
+            entity.Property(e => e.TokenHash)       .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
