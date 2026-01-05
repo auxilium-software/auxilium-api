@@ -2,74 +2,74 @@
 {
     public class UserModel
     {
-        /**
-         * The unique identifier for the additional property.
-         */
+        /// <summary>
+        /// The unique identifier for the additional property.
+        /// </summary>
         public Guid Id { get; set; }
-        /**
-         * The timestamp when the additional property was created.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was created.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
-        /**
-         * The unique identifier of the user who created the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who created the additional property.
+        /// </summary>
         public Guid CreatedBy { get; set; }
-        /**
-         * The timestamp when the additional property was last updated.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was last updated.
+        /// </summary>
         public DateTime LastUpdatedAt { get; set; }
-        /**
-         * The unique identifier of the user who last updated the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who last updated the additional property.
+        /// </summary>
         public Guid LastUpdatedBy { get; set; }
 
 
 
-        /**
-         * The email address of the user.
-         */
+        /// <summary>
+        /// The email address of the user.
+        /// </summary>
         public string EmailAddress { get; set; }
-        /**
-         * The hashed password of the user.
-         */
+        /// <summary>
+        /// The hashed password of the user.
+        /// </summary>
         public string PasswordHash { get; set; }
-        /**
-         * The full name of the user.
-         */
+        /// <summary>
+        /// The full name of the user.
+        /// </summary>
         public string FullName { get; set; }
-        /**
-         * The full address of the user.
-         */
+        /// <summary>
+        /// The full address of the user.
+        /// </summary>
         public string FullAddress { get; set; }
-        /**
-         * The telephone number of the user.
-         */
+        /// <summary>
+        /// The telephone number of the user.
+        /// </summary>
         public string TelephoneNumber { get; set; }
-        /**
-         * The gender of the user.
-         */
+        /// <summary>
+        /// The gender of the user.
+        /// </summary>
         public string Gender { get; set; }
-        /**
-         * The date of birth of the user.
-         */
+        /// <summary>
+        /// The date of birth of the user.
+        /// </summary>
         public DateOnly DateOfBirth { get; set; }
-        /**
-         * How the user found out about the service.
-         */
+        /// <summary>
+        /// How the user found out about the service.
+        /// </summary>
         public string HowDidYouFindOutAboutOurService { get; set; }
 
 
-        /**
-         * Whether the user is allowed to log in.
-         */
+        /// <summary>
+        /// Whether the user is allowed to log in.
+        /// </summary>
         public bool AllowLogin { get; set; }
-        /**
-         * Whether the user is an Administrator.
-         */
+        /// <summary>
+        /// Whether the user is an Administrator.
+        /// </summary>
         public bool IsAdmin { get; set; } = false;
-        /**
-         * Whether the user is a Case Worker.
-         */
+        /// <summary>
+        /// Whether the user is a Case Worker.
+        /// </summary>
         public bool IsCaseWorker { get; set; } = false;
 
 

@@ -2,24 +2,24 @@
 {
     public class CaseMessageReadByModel
     {
-        /**
-         * The unique identifier for the additional property.
-         */
+        /// <summary>
+        /// The unique identifier for the additional property.
+        /// </summary>
         public Guid Id { get; set; }
-        /**
-         * The timestamp when the additional property was created.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was created.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
-        /**
-         * The unique identifier of the user who created the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who created the additional property.
+        /// </summary>
         public Guid CreatedBy { get; set; }
 
 
 
-        /**
-         * The unique identifier for the message that has been read.
-         */
+        /// <summary>
+        /// The unique identifier for the message that has been read.
+        /// </summary>
         public Guid MessageId { get; set; }
 
 
