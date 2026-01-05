@@ -4,32 +4,44 @@ namespace AuxiliumAPI.Common.EntityModels
 {
     public class CaseModel
     {
-        /**
-         * The unique identifier for the additional property.
-         */
+        /// <summary>
+        /// The unique identifier for the additional property.
+        /// </summary>
         public Guid Id { get; set; }
-        /**
-         * The timestamp when the additional property was created.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was created.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
-        /**
-         * The unique identifier of the user who created the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who created the additional property.
+        /// </summary>
         public Guid CreatedBy { get; set; }
-        /**
-         * The timestamp when the additional property was last updated.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was last updated.
+        /// </summary>
         public DateTime LastUpdatedAt { get; set; }
-        /**
-         * The unique identifier of the user who last updated the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who last updated the additional property.
+        /// </summary>
         public Guid LastUpdatedBy { get; set; }
 
 
 
+        /// <summary>
+        /// The title of the case.
+        /// </summary>
         public string Title { get; set; }
+        /// <summary>
+        /// An optional description of the case.
+        /// </summary>
         public string? Description { get; set; }
+        /// <summary>
+        /// The sensitivity level of the case.
+        /// </summary>
         public CaseSensitivityEnum Sensitivity { get; set; } = CaseSensitivityEnum.Confidential;
+        /// <summary>
+        /// The current status of the case.
+        /// </summary>
         public CaseStatusEnum Status { get; set; } = CaseStatusEnum.Open;
 
 

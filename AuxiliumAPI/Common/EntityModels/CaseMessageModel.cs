@@ -2,33 +2,48 @@
 {
     public class CaseMessageModel
     {
-        /**
-         * The unique identifier for the additional property.
-         */
+        /// <summary>
+        /// The unique identifier for the additional property.
+        /// </summary>
         public Guid Id { get; set; }
-        /**
-         * The timestamp when the additional property was created.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was created.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
-        /**
-         * The unique identifier of the user who created the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who created the additional property.
+        /// </summary>
         public Guid CreatedBy { get; set; }
-        /**
-         * The timestamp when the additional property was last updated.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was last updated.
+        /// </summary>
         public DateTime LastUpdatedAt { get; set; }
-        /**
-         * The unique identifier of the user who last updated the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who last updated the additional property.
+        /// </summary>
         public Guid LastUpdatedBy { get; set; }
 
 
 
+        /// <summary>
+        /// The unique identifier of the case this message is attached to.
+        /// </summary>
         public Guid CaseId { get; set; }
+        /// <summary>
+        /// The unique identifier of the user who sent the message.
+        /// </summary>
         public Guid SenderId { get; set; }
+        /// <summary>
+        /// The subject of the message.
+        /// </summary>
         public string Subject { get; set; }
+        /// <summary>
+        /// The content/body of the message.
+        /// </summary>
         public string Content { get; set; }
+        /// <summary>
+        /// Indicates whether the message is marked as urgent.
+        /// </summary>
         public bool IsUrgent { get; set; }
 
 

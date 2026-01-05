@@ -1,23 +1,29 @@
 ﻿namespace AuxiliumAPI.Common.EntityModels
 {
     public class RefreshTokenModel
-    {        
-        /**
-         * The unique identifier for the additional property.
-         */
+    {
+        /// <summary>
+        /// The unique identifier for the additional property.
+        /// </summary>
         public Guid Id { get; set; }
-        /**
-         * The timestamp when the additional property was created.
-         */
+        /// <summary>
+        /// The timestamp when the additional property was created.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
-        /**
-         * The unique identifier of the user who created the additional property.
-         */
+        /// <summary>
+        /// The unique identifier of the user who created the additional property.
+        /// </summary>
         public Guid CreatedBy { get; set; }
 
 
 
+        /// <summary>
+        /// A hash of the Refresh Token.
+        /// </summary>
         public string TokenHash { get; set; }
+        /// <summary>
+        /// The expiration datetime of the Refresh Token.
+        /// </summary>
         public DateTime ExpiresAt { get; set; }
 
 
