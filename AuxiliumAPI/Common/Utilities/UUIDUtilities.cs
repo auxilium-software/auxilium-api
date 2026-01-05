@@ -25,8 +25,9 @@ namespace AuxiliumAPI.Common.Utilities
             [DatabaseObjectType.CaseClient]             = "/auxilium/3/database_object/mariadb/case/client",
 
             [DatabaseObjectType.File]                   = "/auxilium/3/database_object/mariadb/file",
-
+            
             [DatabaseObjectType.Message]                = "/auxilium/3/database_object/mariadb/message",
+            [DatabaseObjectType.MessageReadBy]          = "/auxilium/3/database_object/mariadb/message/read_by",
         };
 
         /**

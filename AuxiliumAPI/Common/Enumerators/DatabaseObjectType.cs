@@ -15,5 +15,6 @@
         File,
 
         Message,
+        MessageReadBy,
     }
 }
