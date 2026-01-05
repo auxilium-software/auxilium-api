@@ -26,7 +26,7 @@ public class FileDocumentService : IFileDocumentService
         _lfsBasePath = _configuration["FileSystem:RootStorageDirectories:AuxLFS"]!;
     }
 
-    #region case file operations
+    #region ========================= CASE FILE OPERATIONS =========================
     public async Task<CaseFileModel?> GetCaseFileMetadataAsync(Guid fileId)
     {
         try
@@ -160,8 +160,7 @@ public class FileDocumentService : IFileDocumentService
         }
     }
     #endregion
-
-    #region user file operations
+    #region ========================= USER FILE OPERATIONS =========================
     public async Task<UserFileModel?> GetUserFileMetadataAsync(Guid fileId)
     {
         try
@@ -295,8 +294,7 @@ public class FileDocumentService : IFileDocumentService
         }
     }
     #endregion
-
-    #region shared file operations
+    #region ========================= SHARED FILE OPERATIONS =========================
     public async Task<byte[]?> GetFileContentsAsync(Guid fileId)
     {
         try
