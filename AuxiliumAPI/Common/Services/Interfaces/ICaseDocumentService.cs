@@ -1,14 +1,14 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
+﻿using AuxiliumAPI.Common.EntityModels;
+using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Models.Case;
 
 namespace AuxiliumAPI.Common.Services.Interfaces
 {
     public interface ICaseDocumentService
     {
-        Task<CaseDocumentStructure?> GetDocumentAsync(Guid caseId);
-        Task SaveDocumentAsync(CaseDocumentStructure caseDoc);
+        Task<CaseModel?> GetDocumentAsync(Guid caseId);
+        Task SaveDocumentAsync(CaseModel caseDoc);
+        Task<bool> CheckUserAccessAsync(Guid caseId, UserModel currentUser);
 
 
 
@@ -19,13 +19,13 @@ namespace AuxiliumAPI.Common.Services.Interfaces
 
 
 
-        Task<Dictionary<string, object>> GetAdditionalPropertiesAsync(Guid caseId);
-        Task SaveAdditionalPropertyAsync(Guid caseId, string propertyName, AdditionalPropertySubStructure propertyStructure);
-        Task DeleteAdditionalPropertyAsync(Guid caseId, string propertyName);
+        Task<List<CaseAdditionalPropertyModel>> GetAdditionalPropertiesAsync(Guid caseId);
+        Task SaveAdditionalPropertyAsync(Guid caseId, string additionalPropertyName, string additionalPropertyContent);
+        Task DeleteAdditionalPropertyAsync(Guid caseId, Guid additionalPropertyId);
 
 
 
-        Task<CaseTodoSubStructure> CreateTodoAsync(
+        Task<CaseTodoModel> CreateTodoAsync(
             Guid caseId,
             string summary,
             string? description,
@@ -33,11 +33,24 @@ namespace AuxiliumAPI.Common.Services.Interfaces
             Guid createdBy,
             DateTime? dueDate = null,
             Guid? assignedTo = null,
-            DateTime? reminder = null
-        );
-
-
-
-        Task<bool> CheckUserAccessAsync(Guid caseId, UserRowStructure currentUser);
+            DateTime? reminder = null);
+        Task<CaseTodoModel?> GetTodoAsync(Guid caseId, Guid todoId);
+        Task<List<CaseTodoModel>> GetTodosAsync(Guid caseId);
+        Task UpdateTodoStatusAsync(
+            Guid caseId,
+            Guid todoId,
+            TodoStatusEnum status,
+            Guid? completedBy = null,
+            string? completionNotes = null);
+        Task UpdateTodoAsync(
+            Guid caseId,
+            Guid todoId,
+            string? summary = null,
+            string? description = null,
+            TodoPriorityEnum? priority = null,
+            DateTime? dueDate = null,
+            Guid? assignedTo = null,
+            DateTime? reminder = null);
+        Task DeleteTodoAsync(Guid caseId, Guid todoId);
     }
 }

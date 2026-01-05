@@ -1,22 +1,22 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
+﻿
+using AuxiliumAPI.Common.EntityModels;
 
 namespace AuxiliumAPI.Common.Services.Interfaces
 {
     public interface IUserDocumentService
     {
-        Task<UserDocumentStructure?> GetDocumentAsync(Guid userId);
-        Task SaveDocumentAsync(UserDocumentStructure caseDoc);
+        Task<UserModel?> GetDocumentAsync(Guid userId);
+        Task SaveDocumentAsync(UserModel userDoc);
 
 
 
-        Task<Dictionary<string, object>> GetAdditionalPropertiesAsync(Guid userId);
-        Task SaveAdditionalPropertyAsync(Guid userId, string propertyName, AdditionalPropertySubStructure propertyStructure);
-        Task DeleteAdditionalPropertyAsync(Guid userId, string propertyName);
+        Task<List<UserAdditionalPropertyModel>> GetAdditionalPropertiesAsync(Guid userId);
+        Task SaveAdditionalPropertyAsync(Guid userId, string additionalPropertyName, string additionalPropertyContent);
+        Task DeleteAdditionalPropertyAsync(Guid userId, Guid additionalPropertyId);
 
 
 
-        Task<bool> CheckUserAccessAsync(Guid userId, UserRowStructure currentUser);
+        Task<bool> CheckUserAccessAsync(Guid userId, UserModel currentUser);
+
     }
 }
