@@ -20,6 +20,7 @@ public class AuxiliumDbContext : DbContext
     public DbSet<CaseAdditionalPropertyModel> CaseAdditionalProperties { get; set; }
     public DbSet<UserAdditionalPropertyModel> UserAdditionalProperties { get; set; }
     public DbSet<CaseMessageModel> CaseMessages { get; set; }
+    public DbSet<CaseMessageReadByModel> CaseMessagesReadBys { get; set; }
     public DbSet<CaseFileModel> CaseFiles { get; set; }
     public DbSet<UserFileModel> UserFiles { get; set; }
     public DbSet<CaseTodoModel> CaseTodos { get; set; }
@@ -163,6 +164,7 @@ public class AuxiliumDbContext : DbContext
 
             entity.Property(e => e.CaseId)          .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
@@ -197,6 +199,7 @@ public class AuxiliumDbContext : DbContext
 
             entity.Property(e => e.UserId)          .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
             entity.HasOne(e => e.CreatedByUser)
@@ -249,6 +252,28 @@ public class AuxiliumDbContext : DbContext
             entity.HasOne(e => e.Sender)
                   .WithMany()
                   .HasForeignKey(e => e.SenderId);
+        });
+
+        // case_messages_read_bys
+        modelBuilder.Entity<CaseMessageReadByModel>(entity =>
+        {
+            entity.ToTable("case_messages_read_bys");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
+            entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+
+            entity.Property(e => e.MessageId)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Message)
+                  .WithMany()
+                  .HasForeignKey(e => e.MessageId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // case_todos
