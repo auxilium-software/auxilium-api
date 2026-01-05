@@ -6,13 +6,13 @@ namespace AuxiliumAPI.Models.AdditionalProperty
     public class AdditionalPropertyCreationRequestModel
     {
         [Required]
-        [JsonPropertyName("content")]
-        public required string Content { get; set; }
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
 
 
         [Required]
-        [JsonPropertyName("display_name")]
-        public string? DisplayName { get; set; }
+        [JsonPropertyName("content")]
+        public required string Content { get; set; }
 
 
         [Required]
