@@ -14,13 +14,22 @@ namespace AuxiliumAPI.Common.Utilities
          */
         private static readonly Dictionary<DatabaseObjectType, string> NamespacePaths = new()
         {
-            [DatabaseObjectType.User]               = "/auxilium/3/database_object/mariadb/user",
-            [DatabaseObjectType.Case]               = "/auxilium/3/database_object/mariadb/case",
-            [DatabaseObjectType.CaseTimelineItem]   = "/auxilium/3/database_object/mariadb/case/timeline_item",
-            [DatabaseObjectType.CaseTodoItem]       = "/auxilium/3/database_object/mariadb/case/todo_item",
-            [DatabaseObjectType.File]               = "/auxilium/3/database_object/mariadb/file",
-            [DatabaseObjectType.Message]            = "/auxilium/3/database_object/mariadb/message",
+            [DatabaseObjectType.User]                   = "/auxilium/3/database_object/mariadb/user",
+            [DatabaseObjectType.UserAdditionalProperty] = "/auxilium/3/database_object/mariadb/user/additional_property",
+
+            [DatabaseObjectType.Case]                   = "/auxilium/3/database_object/mariadb/case",
+            [DatabaseObjectType.CaseTimelineItem]       = "/auxilium/3/database_object/mariadb/case/timeline_item",
+            [DatabaseObjectType.CaseTodoItem]           = "/auxilium/3/database_object/mariadb/case/todo_item",
+            [DatabaseObjectType.CaseAdditionalProperty] = "/auxilium/3/database_object/mariadb/case/additional_property",
+            [DatabaseObjectType.CaseWorker]             = "/auxilium/3/database_object/mariadb/case/worker",
+            [DatabaseObjectType.CaseClient]             = "/auxilium/3/database_object/mariadb/case/client",
+
+            [DatabaseObjectType.File]                   = "/auxilium/3/database_object/mariadb/file",
+            
+            [DatabaseObjectType.Message]                = "/auxilium/3/database_object/mariadb/message",
+            [DatabaseObjectType.MessageReadBy]          = "/auxilium/3/database_object/mariadb/message/read_by",
         };
+
 
         /**
          * Takes in a DatabaseObjectType and gets the precomputed Namespace UUID for it.
