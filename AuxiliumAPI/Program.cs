@@ -96,7 +96,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        var originsSection = builder.Configuration.GetSection("API:CORS:AllowedOrigins");
+        var originsSection = builder.Configuration.GetSection("API:AllowedOrigins");
         var origins = originsSection.Get<string[]>() ?? Array.Empty<string>();
 
         policy.WithOrigins(origins)
@@ -109,7 +109,6 @@ builder.Services.AddCors(options =>
 
 
 builder.Services.AddScoped<IMariaDbService, MariaDbService>();
-builder.Services.AddScoped<ICouchDbService, CouchDbService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
