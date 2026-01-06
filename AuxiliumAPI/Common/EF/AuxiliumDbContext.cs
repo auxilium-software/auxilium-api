@@ -39,6 +39,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -50,7 +52,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.IsAdmin)         .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
             entity.Property(e => e.IsCaseWorker)    .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
 
-            entity.HasIndex(e => e.EmailAddress)    .IsUnique();
+
+
+            entity.HasIndex(
+                e => e.EmailAddress
+            ).IsUnique();
         });
 
         // cases
@@ -59,6 +65,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("cases");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -70,42 +78,17 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Status)          .HasColumnType("text")          .HasDefaultValueSql("open")                                                                     .IsRequired();
             entity.Property(e => e.Sensitivity)     .HasColumnType("text")          .HasDefaultValueSql("confidential")                                                             .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasMany(e => e.Workers)
-                  .WithOne(w => w.Case)
-                  .HasForeignKey(w => w.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Clients)
-                  .WithOne(c => c.Case)
-                  .HasForeignKey(c => c.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.AdditionalProperties)
-                  .WithOne(p => p.Case)
-                  .HasForeignKey(p => p.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Messages)
-                  .WithOne(m => m.Case)
-                  .HasForeignKey(m => m.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Files)
-                  .WithOne(f => f.Case)
-                  .HasForeignKey(f => f.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Todos)
-                  .WithOne(t => t.Case)
-                  .HasForeignKey(t => t.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Timeline)
-                  .WithOne()
-                  .HasForeignKey("CaseId")
-                  .OnDelete(DeleteBehavior.Cascade);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.Workers)          .WithOne(w => w.Case)           .HasForeignKey(w => w.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Clients)          .WithOne(c => c.Case)           .HasForeignKey(c => c.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.AdditionalProperties).WithOne(p => p.Case)        .HasForeignKey(p => p.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Messages)         .WithOne(m => m.Case)           .HasForeignKey(m => m.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Files)            .WithOne(f => f.Case)           .HasForeignKey(f => f.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Todos)            .WithOne(t => t.Case)           .HasForeignKey(t => t.CaseId)           .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Timeline)         .WithOne()                      .HasForeignKey("CaseId")                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // case_workers
@@ -114,6 +97,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_workers");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -121,16 +106,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.Workers)
-                  .HasForeignKey(e => e.CaseId);
-            entity.HasOne(e => e.User)
-                  .WithMany(u => u.WorkerOnCases)
-                  .HasForeignKey(e => e.UserId);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.Workers)       .HasForeignKey(e => e.CaseId);
+            entity.HasOne(e => e.User)              .WithMany(u => u.WorkerOnCases) .HasForeignKey(e => e.UserId);
         });
 
         // case_clients
@@ -139,6 +119,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_clients");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -146,16 +128,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.Clients)
-                  .HasForeignKey(e => e.CaseId);
-            entity.HasOne(e => e.User)
-                  .WithMany(u => u.ClientOnCases)
-                  .HasForeignKey(e => e.UserId);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.Clients)       .HasForeignKey(e => e.CaseId);
+            entity.HasOne(e => e.User)              .WithMany(u => u.ClientOnCases) .HasForeignKey(e => e.UserId);
         });
 
         // case_additional_properties
@@ -164,6 +141,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_additional_properties");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -175,17 +154,13 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.AdditionalProperties)
-                  .HasForeignKey(e => e.CaseId);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.AdditionalProperties).HasForeignKey(e => e.CaseId);
+
+
 
             entity.HasIndex(e => new {
                 e.CaseId,
@@ -199,6 +174,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("user_additional_properties");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -210,17 +187,13 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.User)
-                  .WithMany(c => c.AdditionalProperties)
-                  .HasForeignKey(e => e.UserId);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)              .WithMany(c => c.AdditionalProperties) .HasForeignKey(e => e.UserId);
+
+
 
             entity.HasIndex(e => new {
                 e.UserId,
@@ -234,6 +207,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_messages");
             entity.HasKey(e => e.Id);
 
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -246,20 +221,12 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.IsUrgent)        .HasColumnType("tinyint(1)")    .HasDefaultValue(false)                                                                         .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.Messages)
-                  .HasForeignKey(e => e.CaseId);
-            entity.HasOne(e => e.Sender)
-                  .WithMany()
-                  .HasForeignKey(e => e.SenderId);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.Messages)      .HasForeignKey(e => e.CaseId);
+            entity.HasOne(e => e.Sender)            .WithMany()                     .HasForeignKey(e => e.SenderId);
         });
 
         // case_messages_read_bys
@@ -268,20 +235,18 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_messages_read_bys");
             entity.HasKey(e => e.Id);
 
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.Property(e => e.MessageId)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Message)
-                  .WithMany()
-                  .HasForeignKey(e => e.MessageId)
-                  .OnDelete(DeleteBehavior.Cascade);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Message)           .WithMany()                     .HasForeignKey(e => e.MessageId)        .OnDelete(DeleteBehavior.Cascade);
         });
 
         // case_todos
@@ -290,6 +255,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_todos");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -308,26 +275,13 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CompletedBy)     .HasColumnType("char(36)");
             entity.Property(e => e.CompletionNote)  .HasColumnType("text");
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany()
-                  .HasForeignKey(e => e.CaseId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.AssignedToUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.AssignedTo)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.CompletedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CompletedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany()                     .HasForeignKey(e => e.CaseId)           .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedToUser)    .WithMany()                     .HasForeignKey(e => e.AssignedTo)       .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CompletedByUser)   .WithMany()                     .HasForeignKey(e => e.CompletedBy)      .OnDelete(DeleteBehavior.Restrict);
         });
 
         // case_timeline
@@ -336,6 +290,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_timeline");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
@@ -343,18 +299,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.Timeline)
-                  .HasForeignKey(e => e.CaseId)
-                  .OnDelete(DeleteBehavior.Restrict);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.Timeline)      .HasForeignKey(e => e.CaseId)           .OnDelete(DeleteBehavior.Restrict);
         });
 
         // case_files
@@ -363,6 +312,8 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("case_files");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -377,18 +328,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Case)
-                  .WithMany(c => c.Files)
-                  .HasForeignKey(e => e.CaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)              .WithMany(c => c.Files)         .HasForeignKey(e => e.CaseId)           .OnDelete(DeleteBehavior.Cascade);
         });
 
         // user_files
@@ -396,6 +340,8 @@ public class AuxiliumDbContext : DbContext
         {
             entity.ToTable("user_files");
             entity.HasKey(e => e.Id);
+
+
 
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
@@ -411,18 +357,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.LastUpdatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.LastUpdatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.User)
-                  .WithMany(c => c.Files)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LastUpdatedByUser) .WithMany()                     .HasForeignKey(e => e.LastUpdatedBy)    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)              .WithMany(c => c.Files)         .HasForeignKey(e => e.UserId)           .OnDelete(DeleteBehavior.Cascade);
         });
 
         // refresh_tokens
@@ -431,16 +370,17 @@ public class AuxiliumDbContext : DbContext
             entity.ToTable("refresh_tokens");
             entity.HasKey(e => e.Id);
             
+
+
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
             entity.Property(e => e.TokenHash)       .HasColumnType("text")                                                                                                          .IsRequired();
 
-            entity.HasOne(e => e.CreatedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.CreatedBy)
-                  .OnDelete(DeleteBehavior.Restrict);
+
+
+            entity.HasOne(e => e.CreatedByUser)     .WithMany()                     .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
