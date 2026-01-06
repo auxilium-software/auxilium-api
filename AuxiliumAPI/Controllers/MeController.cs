@@ -36,6 +36,7 @@ public class MeController : LoggedInControllerBase
     [HttpGet("")]
     [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserResponseModel>> GetDetailsAboutMyself()
     {
@@ -113,6 +114,7 @@ public class MeController : LoggedInControllerBase
     [HttpPatch("")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UpdateMyProfile(
         [FromBody] ProfileUpdateRequestModel request)
@@ -169,6 +171,7 @@ public class MeController : LoggedInControllerBase
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> ChangePassword(

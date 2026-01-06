@@ -11,6 +11,7 @@ using AuxiliumAPI.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -317,8 +318,10 @@ public class AuthenticationController : ControllerBase
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesDefaultResponseType]
     public async Task<ActionResult<SuccessResponseModel>> Logout()
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
