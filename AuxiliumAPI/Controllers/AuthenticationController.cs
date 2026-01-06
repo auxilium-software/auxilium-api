@@ -92,7 +92,7 @@ public class AuthenticationController : ControllerBase
                 FullAddress = request.FullAddress,
                 TelephoneNumber = request.TelephoneNumber,
                 Gender = request.Gender,
-                DateOfBirth = request.DateOfBirth,
+                DateOfBirth = DateOnly.Parse(request.DateOfBirth),
                 HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
                 IsAdmin = false,
                 IsCaseWorker = false,

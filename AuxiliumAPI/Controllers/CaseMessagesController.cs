@@ -48,7 +48,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check case access
+            // Check case access
             if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
@@ -57,7 +57,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            // create the message entitymessage
+            // Create the message
             var messageDoc = await _messageService.CreateMessageAsync(
                 caseId: caseGuid,
                 subject: request.Subject,
@@ -71,6 +71,9 @@ public class CaseMessagesController : LoggedInControllerBase
                 messageDoc.Id, caseId, user.Id
             );
 
+            // Get read-by details (should be empty for new message)
+            var readByDetails = await _messageService.GetReadByDetailsAsync(messageDoc.Id);
+
             return StatusCode(201, new MessageResponseModel
             {
                 Id = messageDoc.Id,
@@ -80,7 +83,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 Content = messageDoc.Content,
                 SenderId = messageDoc.SenderId,
                 IsUrgent = messageDoc.IsUrgent,
-                ReadBy = messageDoc.ReadBy ?? "{}"
+                ReadBy = readByDetails
             });
         }
         catch (KeyNotFoundException ex)
@@ -126,17 +129,24 @@ public class CaseMessagesController : LoggedInControllerBase
 
             var messages = await _messageService.GetMessagesForCaseAsync(caseGuid);
 
-            var response = messages.Select(m => new MessageResponseModel
+            var response = new List<MessageResponseModel>();
+
+            foreach (var msg in messages)
             {
-                Id = m.Id,
-                CreatedAt = m.CreatedAt,
-                CreatedBy = m.CreatedBy,
-                Subject = m.Subject,
-                Content = m.Content,
-                SenderId = m.SenderId,
-                IsUrgent = m.IsUrgent,
-                ReadBy = m.ReadBy ?? "{}",
-            }).ToList();
+                var readByDetails = await _messageService.GetReadByDetailsAsync(msg.Id);
+
+                response.Add(new MessageResponseModel
+                {
+                    Id = msg.Id,
+                    CreatedAt = msg.CreatedAt,
+                    CreatedBy = msg.CreatedBy,
+                    Subject = msg.Subject,
+                    Content = msg.Content,
+                    SenderId = msg.SenderId,
+                    IsUrgent = msg.IsUrgent,
+                    ReadBy = readByDetails
+                });
+            }
 
             return Ok(response);
         }
@@ -184,14 +194,17 @@ public class CaseMessagesController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "Message not found" });
             }
 
-            // verify the message belongs to this case
+            // Verify the message belongs to this case
             if (messageDoc.CaseId != caseGuid)
             {
                 return NotFound(new FailureResponseModel { Detail = "Message not found in this case" });
             }
 
-            // mark the message as read
+            // Mark the message as read
             await _messageService.MarkAsReadAsync(messageId, user.Id);
+
+            // Get read-by details
+            var readByDetails = await _messageService.GetReadByDetailsAsync(messageId);
 
             return Ok(new MessageResponseModel
             {
@@ -202,7 +215,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 Content = messageDoc.Content,
                 SenderId = messageDoc.SenderId,
                 IsUrgent = messageDoc.IsUrgent,
-                ReadBy = messageDoc.ReadBy ?? "{}",
+                ReadBy = readByDetails
             });
         }
         catch (Exception ex)
@@ -235,7 +248,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check if the user is worker or admin
+            // Check if the user is worker or admin
             var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
             if (caseDoc == null)
             {
@@ -251,7 +264,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            // verify the message actually exists and belongs to case
+            // Verify the message actually exists and belongs to case
             var message = await _messageService.GetMessageAsync(messageId);
             if (message == null)
             {

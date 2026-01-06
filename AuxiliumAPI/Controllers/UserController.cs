@@ -281,45 +281,6 @@ public class UserController : LoggedInControllerBase
         }
     }
 
-    [HttpGet("case-workers")]
-    [ProducesResponseType(typeof(List<UserResponseModel>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<UserResponseModel>>> GetCaseWorkers()
-    {
-        try
-        {
-            var (user, error) = await GetCurrentUserAsync();
-            if (error != null) return error;
-
-            // get all case workers
-            var workers = await Db.Users
-                .Where(u => u.IsCaseWorker || u.IsAdmin)
-                .OrderBy(u => u.FullName)
-                .ToListAsync();
-
-            var response = workers.Select(w => new UserResponseModel
-            {
-                ID = w.Id,
-                FullName = w.FullName ?? string.Empty,
-                EmailAddress = user!.IsAdmin ? w.EmailAddress : "[REDACTED]",
-                IsAdmin = w.IsAdmin,
-                IsCaseWorker = w.IsCaseWorker,
-                CreatedAt = w.CreatedAt,
-                CreatedBy = w.CreatedBy
-            }).ToList();
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get case workers");
-            return StatusCode(500, new FailureResponseModel
-            {
-                Detail = "Failed to fetch case workers"
-            });
-        }
-    }
-
     // helper method for sorting
     private IQueryable<Common.EntityModels.UserModel> ApplySorting(
         IQueryable<Common.EntityModels.UserModel> query,

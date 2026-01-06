@@ -125,7 +125,7 @@ public class MeController : LoggedInControllerBase
                 userDoc.Gender = request.Gender;
 
             if (request.DateOfBirth.HasValue)
-                userDoc.DateOfBirth = request.DateOfBirth;
+                userDoc.DateOfBirth = request.DateOfBirth.Value;
 
             if (request.HowDidYouFindOutAboutOurService != null)
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;

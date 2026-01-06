@@ -15,6 +15,8 @@ namespace AuxiliumAPI.Common.Services.Interfaces
         Task<CaseMessageModel?> GetMessageAsync(Guid messageId);
         Task<List<CaseMessageModel>> GetMessagesForCaseAsync(Guid caseId);
         Task MarkAsReadAsync(Guid messageId, Guid userId);
+        Task<List<Guid>> GetReadByUsersAsync(Guid messageId);
+        Task<Dictionary<Guid, DateTime>> GetReadByDetailsAsync(Guid messageId);
         Task<bool> IsReadByAsync(Guid messageId, Guid userId);
         Task DeleteMessageAsync(Guid messageId);
         Task<bool> CheckUserAccessAsync(Guid messageId, UserModel currentUser);

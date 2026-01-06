@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
+using AuxiliumAPI.Common.DataStructures;
 using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.EntityModels;
 using AuxiliumAPI.Common.Services.Interfaces;
@@ -96,7 +97,7 @@ public class CaseController : LoggedInControllerBase
                 Messages = new List<string>(),
                 Todos = new Dictionary<string, object>(),
                 Timeline = new Dictionary<string, object>(),
-                AdditionalProperties = new Dictionary<string, object>(),
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
                 Referrer = null,
             };
 
@@ -582,7 +583,6 @@ public class CaseController : LoggedInControllerBase
                     }
                 ) ?? new Dictionary<string, object>(),
 
-            // CORRECTED: Map additional properties from simple entities
             AdditionalProperties = caseEntity.AdditionalProperties?
                 .ToDictionary(
                     p => p.Name,  // Use Name as key
