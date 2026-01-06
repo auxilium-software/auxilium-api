@@ -3,28 +3,33 @@
     public class CaseTimelineItemModel
     {
         /// <summary>
-        /// The unique identifier for the additional property.
+        /// The unique identifier for the timeline item.
         /// </summary>
         public Guid Id { get; set; }
         /// <summary>
-        /// The timestamp when the additional property was created.
+        /// The unique identifier for the case associated with this timeline item.
+        /// </summary>
+        public Guid CaseId { get; set; }
+        /// <summary>
+        /// The timestamp when the timeline item was created.
         /// </summary>
         public DateTime CreatedAt { get; set; }
         /// <summary>
-        /// The unique identifier of the user who created the additional property.
+        /// The unique identifier of the user who created the timeline item.
         /// </summary>
         public Guid CreatedBy { get; set; }
         /// <summary>
-        /// The timestamp when the additional property was last updated.
+        /// The timestamp when the timeline item was last updated.
         /// </summary>
         public DateTime LastUpdatedAt { get; set; }
         /// <summary>
-        /// The unique identifier of the user who last updated the additional property.
+        /// The unique identifier of the user who last updated the timeline item.
         /// </summary>
         public Guid LastUpdatedBy { get; set; }
 
 
 
+        public CaseModel Case { get; set; }
         public UserModel CreatedByUser { get; set; }
         public UserModel LastUpdatedByUser { get; set; }
     }
