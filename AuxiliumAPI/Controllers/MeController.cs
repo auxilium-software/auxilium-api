@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
+using AuxiliumAPI.Common.DataStructures;
 using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
@@ -54,7 +55,23 @@ public class MeController : LoggedInControllerBase
             }
 
             // get additional properties
-            var additionalProperties = await _userDocService.GetAdditionalPropertiesAsync(user.Id);
+            var additionalProperties = userDoc.AdditionalProperties?
+                .ToDictionary(
+                    p => p.Name,
+                    p => new AdditionalPropertySubStructure
+                    {
+                        Id = p.Id,
+                        CreatedAt = p.CreatedAt,
+                        CreatedBy = p.CreatedBy,
+                        UpdatedAt = p.LastUpdatedAt,
+                        LastUpdatedBy = p.LastUpdatedBy,
+                        OriginalName = p.Name,
+                        PrettyName = p.Name,
+                        UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                        Content = p.Content,
+                        ContentType = p.ContentType
+                    }
+                ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
 
             // build response
             var response = new UserResponseModel

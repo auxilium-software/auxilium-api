@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
+using AuxiliumAPI.Common.DataStructures;
 using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
@@ -97,13 +98,20 @@ public class UserController : LoggedInControllerBase
                     var additionalProperties = userDoc.AdditionalProperties?
                         .ToDictionary(
                             p => p.Name,
-                            p => (object)new
+                            p => new AdditionalPropertySubStructure
                             {
-                                id = p.Id,
-                                content = p.Content,
-                                contentType = p.ContentType
+                                Id = p.Id,
+                                CreatedAt = p.CreatedAt,
+                                CreatedBy = p.CreatedBy,
+                                UpdatedAt = p.LastUpdatedAt,
+                                LastUpdatedBy = p.LastUpdatedBy,
+                                OriginalName = p.Name,
+                                PrettyName = p.Name,
+                                UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                                Content = p.Content,
+                                ContentType = p.ContentType
                             }
-                        ) ?? new Dictionary<string, object>();
+                        ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
 
                     userResponses.Add(new UserResponseModel
                     {
@@ -146,7 +154,7 @@ public class UserController : LoggedInControllerBase
                         Gender = "[REDACTED]",
                         DateOfBirth = null,
 
-                        AdditionalProperties = new Dictionary<string, object>(),
+                        AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
                         Files = new List<string>(),
 
                         HowDidYouFindOutAboutOurService = "[REDACTED]",
@@ -209,13 +217,20 @@ public class UserController : LoggedInControllerBase
                 var additionalProperties = userDoc.AdditionalProperties?
                     .ToDictionary(
                         p => p.Name,
-                        p => (object)new
+                        p => new AdditionalPropertySubStructure
                         {
-                            id = p.Id,
-                            content = p.Content,
-                            contentType = p.ContentType
+                            Id = p.Id,
+                            CreatedAt = p.CreatedAt,
+                            CreatedBy = p.CreatedBy,
+                            UpdatedAt = p.LastUpdatedAt,
+                            LastUpdatedBy = p.LastUpdatedBy,
+                            OriginalName = p.Name,
+                            PrettyName = p.Name,
+                            UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                            Content = p.Content,
+                            ContentType = p.ContentType
                         }
-                    ) ?? new Dictionary<string, object>();
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
 
                 response = new UserResponseModel
                 {
@@ -258,7 +273,7 @@ public class UserController : LoggedInControllerBase
                     Gender = "[REDACTED]",
                     DateOfBirth = null,
 
-                    AdditionalProperties = new Dictionary<string, object>(),
+                    AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
                     Files = new List<string>(),
 
                     HowDidYouFindOutAboutOurService = "[REDACTED]",

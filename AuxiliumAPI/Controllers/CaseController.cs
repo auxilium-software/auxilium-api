@@ -268,7 +268,10 @@ public class CaseController : LoggedInControllerBase
             // apply filters
             if (!string.IsNullOrEmpty(status))
             {
-                query = query.Where(c => c.Status.ToLower() == status.ToLower());
+                if (Enum.TryParse<CaseStatusEnum>(status, ignoreCase: true, out var statusEnum))
+                {
+                    query = query.Where(c => c.Status == statusEnum);
+                }
             }
 
             if (!string.IsNullOrEmpty(search))
@@ -585,15 +588,22 @@ public class CaseController : LoggedInControllerBase
 
             AdditionalProperties = caseEntity.AdditionalProperties?
                 .ToDictionary(
-                    p => p.Name,  // Use Name as key
-                    p => (object)new
+                    p => p.Name,
+                    p => new AdditionalPropertySubStructure
                     {
-                        id = p.Id,
-                        content = p.Content,
-                        contentType = p.ContentType
+                        Id = p.Id,
+                        CreatedAt = p.CreatedAt,
+                        CreatedBy = p.CreatedBy,
+                        UpdatedAt = p.LastUpdatedAt,
+                        LastUpdatedBy = p.LastUpdatedBy,
+                        OriginalName = p.Name,
+                        PrettyName = p.Name,
+                        UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                        Content = p.Content,
+                        ContentType = p.ContentType
                     }
-                ) ?? new Dictionary<string, object>()
-        };
+                ) ?? new Dictionary<string, AdditionalPropertySubStructure>(),
+            };
     }
     #endregion
 }
