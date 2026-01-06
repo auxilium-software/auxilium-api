@@ -17,11 +17,11 @@
         /// <summary>
         /// The timestamp when the additional property was last updated.
         /// </summary>
-        public required DateTime LastUpdatedAt { get; set; }
+        public DateTime? LastUpdatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who last updated the additional property.
         /// </summary>
-        public required Guid LastUpdatedBy { get; set; }
+        public Guid? LastUpdatedBy { get; set; }
 
 
 

@@ -19,11 +19,11 @@ namespace AuxiliumAPI.Common.EntityModels
         /// <summary>
         /// The timestamp when the additional property was last updated.
         /// </summary>
-        public required DateTime LastUpdatedAt { get; set; }
+        public DateTime? LastUpdatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who last updated the additional property.
         /// </summary>
-        public required Guid LastUpdatedBy { get; set; }
+        public Guid? LastUpdatedBy { get; set; }
 
 
 
@@ -65,15 +65,15 @@ namespace AuxiliumAPI.Common.EntityModels
         /// <summary>
         /// The timestamp when the todo item was completed.
         /// </summary>
-        public required DateTime? CompletedAt { get; set; }
+        public DateTime? CompletedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who completed the todo item.
         /// </summary>
-        public required Guid? CompletedBy { get; set; }
+        public Guid? CompletedBy { get; set; }
         /// <summary>
         /// An optional note added upon completion of the todo item.
         /// </summary>
-        public required string? CompletionNote { get; set; }
+        public string? CompletionNote { get; set; }
 
 
 

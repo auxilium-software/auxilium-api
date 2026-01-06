@@ -79,6 +79,7 @@ public class AuthenticationController : ControllerBase
             // generate UUIDs
             var userId = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
             var caseId = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
+            var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectType.CaseClient);
 
             // hash password
             var passwordHash = _passwordService.HashPassword(request.RawPassword);
@@ -123,6 +124,9 @@ public class AuthenticationController : ControllerBase
             // add the user as a client of the case
             var caseClient = new CaseClientModel
             {
+                Id = caseClientId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
                 CaseId = caseId,
                 UserId = userId
             };
@@ -212,11 +216,14 @@ public class AuthenticationController : ControllerBase
             _db.RefreshTokens.RemoveRange(expiredTokens);
 
             // store the new refresh token
+            var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
             var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
             var expiresAt = DateTime.UtcNow.AddDays(_configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
 
             var refreshTokenEntity = new RefreshTokenModel
             {
+                Id = refreshTokenId,
+                CreatedAt = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 TokenHash = tokenHash,
                 ExpiresAt = expiresAt
