@@ -36,6 +36,12 @@ public class AuxiliumDbContext : DbContext
             s => Guid.Parse(s)
         );
 
+    private static readonly ValueConverter<Guid?, string?> NullableGuidToStringConverter =
+        new ValueConverter<Guid?, string?>(
+            g => g.HasValue ? g.Value.ToString() : null,
+            s => string.IsNullOrEmpty(s) ? null : Guid.Parse(s)
+        );
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,8 +59,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.EmailAddress)    .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.PasswordHash)    .HasColumnType("text")                                                                                                          .IsRequired();
@@ -79,8 +85,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.Title)           .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
@@ -155,8 +161,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
@@ -188,8 +194,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
             
             entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
@@ -221,8 +227,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.SenderId)        .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
@@ -269,8 +275,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Summary)         .HasColumnType("text")                                                                                                          .IsRequired();
@@ -305,8 +311,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
 
 
@@ -326,8 +332,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.CaseId)          .HasColumnType("char(36)");
             entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
@@ -355,8 +361,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
-            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(GuidToStringConverter)                   .IsRequired();
+            entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime");
+            entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(NullableGuidToStringConverter);
 
             entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s));
             entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
