@@ -98,6 +98,14 @@ public class AuxiliumDbContext : DbContext
                   .WithOne(f => f.Case)
                   .HasForeignKey(f => f.CaseId)
                   .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Todos)
+                  .WithOne(t => t.Case)
+                  .HasForeignKey(t => t.CaseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Timeline)
+                  .WithOne()
+                  .HasForeignKey("CaseId")
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // case_workers
@@ -288,10 +296,11 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Summary)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.Status)          .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.Priority)        .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.Status)          .HasColumnType("text")                                                  .HasConversion<string>()                                .IsRequired();
+            entity.Property(e => e.Priority)        .HasColumnType("text")                                                  .HasConversion<string>()                                .IsRequired();
             entity.Property(e => e.DueDate)         .HasColumnType("datetime");
             entity.Property(e => e.AssignedTo)      .HasColumnType("char(36)");
             entity.Property(e => e.Reminder)        .HasColumnType("datetime");
@@ -328,6 +337,7 @@ public class AuxiliumDbContext : DbContext
             entity.HasKey(e => e.Id);
             
             entity.Property(e => e.Id)              .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.CreatedAt)       .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
@@ -340,6 +350,10 @@ public class AuxiliumDbContext : DbContext
             entity.HasOne(e => e.LastUpdatedByUser)
                   .WithMany()
                   .HasForeignKey(e => e.LastUpdatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Case)
+                  .WithMany(c => c.Timeline)
+                  .HasForeignKey(e => e.CaseId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
