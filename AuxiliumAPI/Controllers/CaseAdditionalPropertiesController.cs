@@ -1,7 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.AdditionalProperty;
 using Microsoft.AspNetCore.Mvc;
@@ -9,18 +8,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumAPI.Controllers;
 
 [ApiController]
-[Route("api/v3/cases/{caseId}/additional_properties")]
+[Route("/api/v3/cases/{caseId}/additional_properties")]
 [Tags("Cases")]
-public class CasePropertiesController : LoggedInControllerBase
+public class CaseAdditionalPropertiesController : LoggedInControllerBase
 {
     private readonly ICaseDocumentService _caseDocService;
-    private readonly ILogger<CasePropertiesController> _logger;
+    private readonly ILogger<CaseAdditionalPropertiesController> _logger;
 
-    public CasePropertiesController(
+    public CaseAdditionalPropertiesController(
         ICaseDocumentService caseDocService,
-        ILogger<CasePropertiesController> logger,
-        IMariaDbService mariaDb)
-        : base(mariaDb, logger)
+        AuxiliumDbContext db,
+        ILogger<CaseAdditionalPropertiesController> logger)
+        : base(db, logger)
     {
         _caseDocService = caseDocService;
         _logger = logger;
@@ -35,7 +34,6 @@ public class CasePropertiesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> CreateProperty(
         string caseId,
-        string propertyName,
         [FromBody] AdditionalPropertyCreationRequestModel request)
     {
         try
@@ -43,21 +41,20 @@ public class CasePropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check to make sure that the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // grab the case doc
-            var caseDoc = await _caseDocService.GetDocumentAsync(Guid.Parse(caseId));
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only allow admins or case workers to create additional properties
-            if (!user!.is_admin && !caseDoc.Workers.Contains(user.id))
+            var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
+            if (!user!.IsAdmin && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -65,49 +62,30 @@ public class CasePropertiesController : LoggedInControllerBase
                 });
             }
 
-            // normalise property names
-            var (storageKey, autoDisplayName) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
-            var finalDisplayName = request.DisplayName ?? autoDisplayName;
-
-            // gran existing additional properties
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(Guid.Parse(caseId));
-
-            // check if the property already exists
-            if (properties.ContainsKey(storageKey))
-            {
-                return Conflict(new FailureResponseModel
-                {
-                    Detail = "Property already exists. Use PATCH to update."
-                });
-            }
-
-            // create the substructure to save into the case document
-            var propVal = new AdditionalPropertySubStructure()
-            {
-                Content = request.Content ?? string.Empty,
-                ContentType = request.ContentType ?? "Text",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = user.id,
-                Id = Guid.NewGuid(),
-                OriginalName = propertyName,
-                PrettyName = finalDisplayName,
-                UrlSlug = PropertyNameHandlingUtilities.NormalizeKey(finalDisplayName)
-            };
-
-            // save the additional property
-            await _caseDocService.SaveAdditionalPropertyAsync(Guid.Parse(caseId), storageKey, propVal);
-
-            _logger.LogInformation(
-                "Created property {PropertyName} for case {CaseId} by user {UserId}",
-                storageKey, caseId, user.id
+            // save the additional property (the service will throw exception if the given name already exists)
+            await _caseDocService.SaveAdditionalPropertyAsync(
+                caseGuid,
+                request.Name,
+                request.Content
             );
 
-            // return
+            _logger.LogInformation(
+                "Created property {AdditionalPropertyName} for case {CaseId} by user {UserId}",
+                request.Name, caseId, user.Id
+            );
+
             return StatusCode(201, new SuccessResponseModel());
+        }
+        catch (Exception ex) when (ex.Message.Contains("already exists"))
+        {
+            return Conflict(new FailureResponseModel
+            {
+                Detail = "Property already exists. Use PATCH to update."
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create property {PropertyName} for case {CaseId}", propertyName, caseId);
+            _logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for case {CaseId}", request.Name, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to create property"
@@ -115,7 +93,7 @@ public class CasePropertiesController : LoggedInControllerBase
         }
     }
 
-    [HttpPatch("{propertyName}")]
+    [HttpPatch("{additionalPropertyId}")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -123,7 +101,7 @@ public class CasePropertiesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UpdateProperty(
         string caseId,
-        string propertyName,
+        string additionalPropertyId,
         [FromBody] AdditionalPropertyCreationRequestModel request)
     {
         try
@@ -131,21 +109,25 @@ public class CasePropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // make sure that the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // grab the case doc
-            var caseDoc = await _caseDocService.GetDocumentAsync(Guid.Parse(caseId));
+            if (!Guid.TryParse(additionalPropertyId, out var additionalPropertyIdGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid additional property ID" });
+            }
+
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only allow admins or case workers to modify additional properties
-            if (!user!.is_admin && !caseDoc.Workers.Contains(user.id))
+            var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
+            if (!user!.IsAdmin && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -153,14 +135,11 @@ public class CasePropertiesController : LoggedInControllerBase
                 });
             }
 
-            // normalise property names
-            var (storageKey, autoDisplayName) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
-
             // grab the existing additional properties
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(Guid.Parse(caseId));
+            var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseGuid);
+            var existingProp = properties.FirstOrDefault(p => p.Id == additionalPropertyIdGuid);
 
-            // check if the additional property actually exists
-            if (!properties.ContainsKey(storageKey))
+            if (existingProp == null)
             {
                 return NotFound(new FailureResponseModel
                 {
@@ -168,40 +147,32 @@ public class CasePropertiesController : LoggedInControllerBase
                 });
             }
 
-            // update the additional property
-            var finalDisplayName = request.DisplayName ?? autoDisplayName;
+            // bit of a bodge to update EF directly
+            //TODO: don't do this
+            existingProp.Content = request.Content ?? string.Empty;
+            existingProp.LastUpdatedAt = DateTime.UtcNow;
+            existingProp.LastUpdatedBy = user!.Id;
 
-            // create the substructure to save into the user document
-            var propVal = new AdditionalPropertySubStructure()
+            await Db.SaveChangesAsync();
+
+            // update the LastUpdatedAt timestamp for the case
+            var caseEntity = await Db.Cases.FindAsync(caseGuid);
+            if (caseEntity != null)
             {
-                Content = request.Content ?? string.Empty,
-                ContentType = request.ContentType ?? "Text",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = user.id,
-                Id = Guid.NewGuid(),
-                OriginalName = propertyName,
-                PrettyName = finalDisplayName,
-                UrlSlug = PropertyNameHandlingUtilities.NormalizeKey(finalDisplayName)
-            };
-
-            // save the additional property
-            await _caseDocService.SaveAdditionalPropertyAsync(
-                Guid.Parse(caseId),
-                storageKey,
-                propVal
-            );
+                caseEntity.LastUpdatedAt = DateTime.UtcNow;
+                await Db.SaveChangesAsync();
+            }
 
             _logger.LogInformation(
-                "Updated property {PropertyName} for case {CaseId} by user {UserId}",
-                storageKey, caseId, user.id
+                "Updated property {AdditionalPropertyName} for case {CaseId} by user {UserId}",
+                existingProp.Name, caseId, user.Id
             );
 
-            // return
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update property {PropertyName} for case {CaseId}", propertyName, caseId);
+            _logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for case {CaseId}", additionalPropertyId, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to update property"
@@ -209,7 +180,7 @@ public class CasePropertiesController : LoggedInControllerBase
         }
     }
 
-    [HttpDelete("{propertyName}")]
+    [HttpDelete("{additionalPropertyId}")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -217,7 +188,7 @@ public class CasePropertiesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> DeleteProperty(
         string caseId,
-        string propertyName
+        string additionalPropertyId
         )
     {
         try
@@ -225,21 +196,25 @@ public class CasePropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check to make sure that the given user id is a valid uuid
-            if (!Guid.TryParse(caseId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // grab the case doc
-            var caseDoc = await _caseDocService.GetDocumentAsync(Guid.Parse(caseId));
+            if (!Guid.TryParse(additionalPropertyId, out var additionalPropertyIdGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid additional property ID" });
+            }
+
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only allow admins or case workers to delete additional properties
-            if (!user!.is_admin && !caseDoc.Workers.Contains(user.id))
+            var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
+            if (!user!.IsAdmin && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -247,14 +222,11 @@ public class CasePropertiesController : LoggedInControllerBase
                 });
             }
 
-            // grab the key for the given additional property name
-            var (storageKey, _) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
+            // get existing additional properties
+            var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseGuid);
+            var existingProp = properties.FirstOrDefault(p => p.Id == additionalPropertyIdGuid);
 
-            // grab all the existing additional properties for this user
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(Guid.Parse(caseId));
-
-            // make sure the additional property actually exists
-            if (!properties.ContainsKey(storageKey))
+            if (existingProp == null)
             {
                 return NotFound(new FailureResponseModel
                 {
@@ -262,20 +234,19 @@ public class CasePropertiesController : LoggedInControllerBase
                 });
             }
 
-            // delete the additional property
-            await _caseDocService.DeleteAdditionalPropertyAsync(Guid.Parse(caseId), storageKey);
+            // delete the additional property by its id
+            await _caseDocService.DeleteAdditionalPropertyAsync(caseGuid, existingProp.Id);
 
             _logger.LogInformation(
-                "Deleted property {PropertyName} from case {CaseId} by user {UserId}",
-                storageKey, caseId, user.id
+                "Deleted property {AdditionalPropertyName} from case {CaseId} by user {UserId}",
+                existingProp.Name, caseId, user.Id
             );
 
-            // return
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete property {PropertyName} from case {CaseId}", propertyName, caseId);
+            _logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from case {CaseId}", additionalPropertyId, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to delete property"

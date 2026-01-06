@@ -1,19 +1,12 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
-using AuxiliumAPI.Common.Enumerators;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.File;
 using AuxiliumAPI.Models.Me;
 using AuxiliumAPI.Models.User;
-using AuxiliumAPI.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Win32;
-using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -23,25 +16,20 @@ namespace AuxiliumAPI.Controllers;
 [Authorize]
 public class MeController : LoggedInControllerBase
 {
-    private readonly IConfiguration Configuration;
-    private readonly ILogger<MeController> _logger;
-    private readonly ICouchDbService _couchDb;
-    private readonly IMariaDbService _mariaDb;
+    private readonly IUserDocumentService _userDocService;
     private readonly IPasswordService _passwordService;
+    private readonly ILogger<MeController> _logger;
 
     public MeController(
-        IConfiguration configuration,
-        ILogger<MeController> logger,
-        ICouchDbService couchDb,
-        IMariaDbService mariaDb,
-        IPasswordService passwordService
-        ) : base(mariaDb, logger)
+        IUserDocumentService userDocService,
+        IPasswordService passwordService,
+        AuxiliumDbContext db,
+        ILogger<MeController> logger)
+        : base(db, logger)
     {
-        this.Configuration = configuration;
-        this._logger = logger;
-        this._couchDb = couchDb;
-        this._mariaDb = mariaDb;
-        this._passwordService = passwordService;
+        _userDocService = userDocService;
+        _passwordService = passwordService;
+        _logger = logger;
     }
 
     [HttpGet("")]
@@ -52,59 +40,114 @@ public class MeController : LoggedInControllerBase
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // get user document from couchdb
-            var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Users"]!,
-                user.id
-            );
+            // get user with additional properties
+            var userDoc = await Db.Users
+                .Include(u => u.AdditionalProperties)
+                .FirstOrDefaultAsync(u => u.Id == user!.Id);
 
-            // if the user doc is not found, return not found
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel() { Detail = "User profile not found" });
+                return NotFound(new FailureResponseModel { Detail = "User profile not found" });
             }
 
-            // build response with both mariadb and couchdb data
+            // get additional properties
+            var additionalProperties = await _userDocService.GetAdditionalPropertiesAsync(user.Id);
+
+            // build response
             var response = new UserResponseModel
             {
-                ID = user.id,
+                ID = userDoc.Id,
                 CreatedAt = userDoc.CreatedAt,
                 CreatedBy = userDoc.CreatedBy,
-                LastUpdatedAt = userDoc.CreatedAt,
+                LastUpdatedAt = userDoc.LastUpdatedAt,
                 LastUpdatedBy = userDoc.LastUpdatedBy,
 
-                AdditionalProperties = userDoc.AdditionalProperties,
-                Files = userDoc.Files,
+                EmailAddress = userDoc.EmailAddress,
+                IsAdmin = userDoc.IsAdmin,
+                IsCaseWorker = userDoc.IsCaseWorker,
 
-                EmailAddress = user.email_address,
-                IsAdmin = user.is_admin,
-                FullName = userDoc.FullName,
-                FullAddress = userDoc.FullAddress,
-                TelephoneNumber = userDoc.TelephoneNumber,
-                Gender = userDoc.Gender,
+                FullName = userDoc.FullName ?? string.Empty,
+                FullAddress = userDoc.FullAddress ?? string.Empty,
+                TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
+                Gender = userDoc.Gender ?? string.Empty,
                 DateOfBirth = userDoc.DateOfBirth,
-                HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
+                HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
+
+                AdditionalProperties = additionalProperties,
+                Files = new List<string>() // Files list from file service if needed
             };
 
             // return
-            return Ok(
-                response
-            );
+            return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch user details for current user");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel() { Detail = $"Failed to fetch user details: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to fetch user details"
+            });
         }
     }
 
+    [HttpPatch("")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> UpdateMyProfile(
+        [FromBody] ProfileUpdateRequestModel request)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
+            if (userDoc == null)
+            {
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
+            }
+
+            // update fields if provided
+            if (request.FullName != null)
+                userDoc.FullName = request.FullName;
+
+            if (request.FullAddress != null)
+                userDoc.FullAddress = request.FullAddress;
+
+            if (request.TelephoneNumber != null)
+                userDoc.TelephoneNumber = request.TelephoneNumber;
+
+            if (request.Gender != null)
+                userDoc.Gender = request.Gender;
+
+            if (request.DateOfBirth.HasValue)
+                userDoc.DateOfBirth = request.DateOfBirth;
+
+            if (request.HowDidYouFindOutAboutOurService != null)
+                userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
+
+            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.LastUpdatedBy = user.Id;
+
+            await Db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} updated their profile", user.Id);
+
+            return Ok(new SuccessResponseModel());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user profile");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to update profile"
+            });
+        }
+    }
 
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
@@ -114,56 +157,56 @@ public class MeController : LoggedInControllerBase
     public async Task<ActionResult<SuccessResponseModel>> ChangePassword(
         [FromBody] PasswordUpdateRequestModel request)
     {
-        await using var transaction = await _mariaDb.BeginTransactionAsync();
-
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check if new password value is same as old password value
+            // check if the new password is same as the old password
             if (request.CurrentPassword == request.NewPassword)
             {
-                return Conflict(new FailureResponseModel() { Detail = "New password may not be the same as the old password" });
+                return Conflict(new FailureResponseModel
+                {
+                    Detail = "New password may not be the same as the old password"
+                });
+            }
+
+            // grab the user from database
+            var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
+            if (userDoc == null)
+            {
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
 
             // verify current password
-            if (!_passwordService.VerifyPassword(request.CurrentPassword, user.password_hash))
+            if (!_passwordService.VerifyPassword(request.CurrentPassword, userDoc.PasswordHash))
             {
-                return BadRequest(new FailureResponseModel() { Detail = "Current password is incorrect" });
+                return BadRequest(new FailureResponseModel
+                {
+                    Detail = "Current password is incorrect"
+                });
             }
 
             // hash new password
             var newPasswordHash = _passwordService.HashPassword(request.NewPassword);
 
-            // store the new password hash in the database
-            await _mariaDb.ExecuteAsync(
-                """
-                UPDATE users
-                SET password_hash = @newPasswordHash
-                WHERE id = @userId
-                """,
-                new
-                {
-                    newPasswordHash,
-                    user.id
-                },
-                transaction
-            );
-            await transaction.CommitAsync();
+            // update password
+            userDoc.PasswordHash = newPasswordHash;
+            userDoc.LastUpdatedAt = DateTime.UtcNow;
 
-            // return
+            await Db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} changed their password", user.Id);
+
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
             _logger.LogError(ex, "Failed to change password");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel() { Detail = $"Error changing password: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Error changing password"
+            });
         }
     }
 }
