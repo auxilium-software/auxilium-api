@@ -162,7 +162,7 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
 
-            entity.Property(e => e.CaseId)          .HasColumnType("text")                                                                                                          .IsRequired();
+            entity.Property(e => e.CaseId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
@@ -196,8 +196,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.CreatedBy)       .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.LastUpdatedAt)   .HasColumnType("datetime")      .HasDefaultValueSql("UTC_TIMESTAMP()")                                                          .IsRequired();
             entity.Property(e => e.LastUpdatedBy)   .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
-
-            entity.Property(e => e.UserId)          .HasColumnType("text")                                                                                                          .IsRequired();
+            
+            entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s))   .IsRequired();
             entity.Property(e => e.Name)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Content)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
@@ -292,12 +292,12 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Status)          .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Priority)        .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.DueDate)         .HasColumnType("datetime")      .HasDefaultValue(false);
-            entity.Property(e => e.AssignedTo)      .HasColumnType("char(36)")      .HasDefaultValue(false);
-            entity.Property(e => e.Reminder)        .HasColumnType("datetime")      .HasDefaultValue(false);
-            entity.Property(e => e.CompletedAt)     .HasColumnType("datetime")      .HasDefaultValue(false);
-            entity.Property(e => e.CompletedBy)     .HasColumnType("char(36)")      .HasDefaultValue(false);
-            entity.Property(e => e.CompletionNote)  .HasColumnType("text")          .HasDefaultValue(false);
+            entity.Property(e => e.DueDate)         .HasColumnType("datetime");
+            entity.Property(e => e.AssignedTo)      .HasColumnType("char(36)");
+            entity.Property(e => e.Reminder)        .HasColumnType("datetime");
+            entity.Property(e => e.CompletedAt)     .HasColumnType("datetime");
+            entity.Property(e => e.CompletedBy)     .HasColumnType("char(36)");
+            entity.Property(e => e.CompletionNote)  .HasColumnType("text");
 
             entity.HasOne(e => e.CreatedByUser)
                   .WithMany()
@@ -392,7 +392,7 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.UserId)          .HasColumnType("char(36)")                                              .HasConversion(g => g.ToString(), s => Guid.Parse(s));
             entity.Property(e => e.Filename)        .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.ContentType)     .HasColumnType("text")                                                                                                          .IsRequired();
-            entity.Property(e => e.Size)            .HasColumnType("long")                                                                                                          .IsRequired();
+            entity.Property(e => e.Size)            .HasColumnType("bigint")                                                                                                        .IsRequired();
             entity.Property(e => e.Hash)            .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.LfsPath)         .HasColumnType("text")                                                                                                          .IsRequired();
             entity.Property(e => e.Description)     .HasColumnType("text")                                                                                                          .IsRequired();
