@@ -520,8 +520,8 @@ public class CaseDocumentService : ICaseDocumentService
             var hasAccess = await _db.Cases
                 .Where(c => c.Id == caseId)
                 .AnyAsync(c =>
-                    c.Clients.Any(cl => cl.UserId == currentUser.Id) ||
-                    c.Workers.Any(w => w.UserId == currentUser.Id)
+                    c.Clients!.Any(cl => cl.UserId == currentUser.Id) ||
+                    c.Workers!.Any(w => w.UserId == currentUser.Id)
                 );
 
             return hasAccess;

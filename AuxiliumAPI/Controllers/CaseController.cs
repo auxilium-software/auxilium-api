@@ -135,7 +135,7 @@ public class CaseController : LoggedInControllerBase
                 .Include(c => c.Messages)
                 .Include(c => c.Todos)
                 .Include(c => c.AdditionalProperties)
-                .Where(c => c.Clients.Any(cl => cl.UserId == user!.Id));
+                .Where(c => c.Clients!.Any(cl => cl.UserId == user!.Id));
 
             query = ApplySorting(query, sortBy, sortOrder);
 
@@ -189,7 +189,7 @@ public class CaseController : LoggedInControllerBase
                 .Include(c => c.Messages)
                 .Include(c => c.Todos)
                 .Include(c => c.AdditionalProperties)
-                .Where(c => c.Workers.Any(w => w.UserId == user!.Id));
+                .Where(c => c.Workers!.Any(w => w.UserId == user!.Id));
 
             query = ApplySorting(query, sortBy, sortOrder);
 
@@ -261,8 +261,8 @@ public class CaseController : LoggedInControllerBase
                     .Include(c => c.Messages)
                     .Include(c => c.Todos)
                     .Include(c => c.AdditionalProperties)
-                    .Where(c => c.Clients.Any(cl => cl.UserId == user.Id) ||
-                               c.Workers.Any(w => w.UserId == user.Id));
+                    .Where(c => c.Clients!.Any(cl => cl.UserId == user.Id) ||
+                               c.Workers!.Any(w => w.UserId == user.Id));
             }
 
             // apply filters

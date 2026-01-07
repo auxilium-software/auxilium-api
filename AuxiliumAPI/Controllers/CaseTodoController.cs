@@ -151,7 +151,7 @@ public class CaseTodoController : LoggedInControllerBase
                     caseGuid,
                     todoId,
                     request.Status.Value,
-                    request.Status == TodoStatusEnum.Completed ? user.Id : null,
+                    request.Status == TodoStatusEnum.Completed ? user!.Id : null,
                     request.CompletionNote
                 );
             }
