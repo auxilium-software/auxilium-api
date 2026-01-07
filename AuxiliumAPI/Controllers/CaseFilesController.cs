@@ -72,7 +72,7 @@ public class CaseFilesController : LoggedInControllerBase
                 fileContent: fileBytes,
                 filename: request.File.FileName,
                 contentType: request.File.ContentType ?? "application/octet-stream",
-                uploadedBy: user.Id,
+                uploadedBy: user!.Id,
                 caseId: caseGuid,
                 description: request.Description
             );

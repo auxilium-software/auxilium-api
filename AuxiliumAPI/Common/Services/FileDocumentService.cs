@@ -322,16 +322,16 @@ public class FileDocumentService : IFileDocumentService
         {
             var file = await _db.CaseFiles
                 .Include(f => f.Case)
-                    .ThenInclude(c => c.Workers)
+                    .ThenInclude(c => c!.Workers)
                 .Include(f => f.Case)
-                    .ThenInclude(c => c.Clients)
+                    .ThenInclude(c => c!.Clients)
                 .FirstOrDefaultAsync(f => f.Id == fileId);
 
             if (file == null) return false;
             if (currentUser.IsAdmin) return true;
 
-            return file.Case.Workers.Any(w => w.UserId == currentUser.Id) ||
-                   file.Case.Clients.Any(c => c.UserId == currentUser.Id);
+            return (file?.Case?.Workers ?? []).Any(w => w.UserId == currentUser.Id) ||
+                   (file?.Case?.Clients ?? []).Any(c => c.UserId == currentUser.Id);
         }
         catch (Exception ex)
         {

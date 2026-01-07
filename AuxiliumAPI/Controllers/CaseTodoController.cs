@@ -62,7 +62,7 @@ public class CaseTodoController : LoggedInControllerBase
                 summary: request.Summary,
                 description: request.Description,
                 priority: request.Priority,
-                createdBy: user.Id,
+                createdBy: user!.Id,
                 dueDate: request.DueDate,
                 assignedTo: request.AssignedTo,
                 reminder: request.Reminder

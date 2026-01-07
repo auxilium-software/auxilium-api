@@ -62,7 +62,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 caseId: caseGuid,
                 subject: request.Subject,
                 content: request.Content,
-                senderId: user.Id,
+                senderId: user!.Id,
                 isUrgent: request.IsUrgent
             );
 
@@ -201,7 +201,7 @@ public class CaseMessagesController : LoggedInControllerBase
             }
 
             // Mark the message as read
-            await _messageService.MarkAsReadAsync(messageId, user.Id);
+            await _messageService.MarkAsReadAsync(messageId, user!.Id);
 
             // Get read-by details
             var readByDetails = await _messageService.GetReadByDetailsAsync(messageId);

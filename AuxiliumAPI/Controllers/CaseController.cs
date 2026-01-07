@@ -277,8 +277,8 @@ public class CaseController : LoggedInControllerBase
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(c =>
-                    c.Title.Contains(search) ||
-                    c.Description.Contains(search));
+                    (c.Title ?? "").Contains(search) ||
+                    (c.Description ?? "").Contains(search));
             }
 
             query = ApplySorting(query, sortBy, sortOrder);
@@ -390,8 +390,8 @@ public class CaseController : LoggedInControllerBase
 
             // check the permissions - workers and clients can upload
             var canUpload = user!.IsAdmin ||
-                          caseEntity.Workers.Any(w => w.UserId == user.Id) ||
-                          caseEntity.Clients.Any(c => c.UserId == user.Id);
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id) ||
+                          (caseEntity.Clients ?? []).Any(c => c.UserId == user.Id);
 
             if (!canUpload)
             {
@@ -465,7 +465,7 @@ public class CaseController : LoggedInControllerBase
 
             // only workers and admins can update cases
             var canUpdate = user!.IsAdmin ||
-                          caseEntity.Workers.Any(w => w.UserId == user.Id);
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
             if (!canUpdate)
             {
@@ -497,10 +497,10 @@ public class CaseController : LoggedInControllerBase
             _logger.LogInformation("Updated case {CaseId} by user {UserId}", caseId, user.Id);
 
             // reload relationships
-            await Db.Entry(caseEntity).Collection(c => c.Files).LoadAsync();
-            await Db.Entry(caseEntity).Collection(c => c.Messages).LoadAsync();
-            await Db.Entry(caseEntity).Collection(c => c.Todos).LoadAsync();
-            await Db.Entry(caseEntity).Collection(c => c.AdditionalProperties).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.Files!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.Messages!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.Todos!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.AdditionalProperties!).LoadAsync();
 
             var response = MapToResponseModel(caseEntity);
             return Ok(response);

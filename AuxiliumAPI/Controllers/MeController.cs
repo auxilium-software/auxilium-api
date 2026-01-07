@@ -150,7 +150,7 @@ public class MeController : LoggedInControllerBase
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
 
             userDoc.LastUpdatedAt = DateTime.UtcNow;
-            userDoc.LastUpdatedBy = user.Id;
+            userDoc.LastUpdatedBy = user!.Id;
 
             await Db.SaveChangesAsync();
 
@@ -216,7 +216,7 @@ public class MeController : LoggedInControllerBase
 
             await Db.SaveChangesAsync();
 
-            _logger.LogInformation("User {UserId} changed their password", user.Id);
+            _logger.LogInformation("User {UserId} changed their password", user!.Id);
 
             return Ok(new SuccessResponseModel());
         }

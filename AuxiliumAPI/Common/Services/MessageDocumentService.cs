@@ -236,9 +236,9 @@ public class MessageDocumentService : IMessageDocumentService
             // get message with case from the database
             var message = await _db.CaseMessages
                 .Include(m => m.Case)
-                    .ThenInclude(c => c.Workers)
+                    .ThenInclude(c => c!.Workers)
                 .Include(m => m.Case)
-                    .ThenInclude(c => c.Clients)
+                    .ThenInclude(c => c!.Clients)
                 .FirstOrDefaultAsync(m => m.Id == messageId);
 
             if (message == null) return false;
@@ -247,8 +247,8 @@ public class MessageDocumentService : IMessageDocumentService
             if (currentUser.IsAdmin) return true;
 
             // check if user is worker or client on the case
-            var hasAccess = message.Case.Workers.Any(w => w.UserId == currentUser.Id) ||
-                          message.Case.Clients.Any(c => c.UserId == currentUser.Id);
+            var hasAccess = (message.Case?.Workers ?? []).Any(w => w.UserId == currentUser.Id) ||
+                          (message.Case?.Clients ?? []).Any(c => c.UserId == currentUser.Id);
 
             return hasAccess;
         }

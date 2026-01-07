@@ -28,7 +28,7 @@ namespace AuxiliumAPI.Models.Case
         public required string Summary { get; init; }
 
         [JsonPropertyName("description")]
-        public string Description { get; init; }
+        public string? Description { get; init; }
 
         [Required]
         [JsonPropertyName("status")]
