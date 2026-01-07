@@ -1,12 +1,17 @@
 ﻿using AuxiliumAPI.Common.Services;
+﻿using AuxiliumAPI.Common.EF;
+using AuxiliumAPI.Common.Services;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Filters;
 using AuxiliumAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,24 +42,25 @@ builder.Services.AddEndpointsApiExplorer();
 
 
 
-builder.Services.AddSwaggerGen(swaggerGen =>
+builder.Services.AddSwaggerGen(options =>
 {
-    swaggerGen.SwaggerDoc("v3", new OpenApiInfo
+    options.SwaggerDoc("v3", new OpenApiInfo
     {
         Title = "Auxilium API",
         Version = "V3"
     });
 
-    swaggerGen.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
         Name = "Authorization",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme",
     });
 
-    swaggerGen.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -69,7 +75,7 @@ builder.Services.AddSwaggerGen(swaggerGen =>
         }
     });
 
-    swaggerGen.OperationFilter<FileUploadOperationFilter>();
+    options.OperationFilter<FileUploadOperationFilter>();
 });
 
 
