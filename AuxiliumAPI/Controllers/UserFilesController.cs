@@ -54,7 +54,7 @@ public class UserFilesController : LoggedInControllerBase
             }
 
             // check user access
-            if (!await _userDocService.CheckUserAccessAsync(userGuid, user!))
+            if (!_userDocService.CheckUserAccess(userGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -119,7 +119,7 @@ public class UserFilesController : LoggedInControllerBase
                 return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
             }
 
-            if (!await _userDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!_userDocService.CheckUserAccess(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -176,7 +176,7 @@ public class UserFilesController : LoggedInControllerBase
                 return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
             }
 
-            if (!await _userDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!_userDocService.CheckUserAccess(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {

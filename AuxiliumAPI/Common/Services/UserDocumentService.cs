@@ -159,7 +159,7 @@ public class UserDocumentService : IUserDocumentService
     }
     #endregion
     #region ========================= PERMISSION CHECKS =========================
-    public async Task<bool> CheckUserAccessAsync(Guid userId, UserModel currentUser)
+    public bool CheckUserAccess(Guid userId, UserModel currentUser)
     {
         try
         {

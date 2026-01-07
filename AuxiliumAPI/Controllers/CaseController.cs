@@ -341,8 +341,8 @@ public class CaseController : LoggedInControllerBase
 
             // check access -> is admin OR client OR worker
             var hasAccess = user!.IsAdmin ||
-                          caseEntity.Clients.Any(cl => cl.UserId == user.Id) ||
-                          caseEntity.Workers.Any(w => w.UserId == user.Id);
+                          (caseEntity.Clients ?? []).Any(cl => cl.UserId == user.Id) ||
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
             if (!hasAccess)
             {
@@ -496,7 +496,7 @@ public class CaseController : LoggedInControllerBase
 
             _logger.LogInformation("Updated case {CaseId} by user {UserId}", caseId, user.Id);
 
-            // Reload relationships
+            // reload relationships
             await Db.Entry(caseEntity).Collection(c => c.Files).LoadAsync();
             await Db.Entry(caseEntity).Collection(c => c.Messages).LoadAsync();
             await Db.Entry(caseEntity).Collection(c => c.Todos).LoadAsync();

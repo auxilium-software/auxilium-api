@@ -76,7 +76,6 @@
 
         public UserModel? CreatedByUser { get; set; }
         public UserModel? LastUpdatedByUser { get; set; }
-        public UserModel? User { get; set; }
         public ICollection<CaseWorkerModel>? WorkerOnCases { get; set; }
         public ICollection<CaseClientModel>? ClientOnCases { get; set; }
         public ICollection<UserFileModel>? Files { get; set; }

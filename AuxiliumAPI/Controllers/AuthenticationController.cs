@@ -55,13 +55,13 @@ public class AuthenticationController : ControllerBase
 
         try
         {
-            // verify tje reCAPTCHA token
+            // verify the reCAPTCHA token
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
                 return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
             }
 
-            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string? clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
 
             // check if user already exists

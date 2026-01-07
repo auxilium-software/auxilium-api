@@ -35,7 +35,7 @@ namespace AuxiliumAPI.Common.Services
                 {
                     new KeyValuePair<string, string>("secret", this._configuration["ReCAPTCHA:SecretKey"]!),
                     new KeyValuePair<string, string>("response", token),
-                    new KeyValuePair<string, string>("remoteip", clientIp)
+                    new KeyValuePair<string, string>("remoteip", clientIp ?? "")
                 });
 
                 var response = await _httpClient.PostAsync(
