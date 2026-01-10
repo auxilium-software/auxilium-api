@@ -1,7 +1,7 @@
 
 .vs/
-/AuxiliumAPI/obj
+*.user
 /AuxiliumAPI/bin
+/AuxiliumAPI/obj
 /AuxiliumAPI.Tests/bin
 /AuxiliumAPI.Tests/obj
-*.user
