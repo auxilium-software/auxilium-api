@@ -38,11 +38,11 @@ namespace AuxiliumAPI.Common.EntityModels
         /// <summary>
         /// The sensitivity level of the case.
         /// </summary>
-        public required CaseSensitivityEnum Sensitivity { get; set; } = CaseSensitivityEnum.Confidential;
+        public required CaseSensitivityEnum? Sensitivity { get; set; }
         /// <summary>
         /// The current status of the case.
         /// </summary>
-        public required CaseStatusEnum Status { get; set; } = CaseStatusEnum.Open;
+        public required CaseStatusEnum? Status { get; set; }
 
 
 

@@ -41,11 +41,11 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("sensitivity")]
-        public required CaseSensitivityEnum Sensitivity { get; init; }
+        public required CaseSensitivityEnum? Sensitivity { get; init; }
 
         [Required]
         [JsonPropertyName("status")]
-        public required CaseStatusEnum Status { get; init; }
+        public required CaseStatusEnum? Status { get; init; }
 
 
 
