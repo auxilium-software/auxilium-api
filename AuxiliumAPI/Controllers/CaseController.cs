@@ -1,18 +1,14 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
-using AuxiliumAPI.Common.Enumerators;
-using AuxiliumAPI.Common.Services;
+using AuxiliumAPI.Common.DataStructures;
+using AuxiliumAPI.Common.EF;
+using AuxiliumAPI.Common.EntityModels;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using AuxiliumAPI.Models.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -22,109 +18,99 @@ namespace AuxiliumAPI.Controllers;
 [Authorize]
 public class CaseController : LoggedInControllerBase
 {
-    private readonly IConfiguration Configuration;
+    private readonly ICaseDocumentService _caseDocService;
+    private readonly IFileDocumentService _fileService;
     private readonly ILogger<CaseController> _logger;
-    private readonly ICouchDbService _couchDb;
-    private readonly IMariaDbService _mariaDb;
 
     public CaseController(
-        IConfiguration configuration,
-        ILogger<CaseController> logger,
-        ICouchDbService couchDb,
-        IMariaDbService mariaDb
-        ) : base(mariaDb, logger)
+        ICaseDocumentService caseDocService,
+        AuxiliumDbContext db,
+        IFileDocumentService fileService,
+        ILogger<CaseController> logger)
+        : base(db, logger)
     {
-        this.Configuration = configuration;
-        this._logger = logger;
-        this._couchDb = couchDb;
-        this._mariaDb = mariaDb;
+        _caseDocService = caseDocService;
+        _fileService = fileService;
+        _logger = logger;
     }
 
     [HttpPost("")]
     [ProducesResponseType(typeof(CaseResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CaseResponseModel>> CreateCase(
         [FromBody] CaseCreationRequestModel request)
     {
         try
         {
-            // enforce login and get current user details
-            var (user, error) = await GetCurrentUserAsync();
+            // only case workers can create cases
+            var (user, error) = await RequireCaseWorkerAsync();
             if (error != null) return error;
 
-            // generate new case id
-            Guid caseId = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
-
-            // create the case document
-            var caseDoc = new CaseDocumentStructure
+            // create the case entity
+            var caseEntity = new CaseModel
             {
-                Id = caseId.ToString(),
-                CreatedBy = user.id,
-                CreatedAt = DateTime.UtcNow,
-
+                Id = Guid.NewGuid(),
                 Title = request.Title,
-                Description = request.Description,
-                Sensitivity = CaseSensitivityEnum.Confidential,
+                Description = request.Description ?? string.Empty,
                 Status = CaseStatusEnum.Open,
-
-                Clients = new List<Guid> { user.id },
-                Workers = new List<Guid>(),
-
-                Files = new List<string>(),
-                Messages = new List<string>(),
-
-                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>()
+                Sensitivity = CaseSensitivityEnum.Confidential,
+                CreatedBy = user!.Id,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow,
+                LastUpdatedBy = user.Id
             };
 
-            // save to couchdb
-            await _couchDb.SaveDocumentAsync(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseDoc
-            );
+            //TODO: don't use EF directly here
+            Db.Cases.Add(caseEntity);
 
-            // build newly created case into a response model
+            // add currently logged in user as a client
+            Db.CaseClients.Add(new CaseClientModel
+            {
+                Id = Guid.NewGuid(),
+                CaseId = caseEntity.Id,
+                UserId = user.Id,
+                CreatedBy = user.Id,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await Db.SaveChangesAsync();
+
+            _logger.LogInformation("Created case {CaseId} by user {UserId}", caseEntity.Id, user.Id);
+
+            // build the response model
             var response = new CaseResponseModel
             {
-                ID = Guid.Parse(caseDoc.Id),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = null,
-                LastUpdatedBy = null,
-
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
-
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
-
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Files = caseDoc.Files,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
+                ID = caseEntity.Id,
+                CreatedAt = caseEntity.CreatedAt,
+                CreatedBy = caseEntity.CreatedBy,
+                LastUpdatedAt = caseEntity.LastUpdatedAt,
+                LastUpdatedBy = caseEntity.LastUpdatedBy,
+                Title = caseEntity.Title,
+                Description = caseEntity.Description,
+                Status = caseEntity.Status,
+                Sensitivity = caseEntity.Sensitivity,
+                Clients = new List<Guid> { user.Id },
+                Workers = new List<Guid>(),
+                Files = new List<string>(),
+                Messages = new List<string>(),
+                Todos = new Dictionary<string, object>(),
+                Timeline = new Dictionary<string, object>(),
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                Referrer = null,
             };
 
-            // return
             return CreatedAtAction(
                 nameof(GetCaseById),
-                new { caseId = caseDoc.Id },
+                new { caseId = caseEntity.Id },
                 response
             );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create case");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to create case: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to create case" });
         }
     }
 
@@ -135,89 +121,50 @@ public class CaseController : LoggedInControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "createdAt",
-        [FromQuery] string? sortOrder = "desc"
-        )
+        [FromQuery] string? sortOrder = "desc")
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // selector: cases where user is in clients array
-            var selector = new
-            {
-                clients = new
-                {
-                    elemMatch = new { eq = user.id }
-                }
-            };
+            var query = Db.Cases
+                .Include(c => c.Clients)
+                .Include(c => c.Workers)
+                .Include(c => c.Files)
+                .Include(c => c.Messages)
+                .Include(c => c.Todos)
+                .Include(c => c.AdditionalProperties)
+                .Where(c => c.Clients!.Any(cl => cl.UserId == user!.Id));
 
-            var skip = (page - 1) * pageSize;
+            query = ApplySorting(query, sortBy, sortOrder);
 
-            // query couchdb
-            var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector,
-                limit: pageSize,
-                skip: skip,
-                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
-            );
-
-            // get total count
-            var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector
-            );
+            var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
 
-            // populate response models
-            var cases = result.Documents.Select(caseDoc => new CaseResponseModel
-            {
-                ID = Guid.Parse(caseDoc.Id),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+            var cases = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
+            var caseResponses = cases.Select(MapToResponseModel).ToList();
 
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
-
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            }).ToList();
-
-            // build paginated response model
             var response = new PaginatedCasesResponseModel
             {
-                Cases = cases,
+                Cases = caseResponses,
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
                 TotalPages = totalPages,
-                HasMore = page < totalPages,
+                HasMore = page < totalPages
             };
 
-            // return
             return Ok(response);
         }
         catch (Exception ex)
         {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
-            );
+            _logger.LogError(ex, "Failed to fetch my cases");
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 
@@ -232,85 +179,46 @@ public class CaseController : LoggedInControllerBase
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // selector: cases where user is in workers array
-            var selector = new
-            {
-                workers = new
-                {
-                    elemMatch = new { eq = user.id }
-                }
-            };
+            var query = Db.Cases
+                .Include(c => c.Clients)
+                .Include(c => c.Workers)
+                .Include(c => c.Files)
+                .Include(c => c.Messages)
+                .Include(c => c.Todos)
+                .Include(c => c.AdditionalProperties)
+                .Where(c => c.Workers!.Any(w => w.UserId == user!.Id));
 
-            // skip a "page"
-            var skip = (page - 1) * pageSize;
+            query = ApplySorting(query, sortBy, sortOrder);
 
-            // query couchdb
-            var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector,
-                limit: pageSize,
-                skip: skip,
-                sort: new[] { $"{{{sortBy}:\"{sortOrder}\"}}" }
-            );
-
-            // get total count
-            var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector
-            );
+            var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
 
-            // populate response models
-            var cases = result.Documents.Select(caseDoc => new CaseResponseModel
-            {
-                ID = Guid.Parse(caseDoc.Id),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+            var cases = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
+            var caseResponses = cases.Select(MapToResponseModel).ToList();
 
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
-
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            }).ToList();
-
-            // build paginated response model
             var response = new PaginatedCasesResponseModel
             {
-                Cases = cases,
+                Cases = caseResponses,
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
                 TotalPages = totalPages,
-                HasMore = page < totalPages,
+                HasMore = page < totalPages
             };
 
-            // return
             return Ok(response);
         }
         catch (Exception ex)
         {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
-            );
+            _logger.LogError(ex, "Failed to fetch assigned cases");
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 
@@ -321,324 +229,381 @@ public class CaseController : LoggedInControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "createdAt",
-        [FromQuery] string? sortOrder = "desc")
+        [FromQuery] string? sortOrder = "desc",
+        [FromQuery] string? status = null,
+        [FromQuery] string? search = null)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check if user is admin
-            object selector;
+            IQueryable<CaseModel> query;
 
-            if (user.is_admin)
+            if (user!.IsAdmin)
             {
                 // admins see all cases
-                selector = new { };
+                query = Db.Cases
+                    .Include(c => c.Clients)
+                    .Include(c => c.Workers)
+                    .Include(c => c.Files)
+                    .Include(c => c.Messages)
+                    .Include(c => c.Todos)
+                    .Include(c => c.AdditionalProperties);
             }
             else
             {
                 // regular users see cases where they are client OR worker
-                selector = new
-                {
-                    or = new object[]
-                    {
-                        new { clients = new { elemMatch = new { eq = user.id } } },
-                        new { workers = new { elemMatch = new { eq = user.id } } }
-                    }
-                };
+                query = Db.Cases
+                    .Include(c => c.Clients)
+                    .Include(c => c.Workers)
+                    .Include(c => c.Files)
+                    .Include(c => c.Messages)
+                    .Include(c => c.Todos)
+                    .Include(c => c.AdditionalProperties)
+                    .Where(c => c.Clients!.Any(cl => cl.UserId == user.Id) ||
+                               c.Workers!.Any(w => w.UserId == user.Id));
             }
 
-            // skip a "page"
-            var skip = (page - 1) * pageSize;
+            // apply filters
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (Enum.TryParse<CaseStatusEnum>(status, ignoreCase: true, out var statusEnum))
+                {
+                    query = query.Where(c => c.Status == statusEnum);
+                }
+            }
 
-            // query couchdb
-            var result = await _couchDb.QueryAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector,
-                limit: pageSize,
-                skip: skip,
-                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
-            );
-            var total = await _couchDb.CountAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                selector
-            );
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(c =>
+                    (c.Title ?? "").Contains(search) ||
+                    (c.Description ?? "").Contains(search));
+            }
+
+            query = ApplySorting(query, sortBy, sortOrder);
+
+            var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
 
-            // build response models
-            var cases = result.Documents.Select(caseDoc => new CaseResponseModel
-            {
-                ID = Guid.Parse(caseDoc.Id),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+            var cases = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
+            var caseResponses = cases.Select(MapToResponseModel).ToList();
 
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
-
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            }).ToList();
             var response = new PaginatedCasesResponseModel
             {
-                Cases = cases,
+                Cases = caseResponses,
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
                 TotalPages = totalPages,
-                HasMore = page < totalPages,
+                HasMore = page < totalPages
             };
 
-            // return
             return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to search cases");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch cases: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 
-    [HttpGet("{caseId}")]
+    [HttpGet("{caseId:guid}")]
     [ProducesResponseType(typeof(CaseResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<CaseResponseModel>> GetCaseById(string caseId)
+    public async Task<ActionResult<CaseResponseModel>> GetCaseById(Guid caseId)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // grab the case document from couchdb
-            if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                Guid.Parse(caseId)
-            );
-            if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
+            var caseEntity = await Db.Cases
+                .Include(c => c.Clients)
+                .Include(c => c.Workers)
+                .Include(c => c.Files)
+                .Include(c => c.Messages)
+                .Include(c => c.Todos)
+                .Include(c => c.AdditionalProperties)
+                .FirstOrDefaultAsync(c => c.Id == caseId);
 
-            // build response model
-            var response = new CaseResponseModel
+            if (caseEntity == null)
             {
-                ID = Guid.Parse(caseId),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+            }
 
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
+            // check access -> is admin OR client OR worker
+            var hasAccess = user!.IsAdmin ||
+                          (caseEntity.Clients ?? []).Any(cl => cl.UserId == user.Id) ||
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
+            if (!hasAccess)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You don't have permission to view this case"
+                });
+            }
 
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
-
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
-
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            };
-
-            // return
+            var response = MapToResponseModel(caseEntity);
             return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch case: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch case" });
         }
     }
 
-    [HttpPost("{caseId}/upload")]
+    [HttpPost("{caseId:guid}/upload")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UploadFile(
-        string caseId,
+        Guid caseId,
         [FromForm] FileUploadRequestModel request)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // grab the case document from couchdb
-            if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                Guid.Parse(caseId)
-            );
-            if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
+            // verify the cast actually exists
+            var caseEntity = await Db.Cases
+                .Include(c => c.Workers)
+                .Include(c => c.Clients)
+                .FirstOrDefaultAsync(c => c.Id == caseId);
 
-            // check there is a file
-            if (request.File == null || request.File.Length == 0)
+            if (caseEntity == null)
             {
-                return BadRequest(new { detail = "No file provided" });
+                return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
 
-            // read file contents
+            // check the permissions - workers and clients can upload
+            var canUpload = user!.IsAdmin ||
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id) ||
+                          (caseEntity.Clients ?? []).Any(c => c.UserId == user.Id);
+
+            if (!canUpload)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You don't have permission to upload files to this case"
+                });
+            }
+
+            // make sure there is actually a file
+            if (request.File == null || request.File.Length == 0)
+            {
+                return BadRequest(new FailureResponseModel { Detail = "No file provided" });
+            }
+
+            // read the file contents
             using var memoryStream = new MemoryStream();
             await request.File.CopyToAsync(memoryStream);
             var fileBytes = memoryStream.ToArray();
 
-
             var contentType = request.File.ContentType ?? "application/octet-stream";
-            Guid fileId = UUIDUtilities.GenerateV5(DatabaseObjectType.File);
-            var fileHash = HashingUtilities.SHA256Hash(fileBytes);
 
-            // build document structure for the file
-            var fileStructure = new FileDocumentStructure
-            {
-                Id = fileId.ToString(),
-                Filename = request.File.FileName,
-                Description = request.Description,
-                ContentType = contentType,
-                Hash = fileHash,
-                Size = fileBytes.Length,
-                CreatedBy = user.id,
-                CreatedAt = DateTime.UtcNow,
-                ParentType = FileParentTypeEnum.Case,
-                ParentId = Guid.Parse(caseId),
-            };
-
-            // update the case document to include a reference to the file
-            caseDoc.Files ??= [];
-            caseDoc.Files.Add($"auxlfs://localhost/file/{fileId}?size={fileBytes.Length}&hash={fileHash}");
-            caseDoc.LastUpdatedAt = DateTime.UtcNow;
-            caseDoc.LastUpdatedBy = user.id;
-
-            // save file to lfs
-            string path = this.Configuration["FileSystem:RootStorageDirectories:AuxLFS"] + $"/{fileId}.bin";
-            System.IO.File.WriteAllBytes(path, fileBytes);
-
-            // save the updated case document
-            await _couchDb.SaveDocumentAsync(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseDoc
-            );
-            await _couchDb.SaveDocumentAsync(
-                this.Configuration!["Databases:CouchDB:Databases:Files"]!,
-                fileStructure
+            // save file using the file service
+            var (uri, metadata) = await _fileService.SaveCaseFileAsync(
+                fileBytes,
+                request.File.FileName,
+                contentType,
+                user.Id,
+                caseId,
+                request.Description
             );
 
-            // return
+            _logger.LogInformation(
+                "Uploaded file {FileId} ({Size} bytes) to case {CaseId}",
+                metadata.Id, fileBytes.Length, caseId
+            );
+
             return StatusCode(201, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload file");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to upload file" }
-            );
+            _logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
 
-    [HttpPatch("{caseId}")]
+    [HttpPatch("{caseId:guid}")]
     [ProducesResponseType(typeof(CaseResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CaseResponseModel>> UpdateCase(
-        string caseId,
+        Guid caseId,
         [FromBody] CaseUpdateRequestModel request)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // grab the case document from couchdb
-            if (!Guid.TryParse(caseId, out _)) return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
-            var caseDoc = await _couchDb.GetDocumentAsync<CaseDocumentStructure>(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                Guid.Parse(caseId)
-            );
-            if (caseDoc == null) return NotFound(new FailureResponseModel() { Detail = "Case not found" });
+            var caseEntity = await Db.Cases
+                .Include(c => c.Clients)
+                .Include(c => c.Workers)
+                .FirstOrDefaultAsync(c => c.Id == caseId);
 
-            // check to see if anything needs updating
-            if (request.Title != null)
-                caseDoc.Title = request.Title;
-            if (request.Description != null)
-                caseDoc.Description = request.Description;
-
-            // update LastUpdated{At,By} fields
-            caseDoc.LastUpdatedAt = DateTime.UtcNow;
-            caseDoc.LastUpdatedBy = user.id;
-
-            // save the updated case document
-            await _couchDb.SaveDocumentAsync(
-                this.Configuration!["Databases:CouchDB:Databases:Cases"]!,
-                caseDoc
-            );
-
-            // build response model
-            var response = new CaseResponseModel
+            if (caseEntity == null)
             {
-                ID = Guid.Parse(caseDoc.Id),
-                CreatedAt = caseDoc.CreatedAt,
-                CreatedBy = caseDoc.CreatedBy,
-                LastUpdatedAt = caseDoc.LastUpdatedAt,
-                LastUpdatedBy = caseDoc.LastUpdatedBy,
+                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+            }
 
-                Title = caseDoc.Title,
-                Description = caseDoc.Description,
+            // only workers and admins can update cases
+            var canUpdate = user!.IsAdmin ||
+                          (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
-                Sensitivity = caseDoc.Sensitivity,
-                Status = caseDoc.Status,
+            if (!canUpdate)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "Only case workers can update cases"
+                });
+            }
 
-                Clients = caseDoc.Clients,
-                Workers = caseDoc.Workers,
+            // apply updates
+            if (request.Title != null)
+                caseEntity.Title = request.Title;
 
-                Referrer = caseDoc.Referrer,
-                Todos = caseDoc.Todos,
-                Timeline = caseDoc.Timeline,
-                Messages = caseDoc.Messages,
+            if (request.Description != null)
+                caseEntity.Description = request.Description;
 
-                AdditionalProperties = caseDoc.AdditionalProperties,
-                Files = caseDoc.Files,
-            };
+            if (request.Status != null)
+                caseEntity.Status = request.Status ?? CaseStatusEnum.Open;
 
-            // return
+            if (request.Sensitivity != null)
+                caseEntity.Sensitivity = request.Sensitivity ?? CaseSensitivityEnum.Confidential;
+
+            caseEntity.LastUpdatedAt = DateTime.UtcNow;
+            caseEntity.LastUpdatedBy = user.Id;
+
+            //TODO: don't use EF directly here
+            await Db.SaveChangesAsync();
+
+            _logger.LogInformation("Updated case {CaseId} by user {UserId}", caseId, user.Id);
+
+            // reload relationships
+            await Db.Entry(caseEntity).Collection(c => c.Files!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.Messages!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.Todos!).LoadAsync();
+            await Db.Entry(caseEntity).Collection(c => c.AdditionalProperties!).LoadAsync();
+
+            var response = MapToResponseModel(caseEntity);
             return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update case {CaseId}", caseId);
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel{ Detail = $"Failed to update case: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to update case" });
         }
     }
+    #region ========================= HELPER METHODS =========================
+    private IQueryable<CaseModel> ApplySorting(
+        IQueryable<CaseModel> query,
+        string? sortBy,
+        string? sortOrder)
+    {
+        var descending = sortOrder?.ToLower() == "desc";
+
+        return sortBy?.ToLower() switch
+        {
+            "createdat" => descending
+                ? query.OrderByDescending(c => c.CreatedAt)
+                : query.OrderBy(c => c.CreatedAt),
+            "updatedat" => descending
+                ? query.OrderByDescending(c => c.LastUpdatedAt)
+                : query.OrderBy(c => c.LastUpdatedAt),
+            "title" => descending
+                ? query.OrderByDescending(c => c.Title)
+                : query.OrderBy(c => c.Title),
+            "status" => descending
+                ? query.OrderByDescending(c => c.Status)
+                : query.OrderBy(c => c.Status),
+            _ => query.OrderByDescending(c => c.CreatedAt)
+        };
+    }
+
+    private CaseResponseModel MapToResponseModel(CaseModel caseEntity)
+    {
+        return new CaseResponseModel
+        {
+            ID = caseEntity.Id,
+            CreatedAt = caseEntity.CreatedAt,
+            CreatedBy = caseEntity.CreatedBy,
+            LastUpdatedAt = caseEntity.LastUpdatedAt,
+            LastUpdatedBy = caseEntity.LastUpdatedBy,
+
+            Title = caseEntity.Title,
+            Description = caseEntity.Description,
+            Status = caseEntity.Status,
+            Sensitivity = caseEntity.Sensitivity,
+
+            Clients = caseEntity.Clients?.Select(c => c.UserId).ToList() ?? new List<Guid>(),
+            Workers = caseEntity.Workers?.Select(w => w.UserId).ToList() ?? new List<Guid>(),
+
+            Files = caseEntity.Files?.Select(f => $"auxlfs://localhost/files/{f.Id}").ToList() ?? new List<string>(),
+            Messages = caseEntity.Messages?.Select(m => $"auxmsg://localhost/message/{m.Id}").ToList() ?? new List<string>(),
+
+            Referrer = null,
+
+            // Map todos from entities
+            Todos = caseEntity.Todos?
+                .ToDictionary(
+                    t => t.Id.ToString(),
+                    t => (object)new
+                    {
+                        id = t.Id,
+                        summary = t.Summary,
+                        description = t.Description,
+                        status = t.Status.ToString(),
+                        priority = t.Priority.ToString(),
+                        due_date = t.DueDate,
+                        assigned_to = t.AssignedTo,
+                        completed_at = t.CompletedAt
+                    }
+                ) ?? new Dictionary<string, object>(),
+
+            Timeline = caseEntity.Timeline?
+                .ToDictionary(
+                    t => t.Id.ToString(),
+                    t => (object)new
+                    {
+                        id = t.Id,
+                    }
+                ) ?? new Dictionary<string, object>(),
+
+            AdditionalProperties = caseEntity.AdditionalProperties?
+                .ToDictionary(
+                    p => p.Name,
+                    p => new AdditionalPropertySubStructure
+                    {
+                        Id = p.Id,
+                        CreatedAt = p.CreatedAt,
+                        CreatedBy = p.CreatedBy,
+                        UpdatedAt = p.LastUpdatedAt,
+                        LastUpdatedBy = p.LastUpdatedBy,
+                        OriginalName = p.Name,
+                        PrettyName = p.Name,
+                        UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                        Content = p.Content,
+                        ContentType = p.ContentType
+                    }
+                ) ?? new Dictionary<string, AdditionalPropertySubStructure>(),
+            };
+    }
+    #endregion
 }

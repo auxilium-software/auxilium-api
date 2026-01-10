@@ -1,265 +1,258 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.AdditionalProperty;
-using AuxiliumAPI.Models.Case;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AuxiliumAPI.Controllers
+namespace AuxiliumAPI.Controllers;
+
+[ApiController]
+[Route("/api/v3/users/{userId}/additional_properties")]
+[Tags("Users")]
+public class UserAdditionalPropertiesController : LoggedInControllerBase
 {
-    [ApiController]
-    [Route("/api/v3/users/{userId}/additional_properties")]
-    [Tags("Users")]
-    public class UserPropertiesController : LoggedInControllerBase
+    private readonly IUserDocumentService _userDocService;
+    private readonly ILogger<UserAdditionalPropertiesController> _logger;
+
+    public UserAdditionalPropertiesController(
+        IUserDocumentService userDocService,
+        AuxiliumDbContext db,
+        ILogger<UserAdditionalPropertiesController> logger)
+        : base(db, logger)
     {
-        private readonly IUserDocumentService _userDocService;
-        private readonly ILogger<UserPropertiesController> _logger;
+        _userDocService = userDocService;
+        _logger = logger;
+    }
 
-        public UserPropertiesController(
-            IUserDocumentService userDocService,
-            ILogger<UserPropertiesController> logger,
-            IMariaDbService mariaDb)
-            : base(mariaDb, logger)
-        {
-            _userDocService = userDocService;
-            _logger = logger;
-        }
 
-        [HttpPost("{propertyName}")]
-        [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<SuccessResponseModel>> CreateProperty(
-            string userId,
-            string propertyName,
-            [FromBody] AdditionalPropertyCreationRequestModel request)
+    [HttpPost]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> CreateProperty(
+        string userId,
+        [FromBody] AdditionalPropertyCreationRequestModel request)
+    {
+        try
         {
-            try
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            if (!Guid.TryParse(userId, out var userGuid))
             {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                // checks to make sure the given user id is valid
-                if (!Guid.TryParse(userId, out _))
-                {
-                    return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
-                }
-
-                // only allow admins or themselves to create additional properties
-                if (!user!.is_admin && user.id.ToString() != userId)
-                {
-                    return StatusCode(403, new FailureResponseModel
-                    {
-                        Detail = "You can only modify your own properties"
-                    });
-                }
-
-                // normalise property names
-                var (storageKey, autoDisplayName) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
-                var finalDisplayName = request.DisplayName ?? autoDisplayName;
-
-                // grab existing additional properties
-                var properties = await _userDocService.GetAdditionalPropertiesAsync(Guid.Parse(userId));
-
-                // check if the proposed new additional property already exists
-                if (properties.ContainsKey(storageKey))
-                {
-                    return Conflict(new FailureResponseModel
-                    {
-                        Detail = "Property already exists. Use PATCH to update."
-                    });
-                }
-
-                // create the substructure to save into the user document
-                var propVal = new AdditionalPropertySubStructure()
-                {
-                    Content = request.Content ?? string.Empty,
-                    ContentType = request.ContentType ?? "Text",
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = user.id,
-                    Id = Guid.NewGuid(),
-                    OriginalName = propertyName,
-                    PrettyName = finalDisplayName,
-                    UrlSlug = PropertyNameHandlingUtilities.NormalizeKey(finalDisplayName)
-                };
-
-                // save the additional property
-                await _userDocService.SaveAdditionalPropertyAsync(Guid.Parse(userId), storageKey, propVal);
-
-                _logger.LogInformation(
-                    "Created property {PropertyName} for user {UserId}",
-                    storageKey, userId
-                );
-
-                // return
-                return StatusCode(201, new SuccessResponseModel());
+                return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
             }
-            catch (Exception ex)
+
+            // only allow admins or themselves to create additional properties
+            if (!user!.IsAdmin && user.Id != userGuid)
             {
-                _logger.LogError(ex, "Failed to create property {PropertyName} for user {UserId}", propertyName, userId);
-                return StatusCode(500, new FailureResponseModel
+                return StatusCode(403, new FailureResponseModel
                 {
-                    Detail = "Failed to create property"
+                    Detail = "You can only modify your own properties"
                 });
             }
-        }
 
-        [HttpPatch("{propertyName}")]
-        [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<SuccessResponseModel>> UpdateProperty(
-            string userId,
-            string propertyName,
-            [FromBody] AdditionalPropertyCreationRequestModel request)
-        {
-            try
+            // verify the user actually exists
+            var userDoc = await _userDocService.GetDocumentAsync(userGuid);
+            if (userDoc == null)
             {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                // make sure the user id is a valid uuid
-                if (!Guid.TryParse(userId, out _))
-                {
-                    return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
-                }
-
-                // only allow admins or themselves to modify additional properties
-                if (!user!.is_admin && user.id.ToString() != userId)
-                {
-                    return StatusCode(403, new FailureResponseModel
-                    {
-                        Detail = "You can only modify your own properties"
-                    });
-                }
-
-                // normalise property names
-                var (storageKey, autoDisplayName) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
-
-                // grab the existing additional properties
-                var properties = await _userDocService.GetAdditionalPropertiesAsync(Guid.Parse(userId));
-
-                // make sure the additional property actually exists
-                if (!properties.ContainsKey(storageKey))
-                {
-                    return NotFound(new FailureResponseModel
-                    {
-                        Detail = "Property not found. Use POST to create."
-                    });
-                }
-
-                // update the additional property
-                var finalDisplayName = request.DisplayName ?? autoDisplayName;
-
-                // create the substructure to save into the user document
-                var propVal = new AdditionalPropertySubStructure()
-                {
-                    Content = request.Content ?? string.Empty,
-                    ContentType = request.ContentType ?? "Text",
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = user.id,
-                    Id = Guid.NewGuid(),
-                    OriginalName = propertyName,
-                    PrettyName = finalDisplayName,
-                    UrlSlug = PropertyNameHandlingUtilities.NormalizeKey(finalDisplayName)
-                };
-
-                // save the additional property
-                await _userDocService.SaveAdditionalPropertyAsync(
-                    Guid.Parse(userId),
-                    storageKey,
-                    propVal
-                );
-
-                _logger.LogInformation(
-                    "Updated property {PropertyName} for user {UserId}",
-                    storageKey, userId
-                );
-
-                // return
-                return Ok(new SuccessResponseModel());
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
-            catch (Exception ex)
+
+            // save the additional property (service will throw exception if duplicate)
+            await _userDocService.SaveAdditionalPropertyAsync(
+                userGuid,
+                request.Name,
+                request.Content
+            );
+
+            _logger.LogInformation(
+                "Created property {AdditionalPropertyName} for user {UserId} by user {CurrentUserId}",
+                request.Name, userId, user.Id
+            );
+
+            return StatusCode(201, new SuccessResponseModel());
+        }
+        catch (Exception ex) when (ex.Message.Contains("already exists"))
+        {
+            return Conflict(new FailureResponseModel
             {
-                _logger.LogError(ex, "Failed to update property {PropertyName} for user {UserId}", propertyName, userId);
-                return StatusCode(500, new FailureResponseModel
+                Detail = "Property already exists. Use PATCH to update."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for user {UserId}", request.Name, userId);
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to create property"
+            });
+        }
+    }
+
+    [HttpPatch("{additionalPropertyId}")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> UpdateProperty(
+        string userId,
+        string additionalPropertyId,
+        [FromBody] AdditionalPropertyCreationRequestModel request)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
+            }
+
+            if (!Guid.TryParse(additionalPropertyId, out var additionalPropertyIdGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid additional property ID" });
+            }
+
+            // only allow admins or themselves to modify additional properties
+            if (!user!.IsAdmin && user.Id != userGuid)
+            {
+                return StatusCode(403, new FailureResponseModel
                 {
-                    Detail = "Failed to update property"
+                    Detail = "You can only modify your own properties"
                 });
             }
-        }
 
-        [HttpDelete("{propertyName}")]
-        [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<SuccessResponseModel>> DeleteProperty(
-            string userId,
-            string propertyName)
-        {
-            try
+            // verify user exists
+            var userDoc = await _userDocService.GetDocumentAsync(userGuid);
+            if (userDoc == null)
             {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                // check to make sure that the given user id is a valid uuid
-                if (!Guid.TryParse(userId, out _))
-                {
-                    return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
-                }
-
-                // only allow admins or themselves to delete additional properties
-                if (!user!.is_admin && user.id.ToString() != userId)
-                {
-                    return StatusCode(403, new FailureResponseModel
-                    {
-                        Detail = "You can only modify your own properties"
-                    });
-                }
-
-                // grab the key for the given additional property name
-                var (storageKey, _) = PropertyNameHandlingUtilities.HandlePropertyName(propertyName);
-
-                // grab all the existing additional properties for this user
-                var properties = await _userDocService.GetAdditionalPropertiesAsync(Guid.Parse(userId));
-
-                // make sure the additional property actually exists
-                if (!properties.ContainsKey(storageKey))
-                {
-                    return NotFound(new FailureResponseModel
-                    {
-                        Detail = "Property not found"
-                    });
-                }
-
-                // delete the additional property
-                await _userDocService.DeleteAdditionalPropertyAsync(Guid.Parse(userId), storageKey);
-
-                _logger.LogInformation(
-                    "Deleted property {PropertyName} from user {UserId}",
-                    storageKey, userId
-                );
-
-                // return
-                return Ok(new SuccessResponseModel());
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
-            catch (Exception ex)
+
+            // get existing additional properties
+            var properties = await _userDocService.GetAdditionalPropertiesAsync(userGuid);
+            var existingProp = properties.FirstOrDefault(p => p.Id == additionalPropertyIdGuid);
+
+            if (existingProp == null)
             {
-                _logger.LogError(ex, "Failed to delete property {PropertyName} from user {UserId}", propertyName, userId);
-                return StatusCode(500, new FailureResponseModel
+                return NotFound(new FailureResponseModel
                 {
-                    Detail = "Failed to delete property"
+                    Detail = "Property not found. Use POST to create."
                 });
             }
+
+            // update via EF Core directly
+            //TODO: don't do this
+            existingProp.Content = request.Content ?? string.Empty;
+            existingProp.LastUpdatedAt = DateTime.UtcNow;
+            existingProp.LastUpdatedBy = user!.Id;
+
+            await Db.SaveChangesAsync();
+
+            // update the LastUpdatedAt timestamp for the case
+            var userEntity = await Db.Users.FindAsync(userGuid);
+            if (userEntity != null)
+            {
+                userEntity.LastUpdatedAt = DateTime.UtcNow;
+                await Db.SaveChangesAsync();
+            }
+
+            _logger.LogInformation(
+                "Updated property {AdditionalPropertyName} for user {UserId} by user {CurrentUserId}",
+                existingProp.Name, userId, user.Id
+            );
+
+            // return
+            return Ok(new SuccessResponseModel());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for user {UserId}", additionalPropertyId, userId);
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to update property"
+            });
+        }
+    }
+
+    [HttpDelete("{additionalPropertyId}")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> DeleteProperty(
+        string userId,
+        string additionalPropertyId)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid user ID" });
+            }
+
+            if (!Guid.TryParse(additionalPropertyId, out var additionalPropertyIdGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid additional property ID" });
+            }
+
+            // only allow admins or themselves to delete additional properties
+            if (!user!.IsAdmin && user.Id != userGuid)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You can only modify your own properties"
+                });
+            }
+
+            // verify user exists
+            var userDoc = await _userDocService.GetDocumentAsync(userGuid);
+            if (userDoc == null)
+            {
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
+            }
+
+            // get existing properties
+            var properties = await _userDocService.GetAdditionalPropertiesAsync(userGuid);
+            var existingProp = properties.FirstOrDefault(p => p.Id == additionalPropertyIdGuid);
+
+            if (existingProp == null)
+            {
+                return NotFound(new FailureResponseModel
+                {
+                    Detail = "Property not found"
+                });
+            }
+
+            // delete by ID
+            await _userDocService.DeleteAdditionalPropertyAsync(userGuid, existingProp.Id);
+
+            _logger.LogInformation(
+                "Deleted property {AdditionalPropertyName} from user {UserId} by user {CurrentUserId}",
+                existingProp.Name, userId, user.Id
+            );
+
+            // return
+            return Ok(new SuccessResponseModel());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from user {UserId}", additionalPropertyId, userId);
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to delete property"
+            });
         }
     }
 }

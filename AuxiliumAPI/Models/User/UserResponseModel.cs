@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+﻿using AuxiliumAPI.Common.DataStructures;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -75,5 +75,9 @@ namespace AuxiliumAPI.Models.User
         [Required]
         [JsonPropertyName("isAdmin")]
         public required bool IsAdmin { get; set; } = false;
+
+        [Required]
+        [JsonPropertyName("isCaseWorker")]
+        public required bool IsCaseWorker { get; set; } = false;
     }
 }

@@ -2,6 +2,8 @@
 {
     public enum DatabaseObjectType
     {
+        RefreshToken,
+
         User,
         UserAdditionalProperty,
 

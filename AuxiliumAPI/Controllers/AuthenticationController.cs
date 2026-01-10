@@ -1,5 +1,5 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
+﻿using AuxiliumAPI.Common.EF;
+using AuxiliumAPI.Common.EntityModels;
 using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Common.Utilities;
@@ -10,6 +10,8 @@ using AuxiliumAPI.Models.UserRefresh;
 using AuxiliumAPI.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -18,10 +20,9 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Authentication")]
 public class AuthenticationController : ControllerBase
 {
-    private readonly IConfiguration Configuration;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AuthenticationController> _logger;
-    private readonly IMariaDbService _mariaDb;
-    private readonly ICouchDbService _couchDb;
+    private readonly AuxiliumDbContext _db;
     private readonly ICaptchaService _captchaService;
     private readonly IPasswordService _passwordService;
     private readonly ITokenService _tokenService;
@@ -29,119 +30,129 @@ public class AuthenticationController : ControllerBase
     public AuthenticationController(
         IConfiguration configuration,
         ILogger<AuthenticationController> logger,
-        IMariaDbService mariaDb,
-        ICouchDbService couchDb,
+        AuxiliumDbContext db,
         ICaptchaService captchaService,
         IPasswordService passwordService,
-        ITokenService tokenService
-        )
+        ITokenService tokenService)
     {
-        this.Configuration = configuration;
-        this._logger = logger;
-        this._mariaDb = mariaDb;
-        this._couchDb = couchDb;
-        this._captchaService = captchaService;
-        this._passwordService = passwordService;
-        this._tokenService = tokenService;
+        _configuration = configuration;
+        _logger = logger;
+        _db = db;
+        _captchaService = captchaService;
+        _passwordService = passwordService;
+        _tokenService = tokenService;
     }
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserRegistrationResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserRegistrationResponseModel>> Register(
         [FromBody] UserRegistrationRequestModel request)
     {
-        await using var transaction = await _mariaDb.BeginTransactionAsync();
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
-            // make sure the recaptcha token exists
+            // verify the reCAPTCHA token
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
-                return BadRequest(new FailureResponseModel() { Detail = "reCAPTCHA token is required" });
+                return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
             }
 
-            // verify recaptcha
-            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string? clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
 
-            // check if user already exists in mariadb
-            var existingUser = await _mariaDb.ExecuteScalarAsync<string>(
-                "SELECT id FROM users WHERE email_address = @email",
-                new { email = request.EmailAddress }
-            );
+            // check if user already exists
+            var existingUser = await _db.Users
+                .FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
 
             if (existingUser != null)
             {
-                return Conflict(new FailureResponseModel() { Detail = "Email address is already associated with an existing user account." });
+                return Conflict(new FailureResponseModel
+                {
+                    Detail = "Email address is already associated with an existing user account."
+                });
             }
 
-            // generate uuids
-            Guid userID = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
-            Guid caseID = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
+            // generate UUIDs
+            var userId = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
+            var caseId = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
+            var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectType.CaseClient);
 
-            // hash psssword
+            // hash password
             var passwordHash = _passwordService.HashPassword(request.RawPassword);
 
-            // create the user in mariadb
-            await _mariaDb.ExecuteAsync(
-                """
-                INSERT INTO users (id, email_address, password_hash) 
-                VALUES (@userId, @emailAddress, @passwordHash)
-                """,
-                new
-                {
-                    userID,
-                    emailAddress = request.EmailAddress,
-                    passwordHash
-                }
-            );
-
-            // create the user and case documents
-            var userDoc = new UserDocumentStructure
+            // create the user entity
+            var user = new UserModel
             {
-                Id = userID.ToString(),
-                CreatedBy = userID,
+                Id = userId,
+                EmailAddress = request.EmailAddress,
+                PasswordHash = passwordHash,
                 FullName = request.FullName,
                 FullAddress = request.FullAddress,
                 TelephoneNumber = request.TelephoneNumber,
                 Gender = request.Gender,
-                // DateOfBirth = request.DateOfBirth,
-                HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService
+                DateOfBirth = DateOnly.Parse(request.DateOfBirth),
+                HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
+                IsAdmin = false,
+                IsCaseWorker = false,
+                AllowLogin = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId
             };
-            var caseDoc = new CaseDocumentStructure
+
+            // create the case entity
+            var caseEntity = new CaseModel
             {
-                Id = caseID.ToString(),
-                CreatedBy = userID,
+                Id = caseId,
                 Title = request.CaseTitle,
                 Description = request.CaseDescription,
                 Sensitivity = CaseSensitivityEnum.Confidential,
                 Status = CaseStatusEnum.Open,
-                Clients = new List<Guid> { userID }
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
+                LastUpdatedAt = DateTime.UtcNow,
+                LastUpdatedBy = userId
             };
 
-            // save documents to couchdb
-            await _couchDb.SaveDocumentAsync(this.Configuration!["Databases:CouchDB:Databases:Users"]!, userDoc);
-            await _couchDb.SaveDocumentAsync(this.Configuration!["Databases:CouchDB:Databases:Cases"]!, caseDoc);
+            // add the user and the case to database
+            _db.Users.Add(user);
+            _db.Cases.Add(caseEntity);
 
-            // commit mariadb transaction
+            // add the user as a client of the case
+            var caseClient = new CaseClientModel
+            {
+                Id = caseClientId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
+                CaseId = caseId,
+                UserId = userId
+            };
+            _db.CaseClients.Add(caseClient);
+
+            // save all changes
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // return success response
+            _logger.LogInformation("User {UserId} registered successfully", userId);
+
             return CreatedAtAction(
                 nameof(Register),
                 new UserRegistrationResponseModel
                 {
-                    Id = userID,
-                }
-            );
+                    Id = userId
+                });
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error during user registration");
-            throw;
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during registration"
+            });
         }
     }
 
@@ -149,204 +160,212 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserLoginResponseModel>> Login(
         [FromBody] UserLoginRequestModel request)
     {
-        await using var transaction = await _mariaDb.BeginTransactionAsync();
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
-            // make sure the recaptcha token exists
+            // verify the reCAPTCHA token
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
-                return BadRequest(new FailureResponseModel() { Detail = "reCAPTCHA token is required" });
+                return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
             }
 
-            // verify recaptcha
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
 
-            // get user from mariadb
-            var user = await _mariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
-                "SELECT * FROM users WHERE email_address = @email",
-                new { email = request.EmailAddress }
-            );
+            // grab the user from the database
+            var user = await _db.Users
+                .FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
 
             // check if the user exists
             if (user == null)
             {
-                return Unauthorized(new { detail = "Invalid credentials" });
+                return Unauthorized(new FailureResponseModel { Detail = "Invalid credentials" });
             }
 
-            // check if the user is allowed to log in
-            if (!user.allow_login)
+            // check if the user is actually allowed to login
+            if (!user.AllowLogin)
             {
-                return Unauthorized(new { detail = "Account blocked from logging in by the Auxilium IT department." });
+                return Unauthorized(new FailureResponseModel
+                {
+                    Detail = "Account blocked from logging in by the Auxilium IT department."
+                });
             }
 
             // verify the password
-            if (!_passwordService.VerifyPassword(request.RawPassword, user.password_hash))
+            if (!_passwordService.VerifyPassword(request.RawPassword, user.PasswordHash))
             {
-                return Unauthorized(new { detail = "Invalid credentials" });
+                return Unauthorized(new FailureResponseModel { Detail = "Invalid credentials" });
             }
 
-            // create access and refresh tokens
+            // create the access and refresh tokens
             var userData = new Dictionary<string, object>
             {
-                ["id"] = user.id
+                ["id"] = user.Id
             };
             var accessToken = _tokenService.CreateAccessToken(userData);
             var refreshToken = _tokenService.CreateRefreshToken(userData);
 
-            // remove expired refresh tokens from mariadb
-            await _mariaDb.ExecuteAsync(
-                """
-                DELETE FROM refresh_tokens 
-                WHERE user_id = @userId AND expires_at < NOW()
-                """,
-                new { userId = user.id }
-            );
+            // delete expired refresh tokens
+            var expiredTokens = _db.RefreshTokens
+                .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAt < DateTime.UtcNow);
+            _db.RefreshTokens.RemoveRange(expiredTokens);
 
-            // store the newly created refresh token in mariadb
+            // store the new refresh token
+            var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
             var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
-            var expiresAt = DateTime.UtcNow.AddDays(this.Configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
-            await _mariaDb.ExecuteAsync(
-                """
-                INSERT INTO refresh_tokens (user_id, token_hash, expires_at) 
-                VALUES (@userId, @tokenHash, @expiresAt)
-                """,
-                new
-                {
-                    userId = user.id,
-                    tokenHash,
-                    expiresAt
-                }
-            );
+            var expiresAt = DateTime.UtcNow.AddDays(_configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
+
+            var refreshTokenEntity = new RefreshTokenModel
+            {
+                Id = refreshTokenId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                TokenHash = tokenHash,
+                ExpiresAt = expiresAt
+            };
+            _db.RefreshTokens.Add(refreshTokenEntity);
+
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // return
+            _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+
             return Ok(new UserLoginResponseModel
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = this.Configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
+                ExpiresIn = _configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
             });
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error during user login");
-            throw;
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during login"
+            });
         }
     }
 
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserLoginResponseModel>> Refresh(
         [FromBody] UserRefreshTokenRequestModel request)
     {
-        await using var transaction = await _mariaDb.BeginTransactionAsync();
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
             // hash the provided refresh token
             var tokenHash = HashingUtilities.SHA256Hash(request.RefreshToken);
 
-            // verify refresh token and get user from mariadb
-            var user = await _mariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
-                """
-                SELECT u.* 
-                FROM refresh_tokens rt
-                INNER JOIN users u ON rt.user_id = u.id
-                WHERE rt.token_hash = @tokenHash AND rt.expires_at > NOW()
-                """,
-                new { tokenHash }
-            );
+            // verify the refresh token and get user
+            var refreshToken = await _db.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt =>
+                    rt.TokenHash == tokenHash &&
+                    rt.ExpiresAt > DateTime.UtcNow);
 
-            // if the refresh token//user is not found, return unauthorized
-            if (user == null)
+            if (refreshToken == null || refreshToken.User == null)
             {
-                return Unauthorized(new { detail = "Invalid or expired refresh token" });
+                return Unauthorized(new FailureResponseModel
+                {
+                    Detail = "Invalid or expired refresh token"
+                });
             }
+
+            var user = refreshToken.User;
 
             // create new access and refresh tokens
             var userData = new Dictionary<string, object>
             {
-                ["id"] = user.id
+                ["id"] = user.Id
             };
             var accessToken = _tokenService.CreateAccessToken(userData);
             var newRefreshToken = _tokenService.CreateRefreshToken(userData);
 
-            // update the refresh token in mariadb
+            // update the refresh token
             var newTokenHash = HashingUtilities.SHA256Hash(newRefreshToken);
-            var newExpiresAt = DateTime.UtcNow.AddDays(this.Configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
-            await _mariaDb.ExecuteAsync(
-                """
-                UPDATE refresh_tokens
-                SET token_hash = @newTokenHash, expires_at = @expiresAt
-                WHERE token_hash = @oldTokenHash
-                """,
-                new
-                {
-                    newTokenHash,
-                    expiresAt = newExpiresAt,
-                    oldTokenHash = tokenHash
-                }
-            );
+            var newExpiresAt = DateTime.UtcNow.AddDays(_configuration.GetValue<int>("JWT:RefreshTokenExpireDays"));
+
+            refreshToken.TokenHash = newTokenHash;
+            refreshToken.ExpiresAt = newExpiresAt;
+
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // return
+            _logger.LogInformation("Refresh token renewed for user {UserId}", user.Id);
+
             return Ok(new UserLoginResponseModel
             {
                 AccessToken = accessToken,
                 RefreshToken = newRefreshToken,
-                ExpiresIn = this.Configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
+                ExpiresIn = _configuration.GetValue<int>("JWT:AccessTokenExpireMinutes") * 60
             });
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error during token refresh");
-            throw;
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during token refresh"
+            });
         }
     }
 
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesDefaultResponseType]
     public async Task<ActionResult<SuccessResponseModel>> Logout()
     {
-        await using var transaction = await _mariaDb.BeginTransactionAsync();
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
-            // get current user id from token
+            // grab the current user id from token
             var userId = User.FindFirst("sub")?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new FailureResponseModel() { Detail = "User ID not found in token" });
-            }
-            if (!Guid.TryParse(userId, out _))
-            {
-                return BadRequest(new FailureResponseModel() { Detail = "You must provide a valid UUID" });
+                return Unauthorized(new FailureResponseModel { Detail = "User ID not found in token" });
             }
 
-            // remove all refresh tokens from mariadb for that user
-            await _mariaDb.ExecuteAsync(
-                "DELETE FROM refresh_tokens WHERE user_id = @userId",
-                new { userId }
-            );
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid user ID format" });
+            }
+
+            // delete all the refresh tokens for this user
+            var tokens = _db.RefreshTokens.Where(rt => rt.CreatedBy == userGuid);
+            _db.RefreshTokens.RemoveRange(tokens);
+
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // return
+            _logger.LogInformation("User {UserId} logged out successfully", userGuid);
+
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error during logout");
-            throw;
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during logout"
+            });
         }
     }
 }

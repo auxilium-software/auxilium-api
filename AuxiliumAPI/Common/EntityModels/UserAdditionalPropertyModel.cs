@@ -5,30 +5,30 @@
         /// <summary>
         /// The unique identifier for the additional property.
         /// </summary>
-        public Guid Id { get; set; }
+        public required Guid Id { get; set; }
         /// <summary>
         /// The timestamp when the additional property was created.
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public required DateTime CreatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who created the additional property.
         /// </summary>
-        public Guid CreatedBy { get; set; }
+        public required Guid CreatedBy { get; set; }
         /// <summary>
         /// The timestamp when the additional property was last updated.
         /// </summary>
-        public DateTime LastUpdatedAt { get; set; }
+        public DateTime? LastUpdatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who last updated the additional property.
         /// </summary>
-        public Guid LastUpdatedBy { get; set; }
+        public Guid? LastUpdatedBy { get; set; }
 
 
 
         /// <summary>
         /// The unique identifier of the user this additional property is for.
         /// </summary>
-        public required  Guid UserId { get; set; }
+        public required Guid UserId { get; set; }
         /// <summary>
         /// The name of the additional property.
         /// </summary>
@@ -44,8 +44,8 @@
 
 
 
-        public UserModel CreatedByUser { get; set; }
-        public UserModel LastUpdatedByUser { get; set; }
-        public UserModel User { get; set; }
+        public UserModel? CreatedByUser { get; set; }
+        public UserModel? LastUpdatedByUser { get; set; }
+        public UserModel? User { get; set; }
     }
 }

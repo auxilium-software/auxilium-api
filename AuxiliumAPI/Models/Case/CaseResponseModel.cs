@@ -1,5 +1,5 @@
-﻿using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
+﻿
+using AuxiliumAPI.Common.DataStructures;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -35,7 +35,7 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("description")]
-        public required string Description { get; init; }
+        public required string? Description { get; init; }
 
 
 

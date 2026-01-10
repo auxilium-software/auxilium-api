@@ -7,61 +7,61 @@ namespace AuxiliumAPI.Common.EntityModels
         /// <summary>
         /// The unique identifier for the additional property.
         /// </summary>
-        public Guid Id { get; set; }
+        public required Guid Id { get; set; }
         /// <summary>
         /// The timestamp when the additional property was created.
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public required DateTime CreatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who created the additional property.
         /// </summary>
-        public Guid CreatedBy { get; set; }
+        public required Guid CreatedBy { get; set; }
         /// <summary>
         /// The timestamp when the additional property was last updated.
         /// </summary>
-        public DateTime LastUpdatedAt { get; set; }
+        public DateTime? LastUpdatedAt { get; set; }
         /// <summary>
         /// The unique identifier of the user who last updated the additional property.
         /// </summary>
-        public Guid LastUpdatedBy { get; set; }
+        public Guid? LastUpdatedBy { get; set; }
 
 
 
         /// <summary>
         /// The unique identifier for the case this todo is for.
         /// </summary>
-        public Guid CaseId { get; set; }
+        public required Guid CaseId { get; set; }
 
 
 
         /// <summary>
         /// The summary/title of the todo item.
         /// </summary>
-        public string Summary { get; set; }
+        public required string Summary { get; set; }
         /// <summary>
         /// The detailed description of the todo item.
         /// </summary>
-        public string Description { get; set; }
+        public required string Description { get; set; }
         /// <summary>
         /// The current status of the todo item.
         /// </summary>
-        public TodoStatusEnum Status{ get; set; }
+        public required TodoStatusEnum Status { get; set; }
         /// <summary>
         /// The priority level of the todo item.
         /// </summary>
-        public TodoPriorityEnum Priority { get; set; }
+        public required TodoPriorityEnum Priority { get; set; }
         /// <summary>
         /// An optional due date for the todo item.
         /// </summary>
-        public DateTime? DueDate { get; set; }
+        public required DateTime? DueDate { get; set; }
         /// <summary>
         /// An optional unique identifier of the user this todo item is assigned to.
         /// </summary>
-        public Guid? AssignedTo { get; set; }
+        public required Guid? AssignedTo { get; set; }
         /// <summary>
         /// An optional reminder date for the todo item.
         /// </summary>
-        public DateTime? Reminder { get; set; }
+        public required DateTime? Reminder { get; set; }
         /// <summary>
         /// The timestamp when the todo item was completed.
         /// </summary>

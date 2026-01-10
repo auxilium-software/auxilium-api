@@ -16,7 +16,7 @@ namespace AuxiliumAPI.Common.Services.Interfaces
 
 
 
-        Task<bool> CheckUserAccessAsync(Guid userId, UserModel currentUser);
+        bool CheckUserAccess(Guid userId, UserModel currentUser);
 
     }
 }

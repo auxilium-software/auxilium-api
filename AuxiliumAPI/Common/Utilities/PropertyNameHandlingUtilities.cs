@@ -1,5 +1,4 @@
 ﻿
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;

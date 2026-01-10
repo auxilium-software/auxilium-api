@@ -1,124 +1,227 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.CouchDB.SubStructures;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Enumerators;
 using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
-using AuxiliumAPI.Models.UserLogin;
-using AuxiliumAPI.Models.UserRefresh;
-using AuxiliumAPI.Models.UserRegistration;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace AuxiliumAPI.Controllers
+namespace AuxiliumAPI.Controllers;
+
+[ApiController]
+[Route("/api/v3/cases/{caseId}/todos")]
+[Tags("Cases")]
+public class CaseTodoController : LoggedInControllerBase
 {
-    [ApiController]
-    [Route("/api/v3/cases/{case_id}/todos")]
-    [Tags("Cases")]
-    public class CaseTodoController : LoggedInControllerBase
+    private readonly ICaseDocumentService _caseDocService;
+    private readonly ILogger<CaseTodoController> _logger;
+
+    public CaseTodoController(
+        ICaseDocumentService caseDocService,
+        AuxiliumDbContext db,
+        ILogger<CaseTodoController> logger)
+        : base(db, logger)
     {
+        _caseDocService = caseDocService;
+        _logger = logger;
+    }
 
-        private readonly ICaseDocumentService _caseDocService;
-        private readonly ICouchDbService _couchDb;
-        private readonly ILogger<CaseTodoController> _logger;
-
-        public CaseTodoController(
-            ICaseDocumentService caseDocService,
-            ICouchDbService couchDb,
-            ILogger<CaseTodoController> logger,
-            IMariaDbService mariaDb)
-            : base(mariaDb, logger)
+    [HttpPost("")]
+    [ProducesResponseType(typeof(TodoResponseModel), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<TodoResponseModel>> CreateTodo(
+        string caseId,
+        [FromBody] TodoCreationRequestModel request)
+    {
+        try
         {
-            _caseDocService = caseDocService;
-            _couchDb = couchDb;
-            _logger = logger;
-        }
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
 
-
-        [HttpPost("")]
-        [ProducesResponseType(typeof(TodoResponseModel), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<TodoResponseModel>> CreateTodo(
-            string caseId,
-            [FromBody] TodoCreationRequestModel request
-            )
-        {
-            try
+            // make sure the given case id is a valid uuid
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
+            }
 
-                // make sure the given case id is a valid uuid
-                if (!Guid.TryParse(caseId, out _))
+            // check the user's access to the case
+            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            {
+                return StatusCode(403, new FailureResponseModel
                 {
-                    return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-                }
+                    Detail = "You don't have permission to add todos to this case"
+                });
+            }
 
-                // check the user's access to the case
-                if (!await _caseDocService.CheckUserAccessAsync(Guid.Parse(caseId), user!))
+            // create the todo
+            var todo = await _caseDocService.CreateTodoAsync(
+                caseId: caseGuid,
+                summary: request.Summary,
+                description: request.Description,
+                priority: request.Priority,
+                createdBy: user!.Id,
+                dueDate: request.DueDate,
+                assignedTo: request.AssignedTo,
+                reminder: request.Reminder
+            );
+
+            // return
+            return CreatedAtAction(
+                nameof(CreateTodo),
+                new TodoResponseModel
                 {
-                    return StatusCode(403, new FailureResponseModel
-                    {
-                        Detail = "You don't have permission to add todos to this case"
-                    });
+                    Id = todo.Id,
+                    CaseId = caseGuid,
+                    Summary = todo.Summary,
+                    Description = todo.Description,
+                    Status = todo.Status,
+                    Priority = todo.Priority,
+                    CreatedAt = todo.CreatedAt,
+                    CreatedBy = todo.CreatedBy,
+                    DueDate = todo.DueDate,
+                    CompletedAt = todo.CompletedAt,
+                    CompletedBy = todo.CompletedBy,
+                    AssignedTo = todo.AssignedTo,
+                    CompletionNote = todo.CompletionNote
                 }
+            );
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
+            return NotFound(new FailureResponseModel { Detail = "Case not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to create todo" });
+        }
+    }
 
-                // create the todo sub structure
-                CaseTodoSubStructure todo = await _caseDocService.CreateTodoAsync(
-                    caseId: Guid.Parse(caseId),
-                    summary: request.Summary,
-                    description: request.Description,
-                    priority: request.Priority,
-                    createdBy: user.id,
-                    dueDate: request.DueDate,
-                    assignedTo: request.AssignedTo,
-                    reminder: request.Reminder
-                );
+    [HttpPatch("{todoId:guid}")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> UpdateTodo(
+        string caseId,
+        Guid todoId,
+        [FromBody] TodoUpdateRequestModel request)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
 
-                // return
-                return CreatedAtAction(
-                    nameof(CreateTodo),
-                    new TodoResponseModel
-                    {
-                        Id = todo.Id,
-                        CaseId = Guid.Parse(caseId),
-                        Summary = todo.Summary,
-                        Description = todo.Description,
-                        Status = todo.Status,
-                        Priority = todo.Priority,
-                        CreatedAt = todo.CreatedAt,
-                        CreatedBy = todo.CreatedBy,
-                        DueDate = todo.DueDate,
-                        CompletedAt = todo.CompletedAt,
-                        CompletedBy = todo.CompletedBy,
-                        AssignedTo = todo.AssignedTo,
-                        CompletionNote = todo.CompletionNote
-                    }
+            // make sure the given case id is a valid uuid
+            if (!Guid.TryParse(caseId, out var caseGuid))
+            {
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
+            }
+
+            // check the user's access to the case
+            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You don't have permission to update todos for this case"
+                });
+            }
+
+            // update the todo
+            await _caseDocService.UpdateTodoAsync(
+                caseGuid,
+                todoId,
+                request.Summary,
+                request.Description,
+                request.Priority,
+                request.DueDate,
+                request.AssignedTo,
+                request.Reminder
+            );
+
+            // update status is set
+            if (request.Status.HasValue)
+            {
+                await _caseDocService.UpdateTodoStatusAsync(
+                    caseGuid,
+                    todoId,
+                    request.Status.Value,
+                    request.Status == TodoStatusEnum.Completed ? user!.Id : null,
+                    request.CompletionNote
                 );
             }
-            catch (KeyNotFoundException ex)
+
+            // return
+            return Ok(new SuccessResponseModel());
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new FailureResponseModel { Detail = "Todo not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update todo {TodoId}", todoId);
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to update todo" });
+        }
+    }
+
+    [HttpDelete("{todoId:guid}")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> DeleteTodo(
+        string caseId,
+        Guid todoId)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            // make sure the given case id is a valid uuid
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
-                _logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
+            }
+
+            // check the user's access to the case
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            if (caseDoc == null)
+            {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
-            catch (Exception ex)
+
+            // only admins and case workers can delete todos
+            var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
+            if (!user!.IsAdmin && !isWorker)
             {
-                _logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
-                return StatusCode(500, new FailureResponseModel { Detail = "Failed to create todo" });
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "Only case workers and admins can delete todos"
+                });
             }
+
+            // delete the todo
+            await _caseDocService.DeleteTodoAsync(caseGuid, todoId);
+
+            // return
+            return Ok(new SuccessResponseModel());
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new FailureResponseModel { Detail = "Todo not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete todo {TodoId}", todoId);
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete todo" });
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.File;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumAPI.Controllers;
 
 [ApiController]
-[Route("api/v3/cases/{caseId}/files")]
+[Route("/api/v3/cases/{caseId}/files")]
 [Tags("Cases", "Files")]
 public class CaseFilesController : LoggedInControllerBase
 {
@@ -18,9 +19,9 @@ public class CaseFilesController : LoggedInControllerBase
     public CaseFilesController(
         IFileDocumentService fileService,
         ICaseDocumentService caseDocService,
-        ILogger<CaseFilesController> logger,
-        IMariaDbService mariaDb)
-        : base(mariaDb, logger)
+        AuxiliumDbContext db,
+        ILogger<CaseFilesController> logger)
+        : base(db, logger)
     {
         _fileService = fileService;
         _caseDocService = caseDocService;
@@ -35,28 +36,25 @@ public class CaseFilesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<FileDetailsResponseModel>> UploadFile(
         string caseId,
-        [FromForm] FileUploadRequestModel request
-        )
+        [FromForm] FileUploadRequestModel request)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // checks the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
                 return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check there is a file
             if (request.File == null || request.File.Length == 0)
             {
                 return BadRequest(new FailureResponseModel { Detail = "No file provided" });
             }
 
-            // checks the case exists and user has access
-            if (!await _caseDocService.CheckUserAccessAsync(Guid.Parse(caseId), user!))
+            // check case access
+            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -64,42 +62,36 @@ public class CaseFilesController : LoggedInControllerBase
                 });
             }
 
-            // grab the uploaded file contents
+            // read the contents of the file
             using var memoryStream = new MemoryStream();
             await request.File.CopyToAsync(memoryStream);
             var fileBytes = memoryStream.ToArray();
 
-            // save file
-            var (auxLFSURL, fileMetadata) = await _fileService.SaveFileAsync(
+            // save the file
+            var (uri, fileMetadata) = await _fileService.SaveCaseFileAsync(
                 fileContent: fileBytes,
                 filename: request.File.FileName,
                 contentType: request.File.ContentType ?? "application/octet-stream",
-                uploadedBy: user.id,
-                parentType: FileParentTypeEnum.Case,
-                parentId: Guid.Parse(caseId),
+                uploadedBy: user!.Id,
+                caseId: caseGuid,
                 description: request.Description
             );
 
-            // add a reference to the file to the case doc
-            var caseDoc = await _caseDocService.GetDocumentAsync(Guid.Parse(caseId));
-            if (caseDoc != null)
-            {
-                caseDoc.Files ??= [];
-                caseDoc.Files.Add(auxLFSURL);
-                await _caseDocService.SaveDocumentAsync(caseDoc);
-            }
+            _logger.LogInformation(
+                "Uploaded file {FileId} ({Size} bytes) to case {CaseId}",
+                fileMetadata.Id, fileBytes.Length, caseId
+            );
 
-            // return
             return StatusCode(201, new FileDetailsResponseModel
             {
-                Id = Guid.Parse(fileMetadata.Id),
+                Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
                 ContentType = fileMetadata.ContentType,
                 Hash = fileMetadata.Hash,
                 Size = fileMetadata.Size,
                 CreatedAt = fileMetadata.CreatedAt,
                 CreatedBy = fileMetadata.CreatedBy,
-                Description = fileMetadata.Description
+                Description = fileMetadata.Description ?? string.Empty
             });
         }
         catch (Exception ex)
@@ -109,27 +101,25 @@ public class CaseFilesController : LoggedInControllerBase
         }
     }
 
-    [HttpGet("{fileId}")]
+    [HttpGet("{fileId:guid}")]
     [ProducesResponseType(typeof(FileDetailsResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<FileDetailsResponseModel>> GetFile(string caseId, string fileId)
+    public async Task<ActionResult<FileDetailsResponseModel>> GetFile(string caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // ensures the given case id is a valid id
-            if (!Guid.TryParse(caseId, out _) || !Guid.TryParse(fileId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid ID" });
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check whether the user has access to the case
-            if (!await _caseDocService.CheckUserAccessAsync(Guid.Parse(caseId), user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -137,28 +127,28 @@ public class CaseFilesController : LoggedInControllerBase
                 });
             }
 
-            var fileMetadata = await _fileService.GetFileMetadataAsync(Guid.Parse(fileId));
+            var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found" });
             }
 
-            // Verify file belongs to this case
-            if (fileMetadata.ParentId != Guid.Parse(caseId))
+            // verify file belongs to this case
+            if (fileMetadata.CaseId != caseGuid)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
 
             return Ok(new FileDetailsResponseModel
             {
-                Id = Guid.Parse(fileMetadata.Id),
+                Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
                 ContentType = fileMetadata.ContentType,
                 Hash = fileMetadata.Hash,
                 Size = fileMetadata.Size,
                 CreatedAt = fileMetadata.CreatedAt,
                 CreatedBy = fileMetadata.CreatedBy,
-                Description = fileMetadata.Description
+                Description = fileMetadata.Description ?? string.Empty
             });
         }
         catch (Exception ex)
@@ -168,27 +158,25 @@ public class CaseFilesController : LoggedInControllerBase
         }
     }
 
-    [HttpGet("{fileId}/render")]
+    [HttpGet("{fileId:guid}/render")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> RenderFile(string caseId, string fileId)
+    public async Task<IActionResult> RenderFile(string caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // ensures that the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out _) || !Guid.TryParse(fileId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid ID" });
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check that the user has access to the case
-            if (!await _caseDocService.CheckUserAccessAsync(Guid.Parse(caseId), user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -196,33 +184,28 @@ public class CaseFilesController : LoggedInControllerBase
                 });
             }
 
-            // grab the metadata for the file
-            var fileMetadata = await _fileService.GetFileMetadataAsync(Guid.Parse(fileId));
+            var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found" });
             }
 
-            // just check that the file actually belongs to this case
-            if (fileMetadata.ParentId != Guid.Parse(caseId))
+            if (fileMetadata.CaseId != caseGuid)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
 
-            // grab the file contents from lfs
-            var fileBytes = await _fileService.GetFileContentsAsync(Guid.Parse(fileId));
+            var fileBytes = await _fileService.GetFileContentsAsync(fileId);
             if (fileBytes == null || fileBytes.Length == 0)
             {
                 return NotFound(new FailureResponseModel { Detail = "File content not found" });
             }
 
-            // return file with the additional headers
             Response.Headers.Append("Accept-Ranges", "bytes");
             Response.Headers.Append("Content-Length", fileBytes.Length.ToString());
             Response.Headers.Append("Cache-Control", "public, max-age=3600");
             Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileMetadata.Filename}\"");
 
-            // return
             return File(fileBytes, fileMetadata.ContentType ?? "application/octet-stream");
         }
         catch (Exception ex)
@@ -232,34 +215,33 @@ public class CaseFilesController : LoggedInControllerBase
         }
     }
 
-    [HttpDelete("{fileId}")]
+    [HttpDelete("{fileId:guid}")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<SuccessResponseModel>> DeleteFile(string caseId, string fileId)
+    public async Task<ActionResult<SuccessResponseModel>> DeleteFile(string caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // ensures the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out _) || !Guid.TryParse(fileId, out _))
+            if (!Guid.TryParse(caseId, out var caseGuid))
             {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid ID" });
+                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
             }
 
-            // check the user has access to this case
-            var caseDoc = await _caseDocService.GetDocumentAsync(Guid.Parse(caseId));
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
             }
 
-            // ensures that the user is either an admin or a case worker
-            if (!user!.is_admin && !caseDoc.Workers.Contains(user.id))
+            // only case workers and admins can delete files
+            var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
+            if (!user!.IsAdmin && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -267,23 +249,24 @@ public class CaseFilesController : LoggedInControllerBase
                 });
             }
 
-            // grab the file metadata
-            var fileMetadata = await _fileService.GetFileMetadataAsync(Guid.Parse(fileId));
+            var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found" });
             }
 
-            // check that this file actually belongs to this case
-            if (fileMetadata.ParentId != Guid.Parse(caseId))
+            if (fileMetadata.CaseId != caseGuid)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
 
-            // delete the file (this method will also remove it from the case doc)
-            await _fileService.DeleteFileAsync(Guid.Parse(fileId));
+            await _fileService.DeleteCaseFileAsync(fileId);
 
-            // return
+            _logger.LogInformation(
+                "Deleted file {FileId} from case {CaseId} by user {UserId}",
+                fileId, caseId, user.Id
+            );
+
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)

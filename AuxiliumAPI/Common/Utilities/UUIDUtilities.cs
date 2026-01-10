@@ -14,6 +14,8 @@ namespace AuxiliumAPI.Common.Utilities
          */
         private static readonly Dictionary<DatabaseObjectType, string> NamespacePaths = new()
         {
+            [DatabaseObjectType.RefreshToken]           = "/auxilium/3/database_object/refresh_token",
+            
             [DatabaseObjectType.User]                   = "/auxilium/3/database_object/mariadb/user",
             [DatabaseObjectType.UserAdditionalProperty] = "/auxilium/3/database_object/mariadb/user/additional_property",
 
@@ -29,6 +31,7 @@ namespace AuxiliumAPI.Common.Utilities
             [DatabaseObjectType.Message]                = "/auxilium/3/database_object/mariadb/message",
             [DatabaseObjectType.MessageReadBy]          = "/auxilium/3/database_object/mariadb/message/read_by",
         };
+
 
         /**
          * Takes in a DatabaseObjectType and gets the precomputed Namespace UUID for it.

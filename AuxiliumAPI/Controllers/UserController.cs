@@ -1,12 +1,11 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures.CouchDB;
-using AuxiliumAPI.Common.DataStructures.MariaDB;
+using AuxiliumAPI.Common.DataStructures;
+using AuxiliumAPI.Common.EF;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.User;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -15,20 +14,17 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Users")]
 public class UserController : LoggedInControllerBase
 {
-    private readonly IConfiguration _configuration;
+    private readonly IUserDocumentService _userDocService;
     private readonly ILogger<UserController> _logger;
-    private readonly ICouchDbService _couchDb;
 
     public UserController(
-        IConfiguration configuration,
-        ILogger<UserController> logger,
-        ICouchDbService couchDb,
-        IMariaDbService mariaDb
-        ) : base(mariaDb, logger)
+        IUserDocumentService userDocService,
+        AuxiliumDbContext db,
+        ILogger<UserController> logger)
+        : base(db, logger)
     {
-        _configuration = configuration;
+        _userDocService = userDocService;
         _logger = logger;
-        _couchDb = couchDb;
     }
 
     [HttpGet("")]
@@ -38,134 +34,146 @@ public class UserController : LoggedInControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "createdAt",
-        [FromQuery] string? sortOrder = "desc"
-        )
+        [FromQuery] string? sortOrder = "desc",
+        [FromQuery] string? search = null)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check if user is admin
-            object selector;
+            IQueryable<Common.EntityModels.UserModel> query;
 
-            if (user!.is_admin)
+            if (user!.IsAdmin)
             {
                 // admins see all users
-                selector = new { };
+                query = Db.Users.Include(u => u.AdditionalProperties);
             }
             else
             {
-                //TODO: non-admins can only see users that share a case with them
-                selector = new { };
+                // non-admins see users they share cases with
+                query = Db.Users
+                    .Include(u => u.AdditionalProperties)
+                    .Where(u =>
+                        // users they're a client with
+                        Db.CaseClients.Any(cc => cc.UserId == user.Id &&
+                            Db.CaseClients.Any(cc2 => cc2.CaseId == cc.CaseId && cc2.UserId == u.Id)) ||
+                        // users they're a worker with
+                        Db.CaseWorkers.Any(cw => cw.UserId == user.Id &&
+                            Db.CaseWorkers.Any(cw2 => cw2.CaseId == cw.CaseId && cw2.UserId == u.Id)) ||
+                        // or themselves
+                        u.Id == user.Id
+                    )
+                    .Distinct();
             }
 
-            // skip a "page"
-            var skip = (page - 1) * pageSize;
+            // apply search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u =>
+                    u.FullName != null && u.FullName.Contains(search) ||
+                    u.EmailAddress.Contains(search)
+                );
+            }
 
-            // query couchdb
-            var result = await _couchDb.QueryAsync<UserDocumentStructure>(
-                _configuration["Databases:CouchDB:Databases:Users"]!,
-                selector,
-                limit: pageSize,
-                skip: skip,
-                sort: [$"{{{sortBy}:\"{sortOrder}\"}}"]
-            );
+            // apply sorting
+            query = ApplySorting(query, sortBy, sortOrder);
 
-            var total = await _couchDb.CountAsync<UserDocumentStructure>(
-                _configuration["Databases:CouchDB:Databases:Users"]!,
-                selector
-            );
-
+            var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
 
-            // get all the user ids from the result and feed it into a mariadb query
-            var userIds = result.Documents.Select(d => d.Id).ToList();
-            var mariaDbUsers = new Dictionary<string, UserRowStructure>();
-            if (userIds.Count != 0)
-            {
-                var mariaDbData = await MariaDb.QueryAsync<UserRowStructure>(
-                    "SELECT id, email_address, is_admin FROM users WHERE id IN @userIds",
-                    new { userIds }
-                );
-
-                mariaDbUsers = mariaDbData.ToDictionary(
-                    u => u.id.ToString(),
-                    u => u
-                );
-            }
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
             // build response models
-            List<UserResponseModel> users;
+            var userResponses = new List<UserResponseModel>();
 
-            if (user.is_admin)
+            foreach (var userDoc in users)
             {
-                // admins get all the data
-                users = [.. result.Documents.Select(userDoc =>
+                if (user.IsAdmin)
                 {
-                    // get mariadb data for this user
-                    mariaDbUsers.TryGetValue(userDoc.Id, out var mariaDbUser);
+                    // admins get all data including additional properties
+                    var additionalProperties = userDoc.AdditionalProperties?
+                        .ToDictionary(
+                            p => p.Name,
+                            p => new AdditionalPropertySubStructure
+                            {
+                                Id = p.Id,
+                                CreatedAt = p.CreatedAt,
+                                CreatedBy = p.CreatedBy,
+                                UpdatedAt = p.LastUpdatedAt,
+                                LastUpdatedBy = p.LastUpdatedBy,
+                                OriginalName = p.Name,
+                                PrettyName = p.Name,
+                                UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                                Content = p.Content,
+                                ContentType = p.ContentType
+                            }
+                        ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
 
-                    return new UserResponseModel
+                    userResponses.Add(new UserResponseModel
                     {
-                        ID = Guid.Parse(userDoc.Id),
+                        ID = userDoc.Id,
                         CreatedAt = userDoc.CreatedAt,
                         CreatedBy = userDoc.CreatedBy,
                         LastUpdatedAt = userDoc.LastUpdatedAt,
                         LastUpdatedBy = userDoc.LastUpdatedBy,
 
-                        FullName = userDoc.FullName,
-                        FullAddress = userDoc.FullAddress,
-                        TelephoneNumber = userDoc.TelephoneNumber,
-                        Gender = userDoc.Gender,
+                        FullName = userDoc.FullName ?? string.Empty,
+                        FullAddress = userDoc.FullAddress ?? string.Empty,
+                        TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
+                        Gender = userDoc.Gender ?? string.Empty,
                         DateOfBirth = userDoc.DateOfBirth,
 
-                        AdditionalProperties = userDoc.AdditionalProperties,
-                        Files = userDoc.Files,
+                        AdditionalProperties = additionalProperties,
+                        Files = new List<string>(),
 
-                        HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
+                        HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
-                        EmailAddress = mariaDbUser?.email_address ?? "[UNKNOWN]",
-                        IsAdmin = mariaDbUser?.is_admin ?? false,
-                    };
-                })];
-            }
-            else
-            {
-                // non-admins get a reduced amount of data
-                users = [.. result.Documents.Select(userDoc => new UserResponseModel
+                        EmailAddress = userDoc.EmailAddress,
+                        IsAdmin = userDoc.IsAdmin,
+                        IsCaseWorker = userDoc.IsCaseWorker
+                    });
+                }
+                else
                 {
-                    ID = Guid.Parse(userDoc.Id),
-                    CreatedAt = userDoc.CreatedAt,
-                    CreatedBy = userDoc.CreatedBy,
-                    LastUpdatedAt = null,
-                    LastUpdatedBy = null,
+                    // non-admins get redacted data
+                    userResponses.Add(new UserResponseModel
+                    {
+                        ID = userDoc.Id,
+                        CreatedAt = userDoc.CreatedAt,
+                        CreatedBy = userDoc.CreatedBy,
+                        LastUpdatedAt = null,
+                        LastUpdatedBy = null,
 
-                    FullName = userDoc.FullName,
-                    FullAddress = "[REDACTED]",
-                    TelephoneNumber = "[REDACTED]",
-                    Gender = "[REDACTED]",
-                    DateOfBirth = null,
+                        FullName = userDoc.FullName ?? string.Empty,
+                        FullAddress = "[REDACTED]",
+                        TelephoneNumber = "[REDACTED]",
+                        Gender = "[REDACTED]",
+                        DateOfBirth = null,
 
-                    AdditionalProperties = userDoc.AdditionalProperties,
-                    Files = userDoc.Files,
+                        AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                        Files = new List<string>(),
 
-                    HowDidYouFindOutAboutOurService = "[REDACTED]",
+                        HowDidYouFindOutAboutOurService = "[REDACTED]",
 
-                    EmailAddress = "[REDACTED]",
-                    IsAdmin = false,
-                })];
+                        EmailAddress = "[REDACTED]",
+                        IsAdmin = false,
+                        IsCaseWorker = false
+                    });
+                }
             }
 
             var response = new PaginatedUsersResponseModel
             {
-                Users = users,
+                Users = userResponses,
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
                 TotalPages = totalPages,
-                HasMore = page < totalPages,
+                HasMore = page < totalPages
             };
 
             return Ok(response);
@@ -173,102 +181,106 @@ public class UserController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to search users");
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch users: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to fetch users"
+            });
         }
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet("{userId:guid}")]
     [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserResponseModel>> GetUserById(string userId)
+    public async Task<ActionResult<UserResponseModel>> GetUserById(Guid userId)
     {
         try
         {
-            // enforce login and get current user details
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // validate uuid
-            if (!Guid.TryParse(userId, out _))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "You must provide a valid UUID" });
-            }
-
-            // grab the user document from couchdb
-            var userDoc = await _couchDb.GetDocumentAsync<UserDocumentStructure>(
-                _configuration["Databases:CouchDB:Databases:Users"]!,
-                Guid.Parse(userId)
-            );
+            var userDoc = await Db.Users
+                .Include(u => u.AdditionalProperties)
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (userDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
 
-            // fetch mariadb data for this user
-            var mariaDbUser = await MariaDb.QuerySingleOrDefaultAsync<UserRowStructure>(
-                "SELECT id, email_address, is_admin FROM users WHERE id = @userId",
-                new { userId = Guid.Parse(userId) }
-            );
-
-            // build response model
             UserResponseModel response;
 
-            if (user!.is_admin)
+            if (user!.IsAdmin)
             {
-                // admins get all the data
+                // admins get all data including additional properties
+                var additionalProperties = userDoc.AdditionalProperties?
+                    .ToDictionary(
+                        p => p.Name,
+                        p => new AdditionalPropertySubStructure
+                        {
+                            Id = p.Id,
+                            CreatedAt = p.CreatedAt,
+                            CreatedBy = p.CreatedBy,
+                            UpdatedAt = p.LastUpdatedAt,
+                            LastUpdatedBy = p.LastUpdatedBy,
+                            OriginalName = p.Name,
+                            PrettyName = p.Name,
+                            UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                            Content = p.Content,
+                            ContentType = p.ContentType
+                        }
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
+
                 response = new UserResponseModel
                 {
-                    ID = Guid.Parse(userDoc.Id),
+                    ID = userDoc.Id,
                     CreatedAt = userDoc.CreatedAt,
                     CreatedBy = userDoc.CreatedBy,
                     LastUpdatedAt = userDoc.LastUpdatedAt,
                     LastUpdatedBy = userDoc.LastUpdatedBy,
 
-                    FullName = userDoc.FullName,
-                    FullAddress = userDoc.FullAddress,
-                    TelephoneNumber = userDoc.TelephoneNumber,
-                    Gender = userDoc.Gender,
+                    FullName = userDoc.FullName ?? string.Empty,
+                    FullAddress = userDoc.FullAddress ?? string.Empty,
+                    TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
+                    Gender = userDoc.Gender ?? string.Empty,
                     DateOfBirth = userDoc.DateOfBirth,
 
-                    AdditionalProperties = userDoc.AdditionalProperties,
-                    Files = userDoc.Files,
+                    AdditionalProperties = additionalProperties,
+                    Files = new List<string>(),
 
-                    HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService,
+                    HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
-                    EmailAddress = mariaDbUser?.email_address ?? "[UNKNOWN]",
-                    IsAdmin = mariaDbUser?.is_admin ?? false,
+                    EmailAddress = userDoc.EmailAddress,
+                    IsAdmin = userDoc.IsAdmin,
+                    IsCaseWorker = userDoc.IsCaseWorker
                 };
             }
             else
             {
-                // non-admins get a reduced amount of data
+                // non-admins get redacted data
                 response = new UserResponseModel
                 {
-                    ID = Guid.Parse(userDoc.Id),
+                    ID = userDoc.Id,
                     CreatedAt = userDoc.CreatedAt,
                     CreatedBy = userDoc.CreatedBy,
                     LastUpdatedAt = null,
                     LastUpdatedBy = null,
 
-                    FullName = userDoc.FullName,
+                    FullName = userDoc.FullName ?? string.Empty,
                     FullAddress = "[REDACTED]",
                     TelephoneNumber = "[REDACTED]",
                     Gender = "[REDACTED]",
                     DateOfBirth = null,
 
-                    AdditionalProperties = userDoc.AdditionalProperties,
-                    Files = userDoc.Files,
+                    AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                    Files = new List<string>(),
 
                     HowDidYouFindOutAboutOurService = "[REDACTED]",
 
                     EmailAddress = "[REDACTED]",
                     IsAdmin = false,
+                    IsCaseWorker = false
                 };
             }
 
@@ -277,10 +289,33 @@ public class UserController : LoggedInControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch user {UserId}", userId);
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new FailureResponseModel { Detail = $"Failed to fetch user: {ex.Message}" }
-            );
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to fetch user"
+            });
         }
+    }
+
+    // helper method for sorting
+    private IQueryable<Common.EntityModels.UserModel> ApplySorting(
+        IQueryable<Common.EntityModels.UserModel> query,
+        string? sortBy,
+        string? sortOrder)
+    {
+        var descending = sortOrder?.ToLower() == "desc";
+
+        return sortBy?.ToLower() switch
+        {
+            "createdat" => descending
+                ? query.OrderByDescending(u => u.CreatedAt)
+                : query.OrderBy(u => u.CreatedAt),
+            "fullname" => descending
+                ? query.OrderByDescending(u => u.FullName)
+                : query.OrderBy(u => u.FullName),
+            "email" => descending
+                ? query.OrderByDescending(u => u.EmailAddress)
+                : query.OrderBy(u => u.EmailAddress),
+            _ => query.OrderByDescending(u => u.CreatedAt)
+        };
     }
 }

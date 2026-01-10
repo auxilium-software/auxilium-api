@@ -1,12 +1,17 @@
 ﻿using AuxiliumAPI.Common.Services;
+﻿using AuxiliumAPI.Common.EF;
+using AuxiliumAPI.Common.Services;
 using AuxiliumAPI.Common.Services.Interfaces;
 using AuxiliumAPI.Filters;
 using AuxiliumAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,24 +42,25 @@ builder.Services.AddEndpointsApiExplorer();
 
 
 
-builder.Services.AddSwaggerGen(swaggerGen =>
+builder.Services.AddSwaggerGen(options =>
 {
-    swaggerGen.SwaggerDoc("v3", new OpenApiInfo
+    options.SwaggerDoc("v3", new OpenApiInfo
     {
         Title = "Auxilium API",
         Version = "V3"
     });
 
-    swaggerGen.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
         Name = "Authorization",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme",
     });
 
-    swaggerGen.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -69,7 +75,7 @@ builder.Services.AddSwaggerGen(swaggerGen =>
         }
     });
 
-    swaggerGen.OperationFilter<FileUploadOperationFilter>();
+    options.OperationFilter<FileUploadOperationFilter>();
 });
 
 
@@ -96,7 +102,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        var originsSection = builder.Configuration.GetSection("API:CORS:AllowedOrigins");
+        var originsSection = builder.Configuration.GetSection("API:AllowedOrigins");
         var origins = originsSection.Get<string[]>() ?? Array.Empty<string>();
 
         policy.WithOrigins(origins)
@@ -109,7 +115,6 @@ builder.Services.AddCors(options =>
 
 
 builder.Services.AddScoped<IMariaDbService, MariaDbService>();
-builder.Services.AddScoped<ICouchDbService, CouchDbService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
@@ -125,6 +130,39 @@ builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+
+
+
+var mariaDbHost = builder.Configuration["Databases:MariaDB:Host"]           ?? throw new InvalidOperationException("MariaDB Host not found");
+var mariaDbPort = builder.Configuration["Databases:MariaDB:Port"]           ?? throw new InvalidOperationException("MariaDB Port not found");
+var mariaDbUsername = builder.Configuration["Databases:MariaDB:Username"]   ?? throw new InvalidOperationException("MariaDB Username not found");
+var mariaDbPassword = builder.Configuration["Databases:MariaDB:Password"]   ?? throw new InvalidOperationException("MariaDB Password not found");
+var mariaDbDatabase = builder.Configuration["Databases:MariaDB:Database"]   ?? throw new InvalidOperationException("MariaDB Database not found");
+
+var connectionString = $"Server={mariaDbHost};Port={mariaDbPort};Database={mariaDbDatabase};User={mariaDbUsername};Password={mariaDbPassword};CharSet=utf8mb4;";
+
+
+builder.Services.AddDbContext<AuxiliumDbContext>(options =>
+{
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString),
+        mySqlOptions =>
+        {
+            mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+            );
+        }
+    );
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
 
 
 
