@@ -11,7 +11,7 @@ namespace AuxiliumAPI.Models.CaseMessage
 
         [Required]
         [JsonPropertyName("createdBy")]
-        public required Guid CreatedBy { get; init; }
+        public required Guid? CreatedBy { get; init; }
 
         [Required]
         [JsonPropertyName("createdAt")]

@@ -17,7 +17,7 @@
         /// <summary>
         /// The unique identifier of the user who created the timeline item.
         /// </summary>
-        public required Guid CreatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
         /// <summary>
         /// The timestamp when the timeline item was last updated.
         /// </summary>

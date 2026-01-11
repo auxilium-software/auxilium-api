@@ -13,7 +13,7 @@
         /// <summary>
         /// The unique identifier of the user who created the additional property.
         /// </summary>
-        public required Guid CreatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
 
 
 

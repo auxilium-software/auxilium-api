@@ -19,7 +19,7 @@ namespace AuxiliumAPI.Models.Case
 
         [Required]
         [JsonPropertyName("createdBy")]
-        public required Guid CreatedBy { get; init; }
+        public required Guid? CreatedBy { get; init; }
 
 
 

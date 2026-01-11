@@ -11,7 +11,7 @@ namespace AuxiliumAPI.Common.DataStructures
         public required DateTime CreatedAt { get; set; }
 
         [JsonPropertyName("createdBy")]
-        public required Guid CreatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
 
         [JsonPropertyName("updatedAt")]
         public DateTime? UpdatedAt { get; set; }

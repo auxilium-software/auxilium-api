@@ -15,7 +15,7 @@ namespace AuxiliumAPI.Models.File
 
         [Required]
         [JsonPropertyName("createdBy")]
-        public required Guid CreatedBy { get; init; }
+        public required Guid? CreatedBy { get; init; }
 
 
 

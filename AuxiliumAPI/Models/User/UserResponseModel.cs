@@ -18,7 +18,7 @@ namespace AuxiliumAPI.Models.User
 
         [Required]
         [JsonPropertyName("createdBy")]
-        public required Guid CreatedBy { get; set; }
+        public required Guid? CreatedBy { get; set; }
 
         [Required]
         [JsonPropertyName("lastUpdatedAt")]

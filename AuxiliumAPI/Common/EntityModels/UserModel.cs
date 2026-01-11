@@ -13,7 +13,7 @@
         /// <summary>
         /// The unique identifier of the user who created the additional property.
         /// </summary>
-        public required Guid CreatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
         /// <summary>
         /// The timestamp when the additional property was last updated.
         /// </summary>
@@ -40,23 +40,23 @@
         /// <summary>
         /// The full address of the user.
         /// </summary>
-        public required string FullAddress { get; set; }
+        public required string? FullAddress { get; set; }
         /// <summary>
         /// The telephone number of the user.
         /// </summary>
-        public required string TelephoneNumber { get; set; }
+        public required string? TelephoneNumber { get; set; }
         /// <summary>
         /// The gender of the user.
         /// </summary>
-        public required string Gender { get; set; }
+        public required string? Gender { get; set; }
         /// <summary>
         /// The date of birth of the user.
         /// </summary>
-        public required DateOnly DateOfBirth { get; set; }
+        public required DateOnly? DateOfBirth { get; set; }
         /// <summary>
         /// How the user found out about the service.
         /// </summary>
-        public required string HowDidYouFindOutAboutOurService { get; set; }
+        public required string? HowDidYouFindOutAboutOurService { get; set; }
 
 
         /// <summary>
