@@ -78,6 +78,36 @@ public class AuxiliumDbContext : DbContext
             entity.HasIndex(e => e.EmailAddress).IsUnique();
         });
 
+        // wemwbs
+        modelBuilder.Entity<WEMWBSModel>(entity =>
+        {
+            entity.ToTable("wemwbs");
+            entity.HasKey(e => e.Id);
+
+
+
+            entity.Property(e => e.Id)                              .HasColumnName("id")                                        .HasColumnType("char(36)")                                                                                                          .IsRequired();
+            entity.Property(e => e.CreatedAt)                       .HasColumnName("created_at")                                .HasColumnType("datetime")                                                      .HasDefaultValueSql("UTC_TIMESTAMP()")              .IsRequired();
+            entity.Property(e => e.CreatedBy)                       .HasColumnName("created_by")                                .HasColumnType("char(36)");
+            
+            entity.Property(e => e.OptimismScore)                   .HasColumnName("optimism_score")                            .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.UsefulnessScore)                 .HasColumnName("usefulness_score")                          .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.RelaxedScore)                    .HasColumnName("relaxed_score")                             .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.InterestedInPeopleScore)         .HasColumnName("interested_in_people_score")                .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.SpareEnergyScore)                .HasColumnName("spare_energy_score")                        .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.ProblemHandlingScore)            .HasColumnName("problem_handling_score")                    .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.ClearThoughtScore)               .HasColumnName("clear_thought_score")                       .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.FeelingGoodSelfScore)            .HasColumnName("feeling_good_self_score")                   .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.FeelingCloseToPeopleScore)       .HasColumnName("feeling_close_to_people_score")             .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.ConfidenceScore)                 .HasColumnName("confidence_score")                          .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.MakingUpOwnMindScore)            .HasColumnName("making_up_own_mind_score")                  .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.FeelingLovedScore)               .HasColumnName("feeling_loved_score")                       .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.InterestedInNewThingsScore)      .HasColumnName("interested_in_new_things_score")            .HasColumnType("int")                                                                                                               .IsRequired();
+            entity.Property(e => e.FeelingCheerfulScore)            .HasColumnName("feeling_cheerful_score")                    .HasColumnType("int")                                                                                                               .IsRequired();
+            
+            entity.HasOne(e => e.CreatedByUser)                     .WithMany()                                                 .HasForeignKey(e => e.CreatedBy)        .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // cases
         modelBuilder.Entity<CaseModel>(entity =>
         {
