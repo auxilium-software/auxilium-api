@@ -54,8 +54,8 @@ public class AuxiliumDbContext : DbContext
             entity.Property(e => e.LastUpdatedAt)                   .HasColumnName("last_updated_at")                           .HasColumnType("datetime");
             entity.Property(e => e.LastUpdatedBy)                   .HasColumnName("last_updated_by")                           .HasColumnType("char(36)");
 
-            entity.Property(e => e.EmailAddress)                    .HasColumnName("email_address")                             .HasColumnType("text")                                                                                                              .IsRequired();
-            entity.Property(e => e.PasswordHash)                    .HasColumnName("password_hash")                             .HasColumnType("text")                                                                                                              .IsRequired();
+            entity.Property(e => e.EmailAddress)                    .HasColumnName("email_address")                             .HasColumnType("text");
+            entity.Property(e => e.PasswordHash)                    .HasColumnName("password_hash")                             .HasColumnType("text");
             entity.Property(e => e.FullName)                        .HasColumnName("full_name")                                 .HasColumnType("text")                                                                                                              .IsRequired();
 
             entity.Property(e => e.FullAddress)                     .HasColumnName("full_address")                              .HasColumnType("text");

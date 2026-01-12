@@ -28,11 +28,11 @@
         /// <summary>
         /// The email address of the user.
         /// </summary>
-        public required string EmailAddress { get; set; }
+        public required string? EmailAddress { get; set; }
         /// <summary>
         /// The hashed password of the user.
         /// </summary>
-        public required string PasswordHash { get; set; }
+        public required string? PasswordHash { get; set; }
         /// <summary>
         /// The full name of the user.
         /// </summary>
