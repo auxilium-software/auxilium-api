@@ -47,6 +47,10 @@ namespace AuxiliumAPI.Models.UserRegistration
         public required string HowDidYouFindOutAboutOurService { get; init; }
 
         [Required]
+        [JsonPropertyName("languagePreference")]
+        public required string LanguagePreference { get; init; }
+
+        [Required]
         [EmailAddress]
         [JsonPropertyName("emailAddress")]
         public required string EmailAddress { get; init; }

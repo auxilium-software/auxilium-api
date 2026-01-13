@@ -1,8 +1,8 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures;
-using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.EntityModels;
-using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumServices.Common.DataStructures;
+using AuxiliumServices.Common.EF;
+using AuxiliumServices.Common.EntityModels;
+using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using AuxiliumAPI.Models.File;

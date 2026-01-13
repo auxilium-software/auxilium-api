@@ -1,4 +1,6 @@
-﻿namespace AuxiliumAPI.Models.Case
+﻿using AuxiliumServices.Common.Enumerators;
+
+namespace AuxiliumAPI.Models.Case
 {
     public class TodoUpdateRequestModel
     {

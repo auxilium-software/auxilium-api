@@ -1,4 +1,5 @@
 ﻿using AuxiliumAPI.Common.DataStructures;
+using AuxiliumServices.Common.DataStructures;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

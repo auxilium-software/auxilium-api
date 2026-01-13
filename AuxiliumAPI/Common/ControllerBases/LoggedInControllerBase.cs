@@ -1,5 +1,5 @@
-﻿using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.EntityModels;
+﻿using AuxiliumServices.Common.EF;
+using AuxiliumServices.Common.EntityModels;
 using AuxiliumAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -1,6 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumServices.Common.EF;
+using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.CaseMessage;
 using Microsoft.AspNetCore.Mvc;

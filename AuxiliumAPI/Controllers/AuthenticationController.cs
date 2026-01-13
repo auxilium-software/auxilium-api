@@ -1,8 +1,8 @@
-﻿using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.EntityModels;
-using AuxiliumAPI.Common.Enumerators;
-using AuxiliumAPI.Common.Services.Interfaces;
-using AuxiliumAPI.Common.Utilities;
+﻿using AuxiliumServices.Common.EF;
+using AuxiliumServices.Common.EntityModels;
+using AuxiliumServices.Common.Enumerators;
+using AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumServices.Common.Utilities;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using AuxiliumAPI.Models.UserLogin;

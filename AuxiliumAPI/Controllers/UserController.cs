@@ -1,7 +1,7 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Common.DataStructures;
-using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumServices.Common.DataStructures;
+using AuxiliumServices.Common.EF;
+using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.User;
 using Microsoft.AspNetCore.Mvc;
