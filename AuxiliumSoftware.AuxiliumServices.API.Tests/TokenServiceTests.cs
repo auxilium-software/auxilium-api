@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 
 
-namespace AuxiliumAPI.Tests
+namespace AuxiliumSoftware.AuxiliumServices.API.Tests
 {
     public class TokenServiceTests
     {

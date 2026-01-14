@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AuxiliumAPI.Tests.Fixtures
+namespace AuxiliumSoftware.AuxiliumServices.API.Tests.Fixtures
 {
     public class ConfigurationFixture : IDisposable
     {

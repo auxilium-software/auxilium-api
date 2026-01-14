@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AuxiliumAPI\AuxiliumSoftware.AuxiliumServices.API.csproj" />
+    <ProjectReference Include="..\AuxiliumSoftware.AuxiliumServices.API\AuxiliumSoftware.AuxiliumServices.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>

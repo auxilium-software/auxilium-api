@@ -2,7 +2,7 @@
 using FluentAssertions;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 
-namespace AuxiliumAPI.Tests;
+namespace AuxiliumSoftware.AuxiliumServices.API.Tests;
 
 public class PasswordServiceTests
 {

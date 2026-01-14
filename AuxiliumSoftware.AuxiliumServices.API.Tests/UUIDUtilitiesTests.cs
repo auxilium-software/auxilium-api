@@ -9,7 +9,7 @@ using Xunit;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 
-namespace AuxiliumAPI.Tests
+namespace AuxiliumSoftware.AuxiliumServices.API.Tests
 {
     public class UUIDUtilitiesTests
     {

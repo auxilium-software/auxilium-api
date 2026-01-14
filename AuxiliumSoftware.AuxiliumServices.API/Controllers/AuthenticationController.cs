@@ -1,19 +1,19 @@
-﻿using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.EntityModels;
-using AuxiliumServices.Common.Enumerators;
-using AuxiliumServices.Common.Services.Interfaces;
-using AuxiliumServices.Common.Utilities;
-using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.Case;
-using AuxiliumAPI.Models.UserLogin;
-using AuxiliumAPI.Models.UserRefresh;
-using AuxiliumAPI.Models.UserRegistration;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserRefresh;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserRegistration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 
-namespace AuxiliumAPI.Controllers;
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
 [Route("/api/v3/authentication")]
@@ -96,6 +96,7 @@ public class AuthenticationController : ControllerBase
                 TelephoneNumber = request.TelephoneNumber,
                 Gender = request.Gender,
                 DateOfBirth = DateOnly.Parse(request.DateOfBirth),
+                LanguagePreference = request.LanguagePreference,
                 HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
                 IsAdmin = false,
                 IsCaseWorker = false,
