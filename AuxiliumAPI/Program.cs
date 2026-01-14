@@ -1,6 +1,6 @@
-using AuxiliumAPI.Common.EF;
-using AuxiliumAPI.Common.Services;
-using AuxiliumAPI.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Filters;
 using AuxiliumAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,6 +11,8 @@ using System.Text;
 using System.Text.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi.Models;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,7 +103,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        var originsSection = builder.Configuration.GetSection("API:AllowedOrigins");
+        var originsSection = builder.Configuration.GetSection("API:CORS:AllowedOrigins");
         var origins = originsSection.Get<string[]>() ?? Array.Empty<string>();
 
         policy.WithOrigins(origins)
@@ -113,7 +115,6 @@ builder.Services.AddCors(options =>
 
 
 
-builder.Services.AddScoped<IMariaDbService, MariaDbService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
@@ -186,5 +187,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+app.MapFallback(() => Results.NotFound(new
+{
+    error = "Not Found",
+    message = "The requested endpoint does not exist.",
+    statusCode = 404
+}));
 
 app.Run();
