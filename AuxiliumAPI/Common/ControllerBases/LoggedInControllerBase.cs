@@ -1,6 +1,6 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.Common.EF;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityModels;
-using AuxiliumAPI.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Models;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Server;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using Microsoft.AspNetCore.Mvc;

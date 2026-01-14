@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Models;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.File;
