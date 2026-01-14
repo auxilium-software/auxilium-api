@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36705.20
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuxiliumSoftware.AuxiliumServices.API", "AuxiliumAPI\AuxiliumSoftware.AuxiliumServices.API.csproj", "{FA131AC4-4652-40A5-B737-C12078A8AC0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuxiliumSoftware.AuxiliumServices.API.Tests", "AuxiliumAPI.Tests\AuxiliumSoftware.AuxiliumServices.API.Tests.csproj", "{93423231-5AE9-42B5-9E73-0B26D742A440}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA131AC4-4652-40A5-B737-C12078A8AC0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA131AC4-4652-40A5-B737-C12078A8AC0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA131AC4-4652-40A5-B737-C12078A8AC0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA131AC4-4652-40A5-B737-C12078A8AC0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93423231-5AE9-42B5-9E73-0B26D742A440}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93423231-5AE9-42B5-9E73-0B26D742A440}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93423231-5AE9-42B5-9E73-0B26D742A440}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93423231-5AE9-42B5-9E73-0B26D742A440}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0066656-7C15-42A2-8CAA-189782E38B1E}
+	EndGlobalSection
+EndGlobal
