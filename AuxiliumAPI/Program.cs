@@ -1,8 +1,6 @@
 using AuxiliumSoftware.AuxiliumServices.Common.EF;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
-using AuxiliumAPI.Filters;
-using AuxiliumAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +9,8 @@ using System.Text;
 using System.Text.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Middleware;
+using AuxiliumSoftware.AuxiliumServices.API.Filters;
 
 
 

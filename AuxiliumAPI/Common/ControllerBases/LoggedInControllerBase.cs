@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace AuxiliumAPI.Common.ControllerBases
+namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
 {
     /// <summary>
     /// This is an inheritable class for controllers that require the user to be logged in.

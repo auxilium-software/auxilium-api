@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.Server
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.Server
 {
     public class PingResponseModel
     {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.AdditionalProperty
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty
 {
     public class AdditionalPropertyCreationRequestModel
     {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.Me
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.Me
 {
     public class PasswordUpdateRequestModel
     {

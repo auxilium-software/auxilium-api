@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.UserLogin
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin
 {
     public class UserLoginRequestModel
     {

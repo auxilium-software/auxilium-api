@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.User
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.User
 {
     public class UserResponseModel
     {

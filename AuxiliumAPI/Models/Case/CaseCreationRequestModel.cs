@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.Case
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.Case
 {
     public class CaseCreationRequestModel
     {

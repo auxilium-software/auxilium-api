@@ -1,7 +1,7 @@
-﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.Me;
-using AuxiliumAPI.Models.User;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Me;
+using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
 using AuxiliumSoftware.AuxiliumServices.Common.EF;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AuxiliumAPI.Controllers;
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
 [Route("/api/v3/me")]

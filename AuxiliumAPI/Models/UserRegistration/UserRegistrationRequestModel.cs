@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.UserRegistration
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserRegistration
 {
     public class UserRegistrationRequestModel
     {

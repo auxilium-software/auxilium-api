@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.UserRefresh
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserRefresh
 {
     public class UserRefreshTokenRequestModel
     {

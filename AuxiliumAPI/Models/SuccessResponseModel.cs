@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models
+namespace AuxiliumSoftware.AuxiliumServices.API.Models
 {
     /// <summary>
     /// Represents a standard success response model.

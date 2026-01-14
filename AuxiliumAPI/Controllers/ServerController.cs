@@ -1,9 +1,9 @@
 ﻿using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.Server;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Server;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AuxiliumAPI.Controllers
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 {
     [ApiController]
     [Route("/api/v3/server")]

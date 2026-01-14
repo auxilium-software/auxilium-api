@@ -1,11 +1,12 @@
-﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumSoftware.AuxiliumServices.Common.EF;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.EF;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.File;
 using Microsoft.AspNetCore.Mvc;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 
-namespace AuxiliumAPI.Controllers;
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
 [Route("/api/v3/cases/{caseId}/files")]

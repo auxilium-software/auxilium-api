@@ -1,4 +1,4 @@
-﻿namespace AuxiliumAPI.Models.Me
+﻿namespace AuxiliumSoftware.AuxiliumServices.API.Models.Me
 {
     public class ProfileUpdateRequestModel
     {

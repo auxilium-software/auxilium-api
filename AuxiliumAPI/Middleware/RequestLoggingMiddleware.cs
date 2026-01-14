@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
-namespace AuxiliumAPI.Middleware
+namespace AuxiliumSoftware.AuxiliumServices.API.Middleware
 {
     public class RequestLoggingMiddleware
     {

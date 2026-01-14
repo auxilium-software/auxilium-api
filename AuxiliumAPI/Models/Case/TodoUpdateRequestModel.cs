@@ -1,6 +1,6 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 
-namespace AuxiliumAPI.Models.Case
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.Case
 {
     public class TodoUpdateRequestModel
     {

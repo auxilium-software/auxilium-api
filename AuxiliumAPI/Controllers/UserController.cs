@@ -1,6 +1,6 @@
-﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.User;
+﻿using AuxiliumAPI.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
 using AuxiliumSoftware.AuxiliumServices.Common.EF;
@@ -8,7 +8,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AuxiliumAPI.Controllers;
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
 [Route("/api/v3/users")]
@@ -46,7 +46,7 @@ public class UserController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> query;
+            IQueryable<AuxiliumServices.Common.EntityModels.UserModel> query;
 
             if (user!.IsAdmin)
             {
@@ -301,8 +301,8 @@ public class UserController : LoggedInControllerBase
     }
 
     // helper method for sorting
-    private IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> ApplySorting(
-        IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> query,
+    private IQueryable<AuxiliumServices.Common.EntityModels.UserModel> ApplySorting(
+        IQueryable<AuxiliumServices.Common.EntityModels.UserModel> query,
         string? sortBy,
         string? sortOrder)
     {

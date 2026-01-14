@@ -1,17 +1,18 @@
-﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
 using AuxiliumSoftware.AuxiliumServices.Common.EF;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
-using AuxiliumAPI.Models.Case;
-using AuxiliumAPI.Models.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
+using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 
-namespace AuxiliumAPI.Controllers;
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
 [Route("/api/v3/cases")]

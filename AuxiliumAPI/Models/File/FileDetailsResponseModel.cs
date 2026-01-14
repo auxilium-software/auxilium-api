@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.File
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.File
 {
     public class FileDetailsResponseModel
     {

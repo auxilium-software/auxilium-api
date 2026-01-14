@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace AuxiliumAPI.Models.CaseMessage
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.CaseMessage
 {
     public class MessageResponseModel
     {

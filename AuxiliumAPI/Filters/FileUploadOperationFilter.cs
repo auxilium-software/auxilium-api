@@ -1,7 +1,7 @@
 ﻿using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace AuxiliumAPI.Filters
+namespace AuxiliumSoftware.AuxiliumServices.API.Filters
 {
     public class FileUploadOperationFilter : IOperationFilter
     {
