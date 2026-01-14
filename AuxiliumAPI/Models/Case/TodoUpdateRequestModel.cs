@@ -1,4 +1,4 @@
-﻿using AuxiliumServices.Common.Enumerators;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 
 namespace AuxiliumAPI.Models.Case
 {

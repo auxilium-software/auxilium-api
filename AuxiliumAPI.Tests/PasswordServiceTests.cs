@@ -1,6 +1,6 @@
 ﻿using Xunit;
 using FluentAssertions;
-using AuxiliumAPI.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 
 namespace AuxiliumAPI.Tests;
 

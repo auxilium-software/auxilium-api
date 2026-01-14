@@ -1,6 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using Microsoft.AspNetCore.Mvc;
@@ -12,17 +12,21 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases")]
 public class CasePeopleController : LoggedInControllerBase
 {
-    private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CasePeopleController> _logger;
 
+    private readonly ICaseDocumentService _caseDocService;
+
     public CasePeopleController(
+        ILogger<CasePeopleController> logger,
+
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
-        ILogger<CasePeopleController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
-        _caseDocService = caseDocService;
         _logger = logger;
+
+        _caseDocService = caseDocService;
     }
 
     #region ========================= CLIENTS =========================

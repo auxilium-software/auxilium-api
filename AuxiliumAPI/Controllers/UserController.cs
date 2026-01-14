@@ -1,9 +1,10 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.DataStructures;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.User;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,17 +15,20 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Users")]
 public class UserController : LoggedInControllerBase
 {
-    private readonly IUserDocumentService _userDocService;
     private readonly ILogger<UserController> _logger;
 
+    private readonly IUserDocumentService _userDocService;
+
     public UserController(
+        ILogger<UserController> logger,
         IUserDocumentService userDocService,
-        AuxiliumDbContext db,
-        ILogger<UserController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
-        _userDocService = userDocService;
         _logger = logger;
+
+        _userDocService = userDocService;
     }
 
     [HttpGet("")]
@@ -42,7 +46,7 @@ public class UserController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            IQueryable<Common.EntityModels.UserModel> query;
+            IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> query;
 
             if (user!.IsAdmin)
             {
@@ -297,8 +301,8 @@ public class UserController : LoggedInControllerBase
     }
 
     // helper method for sorting
-    private IQueryable<Common.EntityModels.UserModel> ApplySorting(
-        IQueryable<Common.EntityModels.UserModel> query,
+    private IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> ApplySorting(
+        IQueryable<AuxiliumSoftware.AuxiliumServices.Common.EntityModels.UserModel> query,
         string? sortBy,
         string? sortOrder)
     {

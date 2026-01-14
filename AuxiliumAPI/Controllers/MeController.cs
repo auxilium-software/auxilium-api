@@ -1,10 +1,11 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.DataStructures;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Me;
 using AuxiliumAPI.Models.User;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,20 +18,24 @@ namespace AuxiliumAPI.Controllers;
 [Authorize]
 public class MeController : LoggedInControllerBase
 {
-    private readonly IUserDocumentService _userDocService;
-    private readonly IPasswordService _passwordService;
     private readonly ILogger<MeController> _logger;
 
+    private readonly IUserDocumentService _userDocService;
+    private readonly IPasswordService _passwordService;
+
     public MeController(
+        ILogger<MeController> logger,
+
         IUserDocumentService userDocService,
         IPasswordService passwordService,
-        AuxiliumDbContext db,
-        ILogger<MeController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
+        _logger = logger;
+
         _userDocService = userDocService;
         _passwordService = passwordService;
-        _logger = logger;
     }
 
     [HttpGet("")]

@@ -1,7 +1,7 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Enumerators;
-using AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Case;
 using Microsoft.AspNetCore.Mvc;
@@ -13,17 +13,21 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases")]
 public class CaseTodoController : LoggedInControllerBase
 {
-    private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CaseTodoController> _logger;
 
+    private readonly ICaseDocumentService _caseDocService;
+
     public CaseTodoController(
+        ILogger<CaseTodoController> logger,
+
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
-        ILogger<CaseTodoController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
-        _caseDocService = caseDocService;
         _logger = logger;
+
+        _caseDocService = caseDocService;
     }
 
     [HttpPost("")]

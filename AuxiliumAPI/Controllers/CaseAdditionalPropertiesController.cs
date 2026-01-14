@@ -1,9 +1,11 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.AdditionalProperty;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -12,17 +14,22 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases")]
 public class CaseAdditionalPropertiesController : LoggedInControllerBase
 {
+    private readonly ConfigurationStructure _configuration;
     private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CaseAdditionalPropertiesController> _logger;
 
     public CaseAdditionalPropertiesController(
+        IConfiguration configuration,
+        ILogger<CaseAdditionalPropertiesController> logger,
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
-        ILogger<CaseAdditionalPropertiesController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
-        _caseDocService = caseDocService;
+        _configuration = configuration.Get<ConfigurationStructure>()!;
         _logger = logger;
+
+        _caseDocService = caseDocService;
     }
 
     [HttpPost("{propertyName}")]

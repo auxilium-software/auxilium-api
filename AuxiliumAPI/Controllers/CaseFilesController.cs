@@ -1,6 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.File;
 using Microsoft.AspNetCore.Mvc;
@@ -12,20 +12,22 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases", "Files")]
 public class CaseFilesController : LoggedInControllerBase
 {
-    private readonly IFileDocumentService _fileService;
-    private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CaseFilesController> _logger;
 
+    private readonly IFileDocumentService _fileService;
+    private readonly ICaseDocumentService _caseDocService;
+
     public CaseFilesController(
+        ILogger<CaseFilesController> logger,
         IFileDocumentService fileService,
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
-        ILogger<CaseFilesController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
+        _logger = logger;
         _fileService = fileService;
         _caseDocService = caseDocService;
-        _logger = logger;
     }
 
     [HttpPost("")]

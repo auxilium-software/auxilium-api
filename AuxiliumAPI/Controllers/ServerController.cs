@@ -1,5 +1,6 @@
 ﻿using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.Server;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumAPI.Controllers
@@ -11,7 +12,9 @@ namespace AuxiliumAPI.Controllers
     {
         private readonly ILogger<ServerController> _logger;
 
-        public ServerController(ILogger<ServerController> logger)
+        public ServerController(
+            ILogger<ServerController> logger
+            )
         {
             _logger = logger;
         }

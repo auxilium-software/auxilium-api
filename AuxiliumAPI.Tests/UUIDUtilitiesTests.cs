@@ -1,5 +1,4 @@
-﻿using AuxiliumAPI.Common.Enumerators;
-using AuxiliumAPI.Common.Utilities;
+﻿
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
@@ -7,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 
 namespace AuxiliumAPI.Tests
 {

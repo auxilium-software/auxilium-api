@@ -1,4 +1,4 @@
-﻿using AuxiliumAPI.Common.Services;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;

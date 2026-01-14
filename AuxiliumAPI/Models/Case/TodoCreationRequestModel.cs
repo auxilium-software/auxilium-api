@@ -1,4 +1,4 @@
-﻿using AuxiliumServices.Common.Enumerators;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

@@ -1,9 +1,11 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.AdditionalProperty;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace AuxiliumAPI.Controllers;
 
@@ -12,17 +14,21 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Users")]
 public class UserAdditionalPropertiesController : LoggedInControllerBase
 {
-    private readonly IUserDocumentService _userDocService;
     private readonly ILogger<UserAdditionalPropertiesController> _logger;
 
+    private readonly IUserDocumentService _userDocService;
+
     public UserAdditionalPropertiesController(
+        ILogger<UserAdditionalPropertiesController> logger,
+
         IUserDocumentService userDocService,
-        AuxiliumDbContext db,
-        ILogger<UserAdditionalPropertiesController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
-        _userDocService = userDocService;
         _logger = logger;
+
+        _userDocService = userDocService;
     }
 
 

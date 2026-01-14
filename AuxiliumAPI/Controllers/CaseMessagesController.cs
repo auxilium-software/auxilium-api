@@ -1,6 +1,6 @@
 ﻿using AuxiliumAPI.Common.ControllerBases;
-using AuxiliumServices.Common.EF;
-using AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumAPI.Models;
 using AuxiliumAPI.Models.CaseMessage;
 using Microsoft.AspNetCore.Mvc;
@@ -12,20 +12,23 @@ namespace AuxiliumAPI.Controllers;
 [Tags("Cases", "Messages")]
 public class CaseMessagesController : LoggedInControllerBase
 {
-    private readonly IMessageDocumentService _messageService;
-    private readonly ICaseDocumentService _caseDocService;
     private readonly ILogger<CaseMessagesController> _logger;
 
+    private readonly IMessageDocumentService _messageService;
+    private readonly ICaseDocumentService _caseDocService;
+
     public CaseMessagesController(
+        ILogger<CaseMessagesController> logger,
         IMessageDocumentService messageService,
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
-        ILogger<CaseMessagesController> logger)
+        AuxiliumDbContext db
+        )
         : base(db, logger)
     {
+        _logger = logger;
+
         _messageService = messageService;
         _caseDocService = caseDocService;
-        _logger = logger;
     }
 
     [HttpPost("")]
