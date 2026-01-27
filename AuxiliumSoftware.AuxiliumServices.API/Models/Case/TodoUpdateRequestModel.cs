@@ -1,4 +1,6 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Models.Case
 {

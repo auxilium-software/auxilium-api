@@ -1,6 +1,6 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.EF;
-using AuxiliumSoftware.AuxiliumServices.Common.EntityModels;
-using AuxiliumSoftware.AuxiliumServices.API.Models;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +36,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * 
          * @return The user model of the currently logged in user, or an error ActionResult if something went wrong.
          */
-        protected async Task<(UserModel? user, ActionResult? error)> GetCurrentUserAsync()
+        protected async Task<(UserEntityModel? user, ActionResult? error)> GetCurrentUserAsync()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -79,7 +79,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * 
          * @return The user model of the currently logged in admin user, or an error ActionResult if something went wrong.
          */
-        protected async Task<(UserModel? user, ActionResult? error)> RequireAdminAsync()
+        protected async Task<(UserEntityModel? user, ActionResult? error)> RequireAdminAsync()
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return (null, error);
@@ -101,7 +101,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * 
          * @return The user model of the currently logged in case worker or admin user, or an error ActionResult if something went wrong.
          */
-        protected async Task<(UserModel? user, ActionResult? error)> RequireCaseWorkerAsync()
+        protected async Task<(UserEntityModel? user, ActionResult? error)> RequireCaseWorkerAsync()
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return (null, error);

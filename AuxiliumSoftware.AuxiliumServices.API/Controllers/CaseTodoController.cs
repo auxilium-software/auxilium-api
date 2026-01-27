@@ -1,9 +1,9 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.EF;
-using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using Microsoft.AspNetCore.Mvc;
-using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 
