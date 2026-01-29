@@ -1,6 +1,5 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
-using AuxiliumSoftware.AuxiliumServices.Common.EF;
-using AuxiliumSoftware.AuxiliumServices.Common.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +9,8 @@ using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 using AuxiliumSoftware.AuxiliumServices.API.Models.File;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -19,22 +20,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Authorize]
 public class CaseController : LoggedInControllerBase
 {
-    private readonly ILogger<CaseController> _logger;
-
     private readonly ICaseDocumentService _caseDocService;
     private readonly IFileDocumentService _fileService;
 
     public CaseController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CaseController> logger,
 
         ICaseDocumentService caseDocService,
-        AuxiliumDbContext db,
         IFileDocumentService fileService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _caseDocService = caseDocService;
         _fileService = fileService;
     }
@@ -54,7 +52,7 @@ public class CaseController : LoggedInControllerBase
             if (error != null) return error;
 
             // create the case entity
-            var caseEntity = new CaseModel
+            var caseEntity = new CaseEntityModel
             {
                 Id = Guid.NewGuid(),
                 Title = request.Title,
@@ -71,7 +69,7 @@ public class CaseController : LoggedInControllerBase
             Db.Cases.Add(caseEntity);
 
             // add currently logged in user as a client
-            Db.CaseClients.Add(new CaseClientModel
+            Db.CaseClients.Add(new CaseClientEntityModel
             {
                 Id = Guid.NewGuid(),
                 CaseId = caseEntity.Id,
@@ -82,7 +80,7 @@ public class CaseController : LoggedInControllerBase
 
             await Db.SaveChangesAsync();
 
-            _logger.LogInformation("Created case {CaseId} by user {UserId}", caseEntity.Id, user.Id);
+            this.Logger.LogInformation("Created case {CaseId} by user {UserId}", caseEntity.Id, user.Id);
 
             // build the response model
             var response = new CaseResponseModel
@@ -114,7 +112,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create case");
+            this.Logger.LogError(ex, "Failed to create case");
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to create case" });
         }
     }
@@ -168,7 +166,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch my cases");
+            this.Logger.LogError(ex, "Failed to fetch my cases");
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
@@ -222,7 +220,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch assigned cases");
+            this.Logger.LogError(ex, "Failed to fetch assigned cases");
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
@@ -236,14 +234,15 @@ public class CaseController : LoggedInControllerBase
         [FromQuery] string? sortBy = "createdAt",
         [FromQuery] string? sortOrder = "desc",
         [FromQuery] string? status = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null
+        )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            IQueryable<CaseModel> query;
+            IQueryable<CaseEntityModel> query;
 
             if (user!.IsAdmin)
             {
@@ -312,7 +311,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to search cases");
+            this.Logger.LogError(ex, "Failed to search cases");
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
@@ -362,7 +361,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch case" });
         }
     }
@@ -429,7 +428,7 @@ public class CaseController : LoggedInControllerBase
                 request.Description
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Uploaded file {FileId} ({Size} bytes) to case {CaseId}",
                 metadata.Id, fileBytes.Length, caseId
             );
@@ -438,7 +437,7 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
@@ -499,7 +498,7 @@ public class CaseController : LoggedInControllerBase
             //TODO: don't use EF directly here
             await Db.SaveChangesAsync();
 
-            _logger.LogInformation("Updated case {CaseId} by user {UserId}", caseId, user.Id);
+            this.Logger.LogInformation("Updated case {CaseId} by user {UserId}", caseId, user.Id);
 
             // reload relationships
             await Db.Entry(caseEntity).Collection(c => c.Files!).LoadAsync();
@@ -512,13 +511,13 @@ public class CaseController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to update case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to update case" });
         }
     }
     #region ========================= HELPER METHODS =========================
-    private IQueryable<CaseModel> ApplySorting(
-        IQueryable<CaseModel> query,
+    private IQueryable<CaseEntityModel> ApplySorting(
+        IQueryable<CaseEntityModel> query,
         string? sortBy,
         string? sortOrder)
     {
@@ -542,7 +541,7 @@ public class CaseController : LoggedInControllerBase
         };
     }
 
-    private CaseResponseModel MapToResponseModel(CaseModel caseEntity)
+    private CaseResponseModel MapToResponseModel(CaseEntityModel caseEntity)
     {
         return new CaseResponseModel
         {

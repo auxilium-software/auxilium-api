@@ -14,20 +14,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Cases")]
 public class CasePeopleController : LoggedInControllerBase
 {
-    private readonly ILogger<CasePeopleController> _logger;
-
     private readonly ICaseDocumentService _caseDocService;
 
     public CasePeopleController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CasePeopleController> logger,
 
-        ICaseDocumentService caseDocService,
-        AuxiliumDbContext db
+        ICaseDocumentService caseDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _caseDocService = caseDocService;
     }
 
@@ -83,7 +80,7 @@ public class CasePeopleController : LoggedInControllerBase
             // add client
             await _caseDocService.AddClientAsync(caseGuid, request.UserID);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Added client {ClientId} to case {CaseId} by user {UserId}",
                 request.UserID, caseId, user.Id
             );
@@ -92,7 +89,7 @@ public class CasePeopleController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to add client to case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to add client to case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to add client" });
         }
     }
@@ -137,7 +134,7 @@ public class CasePeopleController : LoggedInControllerBase
             // remove the client
             await _caseDocService.RemoveClientAsync(caseGuid, clientId);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Removed client {ClientId} from case {CaseId} by user {UserId}",
                 clientId, caseId, user.Id
             );
@@ -147,7 +144,7 @@ public class CasePeopleController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to remove client from case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to remove client from case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to remove client" });
         }
     }
@@ -204,7 +201,7 @@ public class CasePeopleController : LoggedInControllerBase
             // add worker
             await _caseDocService.AddWorkerAsync(caseGuid, request.UserID);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Added worker {WorkerId} to case {CaseId} by user {UserId}",
                 request.UserID, caseId, user.Id
             );
@@ -214,7 +211,7 @@ public class CasePeopleController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to add worker to case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to add worker to case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to add worker" });
         }
     }
@@ -259,7 +256,7 @@ public class CasePeopleController : LoggedInControllerBase
             // remove worker
             await _caseDocService.RemoveWorkerAsync(caseGuid, workerId);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Removed worker {WorkerId} from case {CaseId} by user {UserId}",
                 workerId, caseId, user.Id
             );
@@ -269,7 +266,7 @@ public class CasePeopleController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to remove worker from case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to remove worker from case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to remove worker" });
         }
     }

@@ -14,20 +14,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Cases")]
 public class CaseTodoController : LoggedInControllerBase
 {
-    private readonly ILogger<CaseTodoController> _logger;
-
     private readonly ICaseDocumentService _caseDocService;
 
     public CaseTodoController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CaseTodoController> logger,
 
-        ICaseDocumentService caseDocService,
-        AuxiliumDbContext db
+        ICaseDocumentService caseDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _caseDocService = caseDocService;
     }
 
@@ -96,12 +93,12 @@ public class CaseTodoController : LoggedInControllerBase
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
+            this.Logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
             return NotFound(new FailureResponseModel { Detail = "Case not found" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to create todo" });
         }
     }
@@ -170,7 +167,7 @@ public class CaseTodoController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update todo {TodoId}", todoId);
+            this.Logger.LogError(ex, "Failed to update todo {TodoId}", todoId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to update todo" });
         }
     }
@@ -225,7 +222,7 @@ public class CaseTodoController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete todo {TodoId}", todoId);
+            this.Logger.LogError(ex, "Failed to delete todo {TodoId}", todoId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete todo" });
         }
     }

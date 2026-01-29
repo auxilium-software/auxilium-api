@@ -20,22 +20,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Authorize]
 public class MeController : LoggedInControllerBase
 {
-    private readonly ILogger<MeController> _logger;
-
     private readonly IUserDocumentService _userDocService;
     private readonly IPasswordService _passwordService;
 
     public MeController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<MeController> logger,
 
         IUserDocumentService userDocService,
-        IPasswordService passwordService,
-        AuxiliumDbContext db
+        IPasswordService passwordService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _userDocService = userDocService;
         _passwordService = passwordService;
     }
@@ -110,7 +107,7 @@ public class MeController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch user details for current user");
+            this.Logger.LogError(ex, "Failed to fetch user details for current user");
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to fetch user details"
@@ -161,13 +158,13 @@ public class MeController : LoggedInControllerBase
 
             await Db.SaveChangesAsync();
 
-            _logger.LogInformation("User {UserId} updated their profile", user.Id);
+            this.Logger.LogInformation("User {UserId} updated their profile", user.Id);
 
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update user profile");
+            this.Logger.LogError(ex, "Failed to update user profile");
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to update profile"
@@ -223,13 +220,13 @@ public class MeController : LoggedInControllerBase
 
             await Db.SaveChangesAsync();
 
-            _logger.LogInformation("User {UserId} changed their password", user!.Id);
+            this.Logger.LogInformation("User {UserId} changed their password", user!.Id);
 
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to change password");
+            this.Logger.LogError(ex, "Failed to change password");
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Error changing password"

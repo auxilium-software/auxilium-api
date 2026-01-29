@@ -1,4 +1,5 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
     {
         protected readonly AuxiliumDbContext Db;
         protected readonly ILogger Logger;
+        protected readonly ConfigurationStructure Configuration;
 
         /**
          * Constructor for LoggedInControllerBase
@@ -23,10 +25,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * @param db The database context to use for data access.
          * @param logger The logger instance for logging.
          */
-        protected LoggedInControllerBase(AuxiliumDbContext db, ILogger logger)
+        protected LoggedInControllerBase(
+            IConfiguration configuration,
+            AuxiliumDbContext db,
+            ILogger logger
+        )
         {
-            Db = db;
-            Logger = logger;
+            this.Configuration = configuration.Get<ConfigurationStructure>()!;
+            this.Db = db;
+            this.Logger = logger;
         }
 
         /**

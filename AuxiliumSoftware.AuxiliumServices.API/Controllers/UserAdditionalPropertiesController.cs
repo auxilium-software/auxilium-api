@@ -16,20 +16,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Users")]
 public class UserAdditionalPropertiesController : LoggedInControllerBase
 {
-    private readonly ILogger<UserAdditionalPropertiesController> _logger;
-
     private readonly IUserDocumentService _userDocService;
 
     public UserAdditionalPropertiesController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<UserAdditionalPropertiesController> logger,
 
-        IUserDocumentService userDocService,
-        AuxiliumDbContext db
+        IUserDocumentService userDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _userDocService = userDocService;
     }
 
@@ -78,7 +75,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
                 request.Content
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Created property {AdditionalPropertyName} for user {UserId} by user {CurrentUserId}",
                 request.Name, userId, user.Id
             );
@@ -94,7 +91,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for user {UserId}", request.Name, userId);
+            this.Logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for user {UserId}", request.Name, userId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to create property"
@@ -172,7 +169,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
                 await Db.SaveChangesAsync();
             }
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Updated property {AdditionalPropertyName} for user {UserId} by user {CurrentUserId}",
                 existingProp.Name, userId, user.Id
             );
@@ -182,7 +179,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for user {UserId}", additionalPropertyId, userId);
+            this.Logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for user {UserId}", additionalPropertyId, userId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to update property"
@@ -246,7 +243,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
             // delete by ID
             await _userDocService.DeleteAdditionalPropertyAsync(userGuid, existingProp.Id);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Deleted property {AdditionalPropertyName} from user {UserId} by user {CurrentUserId}",
                 existingProp.Name, userId, user.Id
             );
@@ -256,7 +253,7 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from user {UserId}", additionalPropertyId, userId);
+            this.Logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from user {UserId}", additionalPropertyId, userId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to delete property"

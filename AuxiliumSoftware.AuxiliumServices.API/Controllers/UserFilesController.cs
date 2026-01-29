@@ -16,21 +16,18 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Users", "Files")]
 public class UserFilesController : LoggedInControllerBase
 {
-    private readonly ILogger<UserFilesController> _logger;
-
     private readonly IFileDocumentService _fileService;
     private readonly IUserDocumentService _userDocService;
 
     public UserFilesController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<UserFilesController> logger,
         IFileDocumentService fileService,
-        IUserDocumentService userDocService,
-        AuxiliumDbContext db
+        IUserDocumentService userDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _fileService = fileService;
         _userDocService = userDocService;
     }
@@ -84,7 +81,7 @@ public class UserFilesController : LoggedInControllerBase
                 description: request.Description
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Uploaded file {FileId} ({Size} bytes) to user {UserId}",
                 fileMetadata.Id, fileBytes.Length, userId
             );
@@ -103,7 +100,7 @@ public class UserFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload file to user {CaseId}", userId);
+            this.Logger.LogError(ex, "Failed to upload file to user {CaseId}", userId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
@@ -160,7 +157,7 @@ public class UserFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get file {FileId} from user {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to get file {FileId} from user {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to get file" });
         }
     }
@@ -217,7 +214,7 @@ public class UserFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to render file {FileId} from user {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to render file {FileId} from user {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to render file" });
         }
     }
@@ -268,7 +265,7 @@ public class UserFilesController : LoggedInControllerBase
 
             await _fileService.DeleteUserFileAsync(fileId);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Deleted file {FileId} from user {CaseId} by user {UserId}",
                 fileId, caseId, user.Id
             );
@@ -277,7 +274,7 @@ public class UserFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete file {FileId} from user {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to delete file {FileId} from user {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete file" });
         }
     }

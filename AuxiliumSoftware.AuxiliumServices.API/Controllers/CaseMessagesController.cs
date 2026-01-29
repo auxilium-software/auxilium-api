@@ -14,21 +14,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Cases", "Messages")]
 public class CaseMessagesController : LoggedInControllerBase
 {
-    private readonly ILogger<CaseMessagesController> _logger;
-
     private readonly IMessageDocumentService _messageService;
     private readonly ICaseDocumentService _caseDocService;
 
     public CaseMessagesController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CaseMessagesController> logger,
-        IMessageDocumentService messageService,
-        ICaseDocumentService caseDocService,
-        AuxiliumDbContext db
-        )
-        : base(db, logger)
-    {
-        _logger = logger;
 
+        IMessageDocumentService messageService,
+        ICaseDocumentService caseDocService
+        )
+        : base(configuration, db, logger)
+    {
         _messageService = messageService;
         _caseDocService = caseDocService;
     }
@@ -71,7 +69,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 isUrgent: request.IsUrgent
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Message {MessageId} created in case {CaseId} by user {UserId}",
                 messageDoc.Id, caseId, user.Id
             );
@@ -93,12 +91,12 @@ public class CaseMessagesController : LoggedInControllerBase
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
+            this.Logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
             return NotFound(new FailureResponseModel { Detail = "Case not found" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create message in case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to create message in case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to create message"
@@ -157,7 +155,7 @@ public class CaseMessagesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get messages for case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to get messages for case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to retrieve messages"
@@ -225,7 +223,7 @@ public class CaseMessagesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get message {MessageId}", messageId);
+            this.Logger.LogError(ex, "Failed to get message {MessageId}", messageId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to retrieve message"
@@ -283,7 +281,7 @@ public class CaseMessagesController : LoggedInControllerBase
 
             await _messageService.DeleteMessageAsync(messageId);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Message {MessageId} deleted from case {CaseId} by user {UserId}",
                 messageId, caseId, user.Id
             );
@@ -292,7 +290,7 @@ public class CaseMessagesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete message {MessageId}", messageId);
+            this.Logger.LogError(ex, "Failed to delete message {MessageId}", messageId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to delete message"

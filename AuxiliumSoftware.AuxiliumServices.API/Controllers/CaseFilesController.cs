@@ -14,20 +14,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Cases", "Files")]
 public class CaseFilesController : LoggedInControllerBase
 {
-    private readonly ILogger<CaseFilesController> _logger;
-
     private readonly IFileDocumentService _fileService;
     private readonly ICaseDocumentService _caseDocService;
 
     public CaseFilesController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CaseFilesController> logger,
+
         IFileDocumentService fileService,
-        ICaseDocumentService caseDocService,
-        AuxiliumDbContext db
+        ICaseDocumentService caseDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
         _fileService = fileService;
         _caseDocService = caseDocService;
     }
@@ -81,7 +80,7 @@ public class CaseFilesController : LoggedInControllerBase
                 description: request.Description
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Uploaded file {FileId} ({Size} bytes) to case {CaseId}",
                 fileMetadata.Id, fileBytes.Length, caseId
             );
@@ -100,7 +99,7 @@ public class CaseFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
+            this.Logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
@@ -157,7 +156,7 @@ public class CaseFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get file {FileId} from case {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to get file {FileId} from case {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to get file" });
         }
     }
@@ -214,7 +213,7 @@ public class CaseFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to render file {FileId} from case {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to render file {FileId} from case {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to render file" });
         }
     }
@@ -266,7 +265,7 @@ public class CaseFilesController : LoggedInControllerBase
 
             await _fileService.DeleteCaseFileAsync(fileId);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Deleted file {FileId} from case {CaseId} by user {UserId}",
                 fileId, caseId, user.Id
             );
@@ -275,7 +274,7 @@ public class CaseFilesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete file {FileId} from case {CaseId}", fileId, caseId);
+            this.Logger.LogError(ex, "Failed to delete file {FileId} from case {CaseId}", fileId, caseId);
             return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete file" });
         }
     }

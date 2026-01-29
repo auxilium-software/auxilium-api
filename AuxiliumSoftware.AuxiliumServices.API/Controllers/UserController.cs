@@ -17,19 +17,16 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Users")]
 public class UserController : LoggedInControllerBase
 {
-    private readonly ILogger<UserController> _logger;
-
     private readonly IUserDocumentService _userDocService;
 
     public UserController(
+        IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<UserController> logger,
-        IUserDocumentService userDocService,
-        AuxiliumDbContext db
+        IUserDocumentService userDocService
         )
-        : base(db, logger)
+        : base(configuration, db, logger)
     {
-        _logger = logger;
-
         _userDocService = userDocService;
     }
 
@@ -186,7 +183,7 @@ public class UserController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to search users");
+            this.Logger.LogError(ex, "Failed to search users");
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to fetch users"
@@ -294,7 +291,7 @@ public class UserController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch user {UserId}", userId);
+            this.Logger.LogError(ex, "Failed to fetch user {UserId}", userId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to fetch user"

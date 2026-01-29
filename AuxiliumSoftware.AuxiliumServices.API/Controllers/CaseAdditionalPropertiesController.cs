@@ -2,7 +2,7 @@
 using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
-using AuxiliumSoftware.AuxiliumServices.Common.EF;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -14,25 +14,21 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [Tags("Cases")]
 public class CaseAdditionalPropertiesController : LoggedInControllerBase
 {
-    private readonly ConfigurationStructure _configuration;
     private readonly ICaseDocumentService _caseDocService;
-    private readonly ILogger<CaseAdditionalPropertiesController> _logger;
 
     public CaseAdditionalPropertiesController(
         IConfiguration configuration,
+        AuxiliumDbContext db,
         ILogger<CaseAdditionalPropertiesController> logger,
-        ICaseDocumentService caseDocService,
-        AuxiliumDbContext db
-        )
-        : base(db, logger)
-    {
-        _configuration = configuration.Get<ConfigurationStructure>()!;
-        _logger = logger;
 
+        ICaseDocumentService caseDocService
+        )
+        : base(configuration, db, logger)
+    {
         _caseDocService = caseDocService;
     }
 
-    [HttpPost("{propertyName}")]
+    [HttpPost("")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -76,7 +72,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
                 request.Content
             );
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Created property {AdditionalPropertyName} for case {CaseId} by user {UserId}",
                 request.Name, caseId, user.Id
             );
@@ -92,7 +88,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for case {CaseId}", request.Name, caseId);
+            this.Logger.LogError(ex, "Failed to create property {AdditionalPropertyName} for case {CaseId}", request.Name, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to create property"
@@ -170,7 +166,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
                 await Db.SaveChangesAsync();
             }
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Updated property {AdditionalPropertyName} for case {CaseId} by user {UserId}",
                 existingProp.Name, caseId, user.Id
             );
@@ -179,7 +175,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for case {CaseId}", additionalPropertyId, caseId);
+            this.Logger.LogError(ex, "Failed to update property {AdditionalPropertyId} for case {CaseId}", additionalPropertyId, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to update property"
@@ -244,7 +240,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
             // delete the additional property by its id
             await _caseDocService.DeleteAdditionalPropertyAsync(caseGuid, existingProp.Id);
 
-            _logger.LogInformation(
+            this.Logger.LogInformation(
                 "Deleted property {AdditionalPropertyName} from case {CaseId} by user {UserId}",
                 existingProp.Name, caseId, user.Id
             );
@@ -253,7 +249,7 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from case {CaseId}", additionalPropertyId, caseId);
+            this.Logger.LogError(ex, "Failed to delete property {AdditionalPropertyId} from case {CaseId}", additionalPropertyId, caseId);
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to delete property"
