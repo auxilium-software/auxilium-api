@@ -1,11 +1,11 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.File;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
-using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
-using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
-using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -21,11 +21,12 @@ public class CaseFilesController : LoggedInControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<CaseFilesController> logger,
+        ITotpService totpService,
 
         IFileDocumentService fileService,
         ICaseDocumentService caseDocService
         )
-        : base(configuration, db, logger)
+        : base(configuration, db, logger, totpService)
     {
         _fileService = fileService;
         _caseDocService = caseDocService;

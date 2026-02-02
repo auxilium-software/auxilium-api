@@ -1,11 +1,11 @@
-﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
-using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -22,10 +22,11 @@ public class UserAdditionalPropertiesController : LoggedInControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<UserAdditionalPropertiesController> logger,
+        ITotpService totpService,
 
         IUserDocumentService userDocService
         )
-        : base(configuration, db, logger)
+        : base(configuration, db, logger, totpService)
     {
         _userDocService = userDocService;
     }

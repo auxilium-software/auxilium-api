@@ -1,9 +1,9 @@
-﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
-using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -20,10 +20,11 @@ public class CaseAdditionalPropertiesController : LoggedInControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<CaseAdditionalPropertiesController> logger,
+        ITotpService totpService,
 
         ICaseDocumentService caseDocService
         )
-        : base(configuration, db, logger)
+        : base(configuration, db, logger, totpService)
     {
         _caseDocService = caseDocService;
     }

@@ -1,11 +1,11 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
-using AuxiliumSoftware.AuxiliumServices.API.Models;
-using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
-using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -20,10 +20,11 @@ public class CasePeopleController : LoggedInControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<CasePeopleController> logger,
+        ITotpService totpService,
 
         ICaseDocumentService caseDocService
         )
-        : base(configuration, db, logger)
+        : base(configuration, db, logger, totpService)
     {
         _caseDocService = caseDocService;
     }
