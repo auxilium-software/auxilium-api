@@ -1,7 +1,6 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
@@ -14,15 +13,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("/api/v3/authentication")]
 [Tags("Authentication")]
 public class AuthenticationController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
+    private readonly ConfigurationStructure _configuration;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly AuxiliumDbContext _db;
 
@@ -40,7 +41,7 @@ public class AuthenticationController : ControllerBase
         ITokenService tokenService
         )
     {
-        _configuration = configuration;
+        _configuration = configuration.Get<ConfigurationStructure>();
         _logger = logger;
         _db = db;
 
@@ -107,6 +108,7 @@ public class AuthenticationController : ControllerBase
                     IsAdmin = false,
                     IsCaseWorker = false,
                     AllowLogin = true,
+                    HasEmailAddressBeenVerified = false,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId
                 };
@@ -233,7 +235,7 @@ public class AuthenticationController : ControllerBase
                 // store the new refresh token
                 var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
                 var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
-                var expiresAtTime = DateTime.UtcNow.AddDays(_configuration.GetValue<int>("JWT:RefreshTokenExpirationInDays"));
+                var expiresAtTime = DateTime.UtcNow.AddDays(this._configuration.JWT.RefreshTokenExpirationInDays);
 
                 var refreshTokenEntity = new RefreshTokenEntityModel
                 {
@@ -247,7 +249,7 @@ public class AuthenticationController : ControllerBase
 
                 await _db.SaveChangesAsync();
 
-                expiresIn = _configuration.GetValue<int>("JWT:AccessTokenExpirationInMinutes") * 60;
+                expiresIn = this._configuration.JWT.AccessTokenExpirationInMinutes * 60;
 
                 _logger.LogInformation("User {UserId} logged in successfully", user.Id);
             });
@@ -269,6 +271,87 @@ public class AuthenticationController : ControllerBase
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "An error occurred during login"
+            });
+        }
+    }
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> Refresh(
+        [FromBody] UserRefreshTokenRequestModel request)
+    {
+        try
+        {
+            var strategy = this._db.Database.CreateExecutionStrategy();
+            string? accessToken = null;
+            string? newRefreshToken = null;
+            int expiresIn = 0;
+
+            // hash the provided refresh token
+            var tokenHash = HashingUtilities.SHA256Hash(request.RefreshToken);
+
+            // verify the refresh token and get user
+            var refreshToken = await this._db.RefreshTokens
+                .Include(rt => rt.CreatedByUser)
+                .FirstOrDefaultAsync(rt =>
+                    rt.TokenHash == tokenHash &&
+                    rt.ExpiresAt > DateTime.UtcNow);
+
+            if (refreshToken == null || refreshToken.CreatedByUser == null)
+            {
+                throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            }
+
+            var user = refreshToken.CreatedByUser;
+
+            // create new access and refresh tokens
+            var userData = new Dictionary<string, object>
+            {
+                ["id"] = user.Id
+            };
+            accessToken = _tokenService.CreateAccessToken(userData);
+            newRefreshToken = _tokenService.CreateRefreshToken(userData);
+
+            // update the refresh token
+            var newTokenHash = HashingUtilities.SHA256Hash(newRefreshToken);
+            var newExpiresAt = DateTime.UtcNow.AddDays(
+                this._configuration.JWT.RefreshTokenExpirationInDays
+            );
+
+            refreshToken.TokenHash = newTokenHash;
+            refreshToken.ExpiresAt = newExpiresAt;
+
+            await this._db.SaveChangesAsync();
+
+            expiresIn = this._configuration.JWT.AccessTokenExpirationInMinutes * 60;
+
+            this._logger.LogInformation("Refresh token renewed for user {UserId}", user.Id);
+
+            return Ok(new UserLoginResponseModel
+            {
+                AccessToken = accessToken!,
+                RefreshToken = newRefreshToken!,
+                ExpiresIn = expiresIn
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(ex, "Error during token refresh");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during token refresh"
             });
         }
     }
