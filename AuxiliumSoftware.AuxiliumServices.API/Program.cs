@@ -94,7 +94,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration!["JWT:ValidIssuer"]!,
-            ValidAudience = builder.Configuration!["JWT:ValidAudience"]!,
+            ValidAudience = builder.Configuration!["JWT:ValidAudiencePrefix"]! + "/access",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration!["JWT:SecretKey"]!))
         };
     });
