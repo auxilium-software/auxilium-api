@@ -1,19 +1,19 @@
+using AuxiliumSoftware.AuxiliumServices.API.Filters;
+using AuxiliumSoftware.AuxiliumServices.API.Middleware;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using System.Text.Json;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Microsoft.OpenApi.Models;
-using AuxiliumSoftware.AuxiliumServices.API.Middleware;
-using AuxiliumSoftware.AuxiliumServices.API.Filters;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 
 
 
@@ -125,6 +125,8 @@ builder.Services.AddScoped<ICaseDocumentService, CaseDocumentService>();
 builder.Services.AddScoped<IUserDocumentService, UserDocumentService>();
 builder.Services.AddScoped<IFileDocumentService, FileDocumentService>();
 builder.Services.AddScoped<IMessageDocumentService, MessageDocumentService>();
+
+builder.Services.AddScoped<ITotpService, TotpService>();
 
 builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
 
