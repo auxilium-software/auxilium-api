@@ -10,16 +10,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
-[Route("/api/v3/cases/{caseId}/todos")]
+[Route("/api/v3/cases/{caseId:guid}/todos")]
 [Tags("Cases")]
-public class CaseTodoController : LoggedInControllerBase
+public class SingleCaseTodoController : LoggedInControllerBase
 {
     private readonly ICaseDocumentService _caseDocService;
 
-    public CaseTodoController(
+    public SingleCaseTodoController(
         IConfiguration configuration,
         AuxiliumDbContext db,
-        ILogger<CaseTodoController> logger,
+        ILogger<SingleCaseTodoController> logger,
         ITotpService totpService,
 
         ICaseDocumentService caseDocService
@@ -36,22 +36,17 @@ public class CaseTodoController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<TodoResponseModel>> CreateTodo(
-        string caseId,
-        [FromBody] TodoCreationRequestModel request)
+        Guid caseId,
+        [FromBody] TodoCreationRequestModel request
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // make sure the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // check the user's access to the case
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -61,7 +56,7 @@ public class CaseTodoController : LoggedInControllerBase
 
             // create the todo
             var todo = await _caseDocService.CreateTodoAsync(
-                caseId: caseGuid,
+                caseId: caseId,
                 summary: request.Summary,
                 description: request.Description,
                 priority: request.Priority,
@@ -77,7 +72,7 @@ public class CaseTodoController : LoggedInControllerBase
                 new TodoResponseModel
                 {
                     Id = todo.Id,
-                    CaseId = caseGuid,
+                    CaseId = caseId,
                     Summary = todo.Summary,
                     Description = todo.Description,
                     Status = todo.Status,
@@ -111,23 +106,18 @@ public class CaseTodoController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UpdateTodo(
-        string caseId,
+        Guid caseId,
         Guid todoId,
-        [FromBody] TodoUpdateRequestModel request)
+        [FromBody] TodoUpdateRequestModel request
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // make sure the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // check the user's access to the case
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -137,7 +127,7 @@ public class CaseTodoController : LoggedInControllerBase
 
             // update the todo
             await _caseDocService.UpdateTodoAsync(
-                caseGuid,
+                caseId,
                 todoId,
                 request.Summary,
                 request.Description,
@@ -151,7 +141,7 @@ public class CaseTodoController : LoggedInControllerBase
             if (request.Status.HasValue)
             {
                 await _caseDocService.UpdateTodoStatusAsync(
-                    caseGuid,
+                    caseId,
                     todoId,
                     request.Status.Value,
                     request.Status == TodoStatusEnum.Completed ? user!.Id : null,
@@ -180,22 +170,17 @@ public class CaseTodoController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> DeleteTodo(
-        string caseId,
-        Guid todoId)
+        Guid caseId,
+        Guid todoId
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // make sure the given case id is a valid uuid
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // check the user's access to the case
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -212,7 +197,7 @@ public class CaseTodoController : LoggedInControllerBase
             }
 
             // delete the todo
-            await _caseDocService.DeleteTodoAsync(caseGuid, todoId);
+            await _caseDocService.DeleteTodoAsync(caseId, todoId);
 
             // return
             return Ok(new SuccessResponseModel());
