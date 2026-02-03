@@ -5,20 +5,22 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin
 {
     public class UserLoginResponseModel
     {
-        [Required]
         [JsonPropertyName("accessToken")]
-        public required string AccessToken { get; init; }
+        public string? AccessToken { get; set; }
 
-        [Required]
         [JsonPropertyName("refreshToken")]
-        public required string RefreshToken { get; init; }
+        public string? RefreshToken { get; set; }
 
-        [Required]
-        [JsonPropertyName("tokenType")]
-        public string TokenType { get; init; } = "Bearer";
-
-        [Required]
         [JsonPropertyName("expiresIn")]
-        public required int ExpiresIn { get; init; }
+        public int? ExpiresIn { get; set; }
+
+
+
+        [Required]
+        [JsonPropertyName("mfaRequired")]
+        public required bool MfaRequired { get; set; } = false;
+
+        [JsonPropertyName("mfaSessionToken")]
+        public string? MfaSessionToken { get; set; }
     }
 }
