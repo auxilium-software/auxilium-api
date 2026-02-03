@@ -2,6 +2,7 @@
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
         protected readonly AuxiliumDbContext Db;
         protected readonly ILogger Logger;
         protected readonly ConfigurationStructure Configuration;
+        protected readonly ITotpService TotpService;
 
         /**
          * Constructor for LoggedInControllerBase
@@ -28,12 +30,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
         protected LoggedInControllerBase(
             IConfiguration configuration,
             AuxiliumDbContext db,
-            ILogger logger
+            ILogger logger,
+            ITotpService totpService
         )
         {
             this.Configuration = configuration.Get<ConfigurationStructure>()!;
             this.Db = db;
             this.Logger = logger;
+            this.TotpService = totpService;
         }
 
         /**
@@ -86,21 +90,21 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * 
          * @return The user model of the currently logged in admin user, or an error ActionResult if something went wrong.
          */
-        protected async Task<(UserEntityModel? user, ActionResult? error)> RequireAdminAsync()
+        protected async Task<ActionResult?> RequireAdminAsync()
         {
             var (user, error) = await GetCurrentUserAsync();
-            if (error != null) return (null, error);
+            if (error != null) return error;
 
             if (!user!.IsAdmin)
             {
                 Logger.LogWarning("User {UserId} attempted admin action without permissions", user.Id);
-                return (null, StatusCode(403, new FailureResponseModel
+                return StatusCode(403, new FailureResponseModel
                 {
-                    Detail = "Administrator privileges required"
-                }));
+                    Detail = "Administrator privileges required, this incident has been reported."
+                });
             }
 
-            return (user, null);
+            return null;
         }
 
         /**
@@ -118,11 +122,55 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
                 Logger.LogWarning("User {UserId} attempted case worker action without permissions", user.Id);
                 return (null, StatusCode(403, new FailureResponseModel
                 {
-                    Detail = "Case worker or administrator privileges required"
+                    Detail = "Case worker or administrator privileges required, this incident has been reported."
                 }));
             }
 
             return (user, null);
+        }
+
+
+
+
+        /// <summary>
+        /// Read the X-TOTP-Code header and verify it against the current User's enrolled TOTP secret.
+        /// Returns a 403 ActionResult if verification fails, or null if the code is valid.
+        /// </summary>
+        protected async Task<ActionResult?> RequireTotpAsync(Guid adminUserId)
+        {
+            var code = Request.Headers["X-TOTP-Code"].FirstOrDefault();
+
+            var hasTotp = await this.TotpService.IsTotpEnabledAsync(adminUserId);
+
+            if (!hasTotp)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You must enable TOTP on your account before performing this action. " +
+                             "Go to your account settings to set up two-factor authentication."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "This action requires a TOTP verification code. " +
+                             "Please provide your authenticator code in the X-TOTP-Code header."
+                });
+            }
+
+            var isValid = await this.TotpService.ValidateUserTotpAsync(adminUserId, code);
+
+            if (!isValid)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "Invalid TOTP code. Please check your authenticator app and try again."
+                });
+            }
+
+            return null; // all good
         }
     }
 }
