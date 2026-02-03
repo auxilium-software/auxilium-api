@@ -63,7 +63,7 @@ public class MeController : LoggedInControllerBase
             // get additional properties
             var additionalProperties = userDoc.AdditionalProperties?
                 .ToDictionary(
-                    p => p.Name,
+                    p => p.UrlSlug,
                     p => new AdditionalPropertySubStructure
                     {
                         Id = p.Id,
@@ -71,9 +71,8 @@ public class MeController : LoggedInControllerBase
                         CreatedBy = p.CreatedBy,
                         UpdatedAt = p.LastUpdatedAt,
                         LastUpdatedBy = p.LastUpdatedBy,
-                        OriginalName = p.Name,
-                        PrettyName = p.Name,
-                        UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                        OriginalName = p.OriginalName,
+                        UrlSlug = p.UrlSlug,
                         Content = p.Content,
                         ContentType = p.ContentType
                     }
@@ -91,12 +90,15 @@ public class MeController : LoggedInControllerBase
                 EmailAddress = userDoc.EmailAddress,
                 IsAdmin = userDoc.IsAdmin,
                 IsCaseWorker = userDoc.IsCaseWorker,
+                AllowLogin = userDoc.AllowLogin,
+                IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
 
                 FullName = userDoc.FullName ?? string.Empty,
                 FullAddress = userDoc.FullAddress ?? string.Empty,
                 TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
                 Gender = userDoc.Gender ?? string.Empty,
                 DateOfBirth = userDoc.DateOfBirth,
+                LanguagePreference = userDoc.LanguagePreference ?? string.Empty,
                 HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
                 AdditionalProperties = additionalProperties,
