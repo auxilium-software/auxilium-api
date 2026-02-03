@@ -3,20 +3,15 @@ using System.Text.Json.Serialization;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty
 {
-    public class AdditionalPropertyCreationRequestModel
+    public class AdditionalPropertyUpdateRequestModel
     {
-        [Required]
-        [JsonPropertyName("name")]
-        public required string Name { get; set; }
-
-
         [Required]
         [JsonPropertyName("content")]
         public required string Content { get; set; }
 
 
         [Required]
-        [JsonPropertyName("content_type")]
+        [JsonPropertyName("contentType")]
         public string? ContentType { get; set; }
     }
 }
