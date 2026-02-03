@@ -10,17 +10,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
-[Route("/api/v3/cases/{caseId}/files")]
+[Route("/api/v3/cases/{caseId:guid}/files")]
 [Tags("Cases", "Files")]
-public class CaseFilesController : LoggedInControllerBase
+public class SingleCaseFilesController : LoggedInControllerBase
 {
     private readonly IFileDocumentService _fileService;
     private readonly ICaseDocumentService _caseDocService;
 
-    public CaseFilesController(
+    public SingleCaseFilesController(
         IConfiguration configuration,
         AuxiliumDbContext db,
-        ILogger<CaseFilesController> logger,
+        ILogger<SingleCaseFilesController> logger,
         ITotpService totpService,
 
         IFileDocumentService fileService,
@@ -39,18 +39,14 @@ public class CaseFilesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<FileDetailsResponseModel>> UploadFile(
-        string caseId,
-        [FromForm] FileUploadRequestModel request)
+        Guid caseId,
+        [FromForm] FileUploadRequestModel request
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
 
             if (request.File == null || request.File.Length == 0)
             {
@@ -58,7 +54,7 @@ public class CaseFilesController : LoggedInControllerBase
             }
 
             // check case access
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -77,7 +73,7 @@ public class CaseFilesController : LoggedInControllerBase
                 filename: request.File.FileName,
                 contentType: request.File.ContentType ?? "application/octet-stream",
                 uploadedBy: user!.Id,
-                caseId: caseGuid,
+                caseId: caseId,
                 description: request.Description
             );
 
@@ -111,19 +107,14 @@ public class CaseFilesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<FileDetailsResponseModel>> GetFile(string caseId, Guid fileId)
+    public async Task<ActionResult<FileDetailsResponseModel>> GetFile(Guid caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -138,7 +129,7 @@ public class CaseFilesController : LoggedInControllerBase
             }
 
             // verify file belongs to this case
-            if (fileMetadata.CaseId != caseGuid)
+            if (fileMetadata.CaseId != caseId)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
@@ -168,19 +159,14 @@ public class CaseFilesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> RenderFile(string caseId, Guid fileId)
+    public async Task<IActionResult> RenderFile(Guid caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -194,7 +180,7 @@ public class CaseFilesController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "File not found" });
             }
 
-            if (fileMetadata.CaseId != caseGuid)
+            if (fileMetadata.CaseId != caseId)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
@@ -225,19 +211,14 @@ public class CaseFilesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<SuccessResponseModel>> DeleteFile(string caseId, Guid fileId)
+    public async Task<ActionResult<SuccessResponseModel>> DeleteFile(Guid caseId, Guid fileId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -259,7 +240,7 @@ public class CaseFilesController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "File not found" });
             }
 
-            if (fileMetadata.CaseId != caseGuid)
+            if (fileMetadata.CaseId != caseId)
             {
                 return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
             }
