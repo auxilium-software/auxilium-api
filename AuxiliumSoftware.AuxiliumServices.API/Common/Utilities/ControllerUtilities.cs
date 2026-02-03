@@ -1,0 +1,323 @@
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
+using AuxiliumSoftware.AuxiliumServices.API.Models.User;
+using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
+namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
+{
+    public static class ControllerUtilities
+    {
+        public static IQueryable<UserEntityModel> ApplySortingForUsers(
+            IQueryable<UserEntityModel> query,
+            string? sortBy,
+            string? sortOrder
+        )
+        {
+            var descending = sortOrder?.ToLower() == "desc";
+
+            return sortBy?.ToLower() switch
+            {
+                "createdat" => descending
+                    ? query.OrderByDescending(u => u.CreatedAt)
+                    : query.OrderBy(u => u.CreatedAt),
+                "fullname" => descending
+                    ? query.OrderByDescending(u => u.FullName)
+                    : query.OrderBy(u => u.FullName),
+                "email" => descending
+                    ? query.OrderByDescending(u => u.EmailAddress)
+                    : query.OrderBy(u => u.EmailAddress),
+                _ => query.OrderByDescending(u => u.CreatedAt)
+            };
+        }
+        public static IQueryable<CaseEntityModel> ApplySortingForCases(
+            IQueryable<CaseEntityModel> query,
+            string? sortBy,
+            string? sortOrder
+        )
+        {
+            var descending = sortOrder?.ToLower() == "desc";
+
+            return sortBy?.ToLower() switch
+            {
+                "createdat" => descending
+                    ? query.OrderByDescending(c => c.CreatedAt)
+                    : query.OrderBy(c => c.CreatedAt),
+                "updatedat" => descending
+                    ? query.OrderByDescending(c => c.LastUpdatedAt)
+                    : query.OrderBy(c => c.LastUpdatedAt),
+                "title" => descending
+                    ? query.OrderByDescending(c => c.Title)
+                    : query.OrderBy(c => c.Title),
+                "status" => descending
+                    ? query.OrderByDescending(c => c.Status)
+                    : query.OrderBy(c => c.Status),
+                _ => query.OrderByDescending(c => c.CreatedAt)
+            };
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static UserResponseModel UserMapToUserResponseModel(UserEntityModel userDoc, bool isAdmin)
+        {
+            if (isAdmin)
+            {
+                var additionalProperties = userDoc.AdditionalProperties?
+                    .ToDictionary(
+                        p => p.UrlSlug,
+                        p => new AdditionalPropertySubStructure
+                        {
+                            Id = p.Id,
+                            CreatedAt = p.CreatedAt,
+                            CreatedBy = p.CreatedBy,
+                            UpdatedAt = p.LastUpdatedAt,
+                            LastUpdatedBy = p.LastUpdatedBy,
+                            OriginalName = p.OriginalName,
+                            UrlSlug = p.UrlSlug,
+                            Content = p.Content,
+                            ContentType = p.ContentType
+                        }
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
+
+                return new UserResponseModel
+                {
+                    ID = userDoc.Id,
+                    CreatedAt = userDoc.CreatedAt,
+                    CreatedBy = userDoc.CreatedBy,
+                    LastUpdatedAt = userDoc.LastUpdatedAt,
+                    LastUpdatedBy = userDoc.LastUpdatedBy,
+
+                    EmailAddress = userDoc.EmailAddress,
+                    FullName = userDoc.FullName ?? string.Empty,
+                    FullAddress = userDoc.FullAddress ?? string.Empty,
+                    TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
+                    Gender = userDoc.Gender ?? string.Empty,
+                    DateOfBirth = userDoc.DateOfBirth,
+                    LanguagePreference = userDoc.LanguagePreference,
+
+                    AdditionalProperties = additionalProperties,
+                    Files = new List<string>(),
+
+                    HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
+
+                    IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
+                    AllowLogin = userDoc.AllowLogin,
+                    IsAdmin = userDoc.IsAdmin,
+                    IsCaseWorker = userDoc.IsCaseWorker
+                };
+            }
+
+            return new UserResponseModel
+            {
+                ID = userDoc.Id,
+                CreatedAt = userDoc.CreatedAt,
+                CreatedBy = userDoc.CreatedBy,
+                LastUpdatedAt = null,
+                LastUpdatedBy = null,
+
+                EmailAddress = "[REDACTED]",
+                FullName = userDoc.FullName ?? string.Empty,
+                FullAddress = "[REDACTED]",
+                TelephoneNumber = "[REDACTED]",
+                Gender = "[REDACTED]",
+                DateOfBirth = null,
+                LanguagePreference = "[REDACTED]",
+
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                Files = new List<string>(),
+
+                HowDidYouFindOutAboutOurService = "[REDACTED]",
+
+                IsEmailVerified = null,
+                AllowLogin = null,
+                IsAdmin = null,
+                IsCaseWorker = null
+            };
+        }
+        public static CaseResponseModel CaseMapToCaseResponseModel(CaseEntityModel caseEntity)
+        {
+            return new CaseResponseModel
+            {
+                ID = caseEntity.Id,
+                CreatedAt = caseEntity.CreatedAt,
+                CreatedBy = caseEntity.CreatedBy,
+                LastUpdatedAt = caseEntity.LastUpdatedAt,
+                LastUpdatedBy = caseEntity.LastUpdatedBy,
+
+                Title = caseEntity.Title,
+                Description = caseEntity.Description,
+                Status = caseEntity.Status,
+                Sensitivity = caseEntity.Sensitivity,
+
+                Clients = caseEntity.Clients?.Select(c => c.UserId).ToList() ?? new List<Guid>(),
+                Workers = caseEntity.Workers?.Select(w => w.UserId).ToList() ?? new List<Guid>(),
+
+                Files = caseEntity.Files?.Select(f => $"auxlfs://localhost/files/{f.Id}").ToList() ?? new List<string>(),
+                Messages = caseEntity.Messages?.Select(m => $"auxmsg://localhost/message/{m.Id}").ToList() ?? new List<string>(),
+
+                Referrer = null,
+
+                // Map todos from entities
+                Todos = caseEntity.Todos?
+                    .ToDictionary(
+                        t => t.Id.ToString(),
+                        t => (object)new
+                        {
+                            id = t.Id,
+                            summary = t.Summary,
+                            description = t.Description,
+                            status = t.Status.ToString(),
+                            priority = t.Priority.ToString(),
+                            due_date = t.DueDate,
+                            assigned_to = t.AssignedTo,
+                            completed_at = t.CompletedAt
+                        }
+                    ) ?? new Dictionary<string, object>(),
+                /*
+                Timeline = caseEntity.Timeline?
+                    .ToDictionary(
+                        t => t.Id.ToString(),
+                        t => (object)new
+                        {
+                            id = t.Id,
+                        }
+                    ) ?? new Dictionary<string, object>(),
+                */
+
+                AdditionalProperties = caseEntity.AdditionalProperties?
+                    .ToDictionary(
+                        p => p.UrlSlug,
+                        p => new AdditionalPropertySubStructure
+                        {
+                            Id = p.Id,
+                            CreatedAt = p.CreatedAt,
+                            CreatedBy = p.CreatedBy,
+                            UpdatedAt = p.LastUpdatedAt,
+                            LastUpdatedBy = p.LastUpdatedBy,
+                            OriginalName = p.OriginalName,
+                            UrlSlug = p.UrlSlug,
+                            Content = p.Content,
+                            ContentType = p.ContentType
+                        }
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>(),
+            };
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static string? SanitisePropertyName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+
+            var sanitized = name
+                .Trim()
+                .ToLowerInvariant()
+                .Replace(' ', '_');
+
+            // only allow alphanumeric, underscore, hyphen
+            if (!System.Text.RegularExpressions.Regex.IsMatch(sanitized, @"^[a-z0-9_-]+$"))
+                return null;
+
+            return sanitized.Length > 100 ? sanitized[..100] : sanitized;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static async Task<bool> HasUserGotConnectionToUser(AuxiliumDbContext Db, UserEntityModel yourself, UserEntityModel targetUser)
+        {
+            if (yourself.IsAdmin)
+                return true;
+
+            if (yourself.Id == targetUser.Id)
+                return true;
+
+            if (yourself.IsCaseWorker)
+            {
+                // case workers can see clients on cases they are assigned to
+                return await Db.CaseWorkers.AnyAsync(cw =>
+                    cw.UserId == yourself.Id
+                    && (
+                        Db.CaseClients.Any(cc => cc.CaseId == cw.CaseId && cc.UserId == targetUser.Id)
+                        || Db.CaseWorkers.Any(cw2 => cw2.CaseId == cw.CaseId && cw2.UserId == targetUser.Id)
+                    )
+                );
+            }
+
+            // non-admins see users they share cases with (as co-clients or co-workers)
+            return await Db.CaseClients.AnyAsync(cc =>
+                cc.UserId == yourself.Id
+                && (
+                    Db.CaseClients.Any(cc2 => cc2.CaseId == cc.CaseId && cc2.UserId == targetUser.Id)
+                    || Db.CaseWorkers.Any(cw => cw.CaseId == cc.CaseId && cw.UserId == targetUser.Id)
+                )
+            );
+        }
+
+        public static async Task<bool> CanUserModifyUser(AuxiliumDbContext Db, UserEntityModel yourself, UserEntityModel targetUser)
+        {
+            if (yourself.IsAdmin)
+                return true;
+
+            if (yourself.Id == targetUser.Id)
+                return true;
+
+            if (yourself.IsCaseWorker)
+            {
+                // case workers can modify clients on their assigned cases
+                return await Db.CaseWorkers.AnyAsync(cw =>
+                    cw.UserId == yourself.Id
+                    && Db.CaseClients.Any(cc => cc.CaseId == cw.CaseId && cc.UserId == targetUser.Id)
+                );
+            }
+
+            // regular users cannot modify other users
+            return false;
+        }
+    }
+}
