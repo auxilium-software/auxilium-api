@@ -26,6 +26,7 @@ public class AuthenticationController : ControllerBase
     private readonly ConfigurationStructure _configuration;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly AuxiliumDbContext _db;
+    private readonly ITotpService _totpService;
 
     private readonly ICaptchaService _captchaService;
     private readonly IPasswordService _passwordService;
@@ -35,6 +36,7 @@ public class AuthenticationController : ControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<AuthenticationController> logger,
+        ITotpService totpService,
 
         ICaptchaService captchaService,
         IPasswordService passwordService,
@@ -44,6 +46,7 @@ public class AuthenticationController : ControllerBase
         _configuration = configuration.Get<ConfigurationStructure>();
         _logger = logger;
         _db = db;
+        _totpService = totpService;
 
         _captchaService = captchaService;
         _passwordService = passwordService;
@@ -57,7 +60,8 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserRegistrationResponseModel>> Register(
-        [FromBody] UserRegistrationRequestModel request)
+        [FromBody] UserRegistrationRequestModel request
+    )
     {
         try
         {
@@ -163,25 +167,26 @@ public class AuthenticationController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during user registration");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during registration"
             });
         }
     }
 
+
     [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserLoginResponseModel>> Login(
         [FromBody] UserLoginRequestModel request)
     {
         try
         {
-            // verify the reCAPTCHA token
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
                 return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
@@ -191,75 +196,57 @@ public class AuthenticationController : ControllerBase
             await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
 
             var strategy = _db.Database.CreateExecutionStrategy();
-            string? accessToken = null;
-            string? refreshToken = null;
-            int expiresIn = 0;
+            UserLoginResponseModel? response = null;
 
-            await strategy.ExecuteAsync(async () =>
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
+
+            if (user == null)
             {
-                // grab the user from the database
-                var user = await _db.Users
-                    .FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
-
-                // check if the user exists
-                if (user == null)
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
-                    throw new UnauthorizedAccessException("Invalid credentials");
-                }
+                    Detail = "Invalid credentials"
+                });
+            }
 
-                // check if the user is actually allowed to login
-                if (!user.AllowLogin)
+            if (!user.AllowLogin)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
-                    throw new UnauthorizedAccessException("Account blocked from logging in by the Auxilium IT department.");
-                }
+                    Detail = "Account blocked from logging in by the Auxilium IT department."
+                });
+            }
 
-                // verify the password
-                if (!_passwordService.VerifyPassword(request.RawPassword, user.PasswordHash))
+            if (!_passwordService.VerifyPassword(request.RawPassword, user.PasswordHash))
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
-                    throw new UnauthorizedAccessException("Invalid credentials");
-                }
+                    Detail = "Invalid credentials"
+                });
+            }
 
-                // create the access and refresh tokens
+            // TOTP enabled => return MFA session token instead
+            if (user.TotpEnabled)
+            {
                 var userData = new Dictionary<string, object>
                 {
                     ["id"] = user.Id
                 };
-                accessToken = _tokenService.CreateAccessToken(userData);
-                refreshToken = _tokenService.CreateRefreshToken(userData);
 
-                // delete expired refresh tokens
-                var expiredTokens = _db.RefreshTokens
-                    .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAt < DateTime.UtcNow);
-                _db.RefreshTokens.RemoveRange(expiredTokens);
-
-                // store the new refresh token
-                var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
-                var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
-                var expiresAtTime = DateTime.UtcNow.AddDays(this._configuration.JWT.RefreshTokenExpirationInDays);
-
-                var refreshTokenEntity = new RefreshTokenEntityModel
+                response = new UserLoginResponseModel
                 {
-                    Id = refreshTokenId,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = user.Id,
-                    TokenHash = tokenHash,
-                    ExpiresAt = expiresAtTime
+                    MfaRequired = true,
+                    MfaSessionToken = _tokenService.CreateMfaToken(userData)
                 };
-                _db.RefreshTokens.Add(refreshTokenEntity);
 
-                await _db.SaveChangesAsync();
+                _logger.LogInformation("MFA required for user {UserId}", user.Id);
+                return Ok(response);
+            }
 
-                expiresIn = this._configuration.JWT.AccessTokenExpirationInMinutes * 60;
+            // no TOTP for this account => issue tokens directly
+            response = await IssueTokensForUserAsync(user);
+            _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-                _logger.LogInformation("User {UserId} logged in successfully", user.Id);
-            });
-
-            return Ok(new UserLoginResponseModel
-            {
-                AccessToken = accessToken!,
-                RefreshToken = refreshToken!,
-                ExpiresIn = expiresIn
-            });
+            return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -274,6 +261,166 @@ public class AuthenticationController : ControllerBase
             });
         }
     }
+
+
+
+
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("verify-totp")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> VerifyTotp(
+        [FromBody] VerifyTotpRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
+            if (userId == null)
+            {
+                return Unauthorized(new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+            }
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            UserLoginResponseModel? response = null;
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Invalid session");
+            }
+
+            if (!user.AllowLogin)
+            {
+                throw new UnauthorizedAccessException("Account blocked from logging in by the Auxilium IT department.");
+            }
+
+            if (string.IsNullOrEmpty(user.TotpSecret))
+            {
+                throw new UnauthorizedAccessException("TOTP not configured for this account");
+            }
+
+            if (!(await _totpService.ValidateUserTotpAsync(user.Id, request.TotpCode)))
+            {
+                throw new UnauthorizedAccessException("Invalid TOTP code");
+            }
+
+            response = await IssueTokensForUserAsync(user);
+            _logger.LogInformation("User {UserId} completed MFA login", user.Id);
+
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during TOTP verification");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during verification"
+            });
+        }
+    }
+
+
+    [AllowAnonymous]
+    [HttpPost("verify-recovery-code")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> VerifyRecoveryCode(
+    [FromBody] VerifyRecoveryCodeRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
+            if (userId == null)
+            {
+                return Unauthorized(new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+            }
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            UserLoginResponseModel? response = null;
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new UnauthorizedAccessException("Invalid session");
+                }
+
+                if (!user.AllowLogin)
+                {
+                    throw new UnauthorizedAccessException("Account blocked from logging in by the Auxilium IT department.");
+                }
+
+                // hash the provided recovery code and look for a match
+                var codeHash = HashingUtilities.SHA256Hash(request.RecoveryCode);
+
+                var recoveryCode = await _db.TotpRecoveryCodes
+                    .FirstOrDefaultAsync(rc =>
+                        rc.CreatedBy == userId &&
+                        rc.CodeHash == codeHash &&
+                        !rc.IsUsed);
+
+                if (recoveryCode == null)
+                {
+                    throw new UnauthorizedAccessException("Invalid recovery code");
+                }
+
+                // mark the recovery code as used
+                recoveryCode.IsUsed = true;
+                recoveryCode.UsedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                response = await IssueTokensForUserAsync(user);
+
+                _logger.LogInformation(
+                    "User {UserId} completed MFA login using recovery code {CodeId}",
+                    user.Id,
+                    recoveryCode.Id
+                );
+            });
+
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during recovery code verification");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during verification"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -339,7 +486,8 @@ public class AuthenticationController : ControllerBase
             {
                 AccessToken = accessToken!,
                 RefreshToken = newRefreshToken!,
-                ExpiresIn = expiresIn
+                ExpiresIn = expiresIn,
+                MfaRequired = false,
             });
         }
         catch (UnauthorizedAccessException ex)
@@ -354,5 +502,58 @@ public class AuthenticationController : ControllerBase
                 Detail = "An error occurred during token refresh"
             });
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<UserLoginResponseModel> IssueTokensForUserAsync(UserEntityModel user)
+    {
+        var userData = new Dictionary<string, object>
+        {
+            ["id"] = user.Id
+        };
+
+        var accessToken = _tokenService.CreateAccessToken(userData);
+        var refreshToken = _tokenService.CreateRefreshToken(userData);
+
+        // remove expired refresh tokens
+        var expiredTokens = _db.RefreshTokens
+            .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAt < DateTime.UtcNow);
+        _db.RefreshTokens.RemoveRange(expiredTokens);
+
+        // store the new refresh token
+        var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
+        var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
+        var expiresAtTime = DateTime.UtcNow.AddDays(_configuration.JWT.RefreshTokenExpirationInDays);
+
+        var refreshTokenEntity = new RefreshTokenEntityModel
+        {
+            Id = refreshTokenId,
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = user.Id,
+            TokenHash = tokenHash,
+            ExpiresAt = expiresAtTime
+        };
+        _db.RefreshTokens.Add(refreshTokenEntity);
+
+        await _db.SaveChangesAsync();
+
+        return new UserLoginResponseModel
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ExpiresIn = _configuration.JWT.AccessTokenExpirationInMinutes * 60,
+            MfaRequired = false,
+        };
     }
 }
