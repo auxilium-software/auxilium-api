@@ -1,4 +1,5 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserStatistic;
@@ -41,7 +42,8 @@ public class UserController : LoggedInControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "createdAt",
         [FromQuery] string? sortOrder = "desc",
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null
+        )
     {
         try
         {
@@ -62,13 +64,23 @@ public class UserController : LoggedInControllerBase
                     .Include(u => u.AdditionalProperties)
                     .Where(u =>
                         // users they're a client with
-                        Db.CaseClients.Any(cc => cc.UserId == user.Id &&
-                            Db.CaseClients.Any(cc2 => cc2.CaseId == cc.CaseId && cc2.UserId == u.Id)) ||
-                        // users they're a worker with
-                        Db.CaseWorkers.Any(cw => cw.UserId == user.Id &&
-                            Db.CaseWorkers.Any(cw2 => cw2.CaseId == cw.CaseId && cw2.UserId == u.Id)) ||
-                        // or themselves
-                        u.Id == user.Id
+                        Db.CaseClients.Any(
+                            cc => cc.UserId == user.Id
+                            && Db.CaseClients.Any(
+                                cc2 => cc2.CaseId == cc.CaseId
+                                && cc2.UserId == u.Id
+                            )
+                        )
+                        // -OR- users they're a worker with
+                        || Db.CaseWorkers.Any(
+                            cw => cw.UserId == user.Id
+                            && Db.CaseWorkers.Any(
+                                cw2 => cw2.CaseId == cw.CaseId
+                                && cw2.UserId == u.Id
+                            )
+                        )
+                        // -OR- themselves
+                        || u.Id == user.Id
                     )
                     .Distinct();
             }
@@ -77,13 +89,13 @@ public class UserController : LoggedInControllerBase
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(u =>
-                    u.FullName != null && u.FullName.Contains(search) ||
-                    u.EmailAddress.Contains(search)
+                    (u.FullName != null && u.FullName.Contains(search))
+                    || u.EmailAddress.Contains(search)
                 );
             }
 
             // apply sorting
-            query = ApplySorting(query, sortBy, sortOrder);
+            query = ControllerUtilities.ApplySortingForUsers(query, sortBy, sortOrder);
 
             var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
@@ -103,7 +115,7 @@ public class UserController : LoggedInControllerBase
                     // admins get all data including additional properties
                     var additionalProperties = userDoc.AdditionalProperties?
                         .ToDictionary(
-                            p => p.Name,
+                            p => p.UrlSlug,
                             p => new AdditionalPropertySubStructure
                             {
                                 Id = p.Id,
@@ -111,9 +123,8 @@ public class UserController : LoggedInControllerBase
                                 CreatedBy = p.CreatedBy,
                                 UpdatedAt = p.LastUpdatedAt,
                                 LastUpdatedBy = p.LastUpdatedBy,
-                                OriginalName = p.Name,
-                                PrettyName = p.Name,
-                                UrlSlug = p.Name.ToLower().Replace(" ", "-"),
+                                OriginalName = p.OriginalName,
+                                UrlSlug = p.UrlSlug,
                                 Content = p.Content,
                                 ContentType = p.ContentType
                             }
@@ -127,18 +138,21 @@ public class UserController : LoggedInControllerBase
                         LastUpdatedAt = userDoc.LastUpdatedAt,
                         LastUpdatedBy = userDoc.LastUpdatedBy,
 
+                        EmailAddress = userDoc.EmailAddress,
                         FullName = userDoc.FullName ?? string.Empty,
                         FullAddress = userDoc.FullAddress ?? string.Empty,
                         TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
                         Gender = userDoc.Gender ?? string.Empty,
                         DateOfBirth = userDoc.DateOfBirth,
+                        LanguagePreference = userDoc.LanguagePreference,
 
                         AdditionalProperties = additionalProperties,
                         Files = new List<string>(),
 
                         HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
-                        EmailAddress = userDoc.EmailAddress,
+                        IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
+                        AllowLogin = userDoc.AllowLogin,
                         IsAdmin = userDoc.IsAdmin,
                         IsCaseWorker = userDoc.IsCaseWorker
                     });
@@ -154,20 +168,23 @@ public class UserController : LoggedInControllerBase
                         LastUpdatedAt = null,
                         LastUpdatedBy = null,
 
+                        EmailAddress = "[REDACTED]",
                         FullName = userDoc.FullName ?? string.Empty,
                         FullAddress = "[REDACTED]",
                         TelephoneNumber = "[REDACTED]",
                         Gender = "[REDACTED]",
                         DateOfBirth = null,
+                        LanguagePreference = "[REDACTED]",
 
                         AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
                         Files = new List<string>(),
 
                         HowDidYouFindOutAboutOurService = "[REDACTED]",
 
-                        EmailAddress = "[REDACTED]",
-                        IsAdmin = false,
-                        IsCaseWorker = false
+                        IsEmailVerified = null,
+                        AllowLogin = null,
+                        IsAdmin = null,
+                        IsCaseWorker = null
                     });
                 }
             }
@@ -194,134 +211,83 @@ public class UserController : LoggedInControllerBase
         }
     }
 
-    [HttpGet("{userId:guid}")]
-    [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(UserStatisticsResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserResponseModel>> GetUserById(Guid userId)
+    public async Task<ActionResult<UserStatisticsResponseModel>> GetUserStatistics(
+        [FromQuery] string period = "week"
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            var userDoc = await Db.Users
-                .Include(u => u.AdditionalProperties)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
 
-            if (userDoc == null)
+            var now = DateTime.UtcNow;
+            var totalUsers = await Db.Users.CountAsync();
+
+            // calculate growth percentage from last month
+            var startOfThisMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var startOfLastMonth = startOfThisMonth.AddMonths(-1);
+
+            var usersCreatedThisMonth = await Db.Users
+                .CountAsync(u => u.CreatedAt >= startOfThisMonth);
+            var usersCreatedLastMonth = await Db.Users
+                .CountAsync(u => u.CreatedAt >= startOfLastMonth && u.CreatedAt < startOfThisMonth);
+
+            double growthPercentage = 0;
+            if (usersCreatedLastMonth > 0)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                growthPercentage = Math.Round(
+                    ((double)(usersCreatedThisMonth - usersCreatedLastMonth) / usersCreatedLastMonth) * 100,
+                    1
+                );
             }
 
-            UserResponseModel response;
 
-            if (user!.IsAdmin)
+            var growthData = await UserStatisticsCalculationUtilities.GetUserGrowthData(this.Db, period, now);
+            var languageDistribution = await UserStatisticsCalculationUtilities.GetLanguageDistributionData(this.Db);
+
+
+            // additional stats
+            var adminCount = await Db.Users.CountAsync(u => u.IsAdmin);
+            var caseWorkerCount = await Db.Users.CountAsync(u => u.IsCaseWorker);
+            var regularUserCount = totalUsers - adminCount - caseWorkerCount;
+
+            var response = new UserStatisticsResponseModel
             {
-                // admins get all data including additional properties
-                var additionalProperties = userDoc.AdditionalProperties?
-                    .ToDictionary(
-                        p => p.Name,
-                        p => new AdditionalPropertySubStructure
-                        {
-                            Id = p.Id,
-                            CreatedAt = p.CreatedAt,
-                            CreatedBy = p.CreatedBy,
-                            UpdatedAt = p.LastUpdatedAt,
-                            LastUpdatedBy = p.LastUpdatedBy,
-                            OriginalName = p.Name,
-                            PrettyName = p.Name,
-                            UrlSlug = p.Name.ToLower().Replace(" ", "-"),
-                            Content = p.Content,
-                            ContentType = p.ContentType
-                        }
-                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
+                TotalUsers = totalUsers,
+                GrowthPercentage = growthPercentage,
+                UsersCreatedThisMonth = usersCreatedThisMonth,
+                UsersCreatedLastMonth = usersCreatedLastMonth,
 
-                response = new UserResponseModel
+                GrowthChart = growthData,
+                LanguageDistribution = languageDistribution,
+
+                UserTypeBreakdown = new UserTypeBreakdownModel
                 {
-                    ID = userDoc.Id,
-                    CreatedAt = userDoc.CreatedAt,
-                    CreatedBy = userDoc.CreatedBy,
-                    LastUpdatedAt = userDoc.LastUpdatedAt,
-                    LastUpdatedBy = userDoc.LastUpdatedBy,
+                    Admins = adminCount,
+                    CaseWorkers = caseWorkerCount,
+                    RegularUsers = regularUserCount
+                },
 
-                    FullName = userDoc.FullName ?? string.Empty,
-                    FullAddress = userDoc.FullAddress ?? string.Empty,
-                    TelephoneNumber = userDoc.TelephoneNumber ?? string.Empty,
-                    Gender = userDoc.Gender ?? string.Empty,
-                    DateOfBirth = userDoc.DateOfBirth,
-
-                    AdditionalProperties = additionalProperties,
-                    Files = new List<string>(),
-
-                    HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
-
-                    EmailAddress = userDoc.EmailAddress,
-                    IsAdmin = userDoc.IsAdmin,
-                    IsCaseWorker = userDoc.IsCaseWorker
-                };
-            }
-            else
-            {
-                // non-admins get redacted data
-                response = new UserResponseModel
-                {
-                    ID = userDoc.Id,
-                    CreatedAt = userDoc.CreatedAt,
-                    CreatedBy = userDoc.CreatedBy,
-                    LastUpdatedAt = null,
-                    LastUpdatedBy = null,
-
-                    FullName = userDoc.FullName ?? string.Empty,
-                    FullAddress = "[REDACTED]",
-                    TelephoneNumber = "[REDACTED]",
-                    Gender = "[REDACTED]",
-                    DateOfBirth = null,
-
-                    AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
-                    Files = new List<string>(),
-
-                    HowDidYouFindOutAboutOurService = "[REDACTED]",
-
-                    EmailAddress = "[REDACTED]",
-                    IsAdmin = false,
-                    IsCaseWorker = false
-                };
-            }
+                GeneratedAt = now
+            };
 
             return Ok(response);
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Failed to fetch user {UserId}", userId);
+            Logger.LogError(ex, "Failed to fetch user statistics");
             return StatusCode(500, new FailureResponseModel
             {
-                Detail = "Failed to fetch user"
+                Detail = "Failed to fetch user statistics"
             });
         }
-    }
-
-    // helper method for sorting
-    private IQueryable<UserEntityModel> ApplySorting(
-        IQueryable<UserEntityModel> query,
-        string? sortBy,
-        string? sortOrder)
-    {
-        var descending = sortOrder?.ToLower() == "desc";
-
-        return sortBy?.ToLower() switch
-        {
-            "createdat" => descending
-                ? query.OrderByDescending(u => u.CreatedAt)
-                : query.OrderBy(u => u.CreatedAt),
-            "fullname" => descending
-                ? query.OrderByDescending(u => u.FullName)
-                : query.OrderBy(u => u.FullName),
-            "email" => descending
-                ? query.OrderByDescending(u => u.EmailAddress)
-                : query.OrderBy(u => u.EmailAddress),
-            _ => query.OrderByDescending(u => u.CreatedAt)
-        };
     }
 }
