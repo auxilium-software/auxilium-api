@@ -68,10 +68,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.Case
         [Required]
         [JsonPropertyName("todos")]
         public required Dictionary<string, object> Todos { get; init; }
-
+        /*
         [Required]
         [JsonPropertyName("timeline")]
         public required Dictionary<string, object> Timeline { get; init; }
+        */
 
         [Required]
         [JsonPropertyName("messages")]
