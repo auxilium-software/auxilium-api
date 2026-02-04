@@ -10,17 +10,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
-[Route("api/v3/cases/{caseId}/messages")]
+[Route("api/v3/cases/{caseId:guid}/messages")]
 [Tags("Cases", "Messages")]
-public class CaseMessagesController : LoggedInControllerBase
+public class SingleCaseMessagesController : LoggedInControllerBase
 {
     private readonly IMessageDocumentService _messageService;
     private readonly ICaseDocumentService _caseDocService;
 
-    public CaseMessagesController(
+    public SingleCaseMessagesController(
         IConfiguration configuration,
         AuxiliumDbContext db,
-        ILogger<CaseMessagesController> logger,
+        ILogger<SingleCaseMessagesController> logger,
         ITotpService totpService,
 
         IMessageDocumentService messageService,
@@ -39,7 +39,7 @@ public class CaseMessagesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<MessageResponseModel>> CreateMessage(
-        string caseId,
+        Guid caseId,
         [FromBody] MessageCreationRequestModel request)
     {
         try
@@ -47,13 +47,8 @@ public class CaseMessagesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            // Check case access
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            // check case access
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -61,9 +56,9 @@ public class CaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            // Create the message
+            // create the message
             var messageDoc = await _messageService.CreateMessageAsync(
-                caseId: caseGuid,
+                caseId: caseId,
                 subject: request.Subject,
                 content: request.Content,
                 senderId: user!.Id,
@@ -75,7 +70,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 messageDoc.Id, caseId, user.Id
             );
 
-            // Get read-by details (should be empty for new message)
+            // get read-by details (should be empty for new message)
             var readByDetails = await _messageService.GetReadByDetailsAsync(messageDoc.Id);
 
             return StatusCode(201, new MessageResponseModel
@@ -111,19 +106,14 @@ public class CaseMessagesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<MessageResponseModel>>> GetMessages(string caseId)
+    public async Task<ActionResult<List<MessageResponseModel>>> GetMessages(Guid caseId)
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -131,7 +121,7 @@ public class CaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            var messages = await _messageService.GetMessagesForCaseAsync(caseGuid);
+            var messages = await _messageService.GetMessagesForCaseAsync(caseId);
 
             var response = new List<MessageResponseModel>();
 
@@ -171,20 +161,16 @@ public class CaseMessagesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<MessageResponseModel>> GetMessage(
-        string caseId,
-        Guid messageId)
+        Guid caseId,
+        Guid messageId
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            if (!await _caseDocService.CheckUserAccessAsync(caseGuid, user!))
+            if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -198,16 +184,16 @@ public class CaseMessagesController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "Message not found" });
             }
 
-            // Verify the message belongs to this case
-            if (messageDoc.CaseId != caseGuid)
+            // verify the message belongs to this case
+            if (messageDoc.CaseId != caseId)
             {
                 return NotFound(new FailureResponseModel { Detail = "Message not found in this case" });
             }
 
-            // Mark the message as read
+            // mark the message as read
             await _messageService.MarkAsReadAsync(messageId, user!.Id);
 
-            // Get read-by details
+            // get read-by details
             var readByDetails = await _messageService.GetReadByDetailsAsync(messageId);
 
             return Ok(new MessageResponseModel
@@ -239,21 +225,17 @@ public class CaseMessagesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> DeleteMessage(
-        string caseId,
-        Guid messageId)
+        Guid caseId,
+        Guid messageId
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
-            // Check if the user is worker or admin
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            // check if the user is worker or admin
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -268,14 +250,14 @@ public class CaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            // Verify the message actually exists and belongs to case
+            // verify the message actually exists and belongs to case
             var message = await _messageService.GetMessageAsync(messageId);
             if (message == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Message not found" });
             }
 
-            if (message.CaseId != caseGuid)
+            if (message.CaseId != caseId)
             {
                 return NotFound(new FailureResponseModel { Detail = "Message not found in this case" });
             }
