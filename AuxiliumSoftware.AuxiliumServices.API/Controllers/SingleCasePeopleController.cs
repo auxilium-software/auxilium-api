@@ -10,16 +10,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
 [ApiController]
-[Route("/api/v3/cases/{caseId}")]
+[Route("/api/v3/cases/{caseId:guid}")]
 [Tags("Cases")]
-public class CasePeopleController : LoggedInControllerBase
+public class SingleCasePeopleController : LoggedInControllerBase
 {
     private readonly ICaseDocumentService _caseDocService;
 
-    public CasePeopleController(
+    public SingleCasePeopleController(
         IConfiguration configuration,
         AuxiliumDbContext db,
-        ILogger<CasePeopleController> logger,
+        ILogger<SingleCasePeopleController> logger,
         ITotpService totpService,
 
         ICaseDocumentService caseDocService
@@ -38,21 +38,17 @@ public class CasePeopleController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> AddClientToCase(
-        string caseId,
-        [FromBody] AddPersonRequestModel request)
+        Guid caseId,
+        [FromBody] AddPersonRequestModel request
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // grab the case with workers
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -79,7 +75,7 @@ public class CasePeopleController : LoggedInControllerBase
             }
 
             // add client
-            await _caseDocService.AddClientAsync(caseGuid, request.UserID);
+            await _caseDocService.AddClientAsync(caseId, request.UserID);
 
             this.Logger.LogInformation(
                 "Added client {ClientId} to case {CaseId} by user {UserId}",
@@ -102,21 +98,17 @@ public class CasePeopleController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> RemoveClientFromCase(
-        string caseId,
-        Guid clientId)
+        Guid caseId,
+        Guid clientId
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // grab the case with workers
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -133,7 +125,7 @@ public class CasePeopleController : LoggedInControllerBase
             }
 
             // remove the client
-            await _caseDocService.RemoveClientAsync(caseGuid, clientId);
+            await _caseDocService.RemoveClientAsync(caseId, clientId);
 
             this.Logger.LogInformation(
                 "Removed client {ClientId} from case {CaseId} by user {UserId}",
@@ -159,21 +151,17 @@ public class CasePeopleController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> AddWorkerToCase(
-        string caseId,
-        [FromBody] AddPersonRequestModel request)
+        Guid caseId,
+        [FromBody] AddPersonRequestModel request
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // grab the case with workers
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -200,7 +188,7 @@ public class CasePeopleController : LoggedInControllerBase
             }
 
             // add worker
-            await _caseDocService.AddWorkerAsync(caseGuid, request.UserID);
+            await _caseDocService.AddWorkerAsync(caseId, request.UserID);
 
             this.Logger.LogInformation(
                 "Added worker {WorkerId} to case {CaseId} by user {UserId}",
@@ -224,21 +212,17 @@ public class CasePeopleController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> RemoveWorkerFromCase(
-        string caseId,
-        Guid workerId)
+        Guid caseId,
+        Guid workerId
+    )
     {
         try
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!Guid.TryParse(caseId, out var caseGuid))
-            {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid case ID" });
-            }
-
             // get case with workers
-            var caseDoc = await _caseDocService.GetDocumentAsync(caseGuid);
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "Case not found" });
@@ -255,7 +239,7 @@ public class CasePeopleController : LoggedInControllerBase
             }
 
             // remove worker
-            await _caseDocService.RemoveWorkerAsync(caseGuid, workerId);
+            await _caseDocService.RemoveWorkerAsync(caseId, workerId);
 
             this.Logger.LogInformation(
                 "Removed worker {WorkerId} from case {CaseId} by user {UserId}",
