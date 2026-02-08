@@ -8,6 +8,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public class MeController : LoggedInControllerBase
     private readonly IPasswordService _passwordService;
 
     public MeController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<MeController> logger,
@@ -32,7 +34,7 @@ public class MeController : LoggedInControllerBase
         IUserDocumentService userDocService,
         IPasswordService passwordService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _userDocService = userDocService;
         _passwordService = passwordService;

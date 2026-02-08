@@ -9,6 +9,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ public class CaseController : LoggedInControllerBase
     private readonly IFileDocumentService _fileService;
 
     public CaseController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<CaseController> logger,
@@ -33,7 +35,7 @@ public class CaseController : LoggedInControllerBase
         ICaseDocumentService caseDocService,
         IFileDocumentService fileService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _caseDocService = caseDocService;
         _fileService = fileService;

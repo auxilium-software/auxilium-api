@@ -6,6 +6,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         private readonly ITokenService _tokenService;
 
         public AuthenticationAuthenticatedController(
+            ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
             ILogger<AuthenticationAuthenticatedController> logger,
@@ -33,7 +35,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             IPasswordService passwordService,
             ITokenService tokenService
             )
-            : base(configuration, db, logger, totpService)
+            : base(systemSettingsService, configuration, db, logger, totpService)
         {
             _captchaService = captchaService;
             _passwordService = passwordService;

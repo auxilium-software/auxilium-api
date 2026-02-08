@@ -4,6 +4,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.MyTotp;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
@@ -16,12 +17,13 @@ public class MyTotpController : LoggedInControllerBase
     private readonly ITotpService _totpService;
 
     public MyTotpController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<MyTotpController> logger,
         ITotpService totpService
     )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _totpService = totpService;
     }

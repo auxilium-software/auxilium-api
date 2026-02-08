@@ -5,6 +5,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,13 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
     private readonly ICaseDocumentService _caseDocService;
 
     public SingleCaseAdditionalPropertiesController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<SingleCaseAdditionalPropertiesController> logger,
         ITotpService totpService,
         ICaseDocumentService caseDocService)
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _caseDocService = caseDocService;
     }

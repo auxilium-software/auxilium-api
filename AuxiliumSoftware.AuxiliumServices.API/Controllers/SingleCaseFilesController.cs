@@ -5,6 +5,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
@@ -18,6 +19,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
     private readonly ICaseDocumentService _caseDocService;
 
     public SingleCaseFilesController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<SingleCaseFilesController> logger,
@@ -26,7 +28,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
         IFileDocumentService fileService,
         ICaseDocumentService caseDocService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _fileService = fileService;
         _caseDocService = caseDocService;

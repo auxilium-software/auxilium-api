@@ -6,6 +6,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -20,6 +21,7 @@ public class UserFilesController : LoggedInControllerBase
     private readonly IUserDocumentService _userDocService;
 
     public UserFilesController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<UserFilesController> logger,
@@ -28,7 +30,7 @@ public class UserFilesController : LoggedInControllerBase
         IFileDocumentService fileService,
         IUserDocumentService userDocService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _fileService = fileService;
         _userDocService = userDocService;

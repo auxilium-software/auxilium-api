@@ -3,6 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
     [Authorize]
     public abstract class LoggedInControllerBase : ControllerBase
     {
+        protected readonly ISystemSettingsService SystemSettings;
         protected readonly AuxiliumDbContext Db;
         protected readonly ILogger Logger;
         protected readonly ConfigurationStructure Configuration;
@@ -28,12 +30,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
          * @param logger The logger instance for logging.
          */
         protected LoggedInControllerBase(
+            ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
             ILogger logger,
             ITotpService totpService
         )
         {
+            this.SystemSettings = systemSettingsService;
             this.Configuration = configuration.Get<ConfigurationStructure>()!;
             this.Db = db;
             this.Logger = logger;

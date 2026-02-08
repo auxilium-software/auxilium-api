@@ -5,6 +5,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,12 +22,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     public class SystemBulletinAdminController : LoggedInControllerBase
     {
         public SystemBulletinAdminController(
+            ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
             ILogger<SystemBulletinAdminController> logger,
             ITotpService totpService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
         {
         }
 

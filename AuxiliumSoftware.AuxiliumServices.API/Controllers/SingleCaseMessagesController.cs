@@ -5,6 +5,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
@@ -18,6 +19,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
     private readonly ICaseDocumentService _caseDocService;
 
     public SingleCaseMessagesController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<SingleCaseMessagesController> logger,
@@ -26,7 +28,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
         IMessageDocumentService messageService,
         ICaseDocumentService caseDocService
         )
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _messageService = messageService;
         _caseDocService = caseDocService;

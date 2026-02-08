@@ -4,6 +4,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
@@ -16,12 +17,13 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
     private readonly IUserDocumentService _userDocService;
 
     public SingleUserAdditionalPropertiesController(
+        ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<SingleUserAdditionalPropertiesController> logger,
         ITotpService totpService,
         IUserDocumentService userDocService)
-        : base(configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, logger, totpService)
     {
         _userDocService = userDocService;
     }
