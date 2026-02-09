@@ -26,6 +26,7 @@ public class AuthenticationController : ControllerBase
     private readonly ConfigurationStructure _configuration;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly AuxiliumDbContext _db;
+    private readonly IWafService _wafService;
     private readonly ITotpService _totpService;
 
     private readonly ICaptchaService _captchaService;
@@ -36,6 +37,7 @@ public class AuthenticationController : ControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<AuthenticationController> logger,
+        IWafService wafService,
         ITotpService totpService,
 
         ICaptchaService captchaService,
@@ -46,6 +48,7 @@ public class AuthenticationController : ControllerBase
         _configuration = configuration.Get<ConfigurationStructure>();
         _logger = logger;
         _db = db;
+        _wafService = wafService;
         _totpService = totpService;
 
         _captchaService = captchaService;

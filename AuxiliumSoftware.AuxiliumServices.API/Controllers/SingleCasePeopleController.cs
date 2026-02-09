@@ -5,7 +5,6 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
@@ -21,12 +20,13 @@ public class SingleCasePeopleController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
+        IWafService waf,
         ILogger<SingleCasePeopleController> logger,
         ITotpService totpService,
 
         ICaseDocumentService caseDocService
         )
-        : base(systemSettingsService, configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _caseDocService = caseDocService;
     }

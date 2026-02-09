@@ -6,7 +6,6 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,13 +25,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
+            IWafService waf,
             ILogger<SingleCaseController> logger,
             ITotpService totpService,
 
             ICaseDocumentService caseDocService,
             IFileDocumentService fileService
             )
-            : base(systemSettingsService, configuration, db, logger, totpService)
+            : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
             _caseDocService = caseDocService;
             _fileService = fileService;

@@ -5,7 +5,6 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,16 +19,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Authorize]
     public class SystemBulletinController : ControllerBase
     {
+        private readonly IWafService _waf;
         private readonly ILogger<SystemBulletinController> _logger;
         private readonly AuxiliumDbContext _db;
 
         public SystemBulletinController(
             IConfiguration configuration,
             AuxiliumDbContext db,
+            IWafService waf,
             ILogger<SystemBulletinController> logger,
             ITotpService totpService
             )
         {
+            _waf = waf;
             _logger = logger;
             _db = db;
         }
@@ -44,7 +46,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var isAuthenticated = userId != null;
             Guid? userGuid = isAuthenticated ? Guid.Parse(userId) : null;
 
-            var query = _db.SystemBulletins
+            var query = _db.System_Bulletins
                 .Where(b => b.IsActive)
                 .Where(b => b.StartsAt <= now)
                 .Where(b => b.EndsAt == null || b.EndsAt > now);

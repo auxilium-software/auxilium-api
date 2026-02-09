@@ -6,7 +6,6 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -24,13 +23,14 @@ public class UserFilesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
+        IWafService waf,
         ILogger<UserFilesController> logger,
         ITotpService totpService,
 
         IFileDocumentService fileService,
         IUserDocumentService userDocService
         )
-        : base(systemSettingsService, configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _fileService = fileService;
         _userDocService = userDocService;

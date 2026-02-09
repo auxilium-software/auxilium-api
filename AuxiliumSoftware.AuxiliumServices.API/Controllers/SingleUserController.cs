@@ -9,7 +9,6 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Channels;
@@ -22,7 +21,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 public class SingleUserController : LoggedInControllerBase
 {
     private readonly IUserDocumentService _userDocService;
-    private readonly ITotpService _totpService;
 
     public SingleUserController(
         ISystemSettingsService systemSettingsService,
@@ -30,13 +28,13 @@ public class SingleUserController : LoggedInControllerBase
         AuxiliumDbContext db,
         ILogger<SingleUserController> logger,
         ITotpService totpService,
+        IWafService waf,
 
         IUserDocumentService userDocService
         )
-        : base(systemSettingsService, configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _userDocService = userDocService;
-        _totpService = totpService;
     }
 
 
