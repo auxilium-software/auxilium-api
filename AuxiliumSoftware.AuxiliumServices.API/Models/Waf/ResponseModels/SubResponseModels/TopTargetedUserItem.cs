@@ -6,6 +6,6 @@
         public required int FailedAttempts { get; set; }
         public required int DistinctIpAddresses { get; set; }
         public required DateTime LastAttempt { get; set; }
-        public required bool IsCurrentlyLockedOut { get; set; }
+        public bool IsCurrentlyLockedOut { get; set; }
     }
 }
