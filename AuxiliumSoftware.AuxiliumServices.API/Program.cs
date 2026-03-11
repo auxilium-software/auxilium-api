@@ -147,7 +147,21 @@ var mariaDbUsername = builder.Configuration["Databases:MariaDB:Username"]   ?? t
 var mariaDbPassword = builder.Configuration["Databases:MariaDB:Password"]   ?? throw new InvalidOperationException("MariaDB Password not found");
 var mariaDbDatabase = builder.Configuration["Databases:MariaDB:Database"]   ?? throw new InvalidOperationException("MariaDB Database not found");
 
-var connectionString = $"Server={mariaDbHost};Port={mariaDbPort};Database={mariaDbDatabase};User={mariaDbUsername};Password={mariaDbPassword};CharSet=utf8mb4;";
+var connectionString =
+    $"Server={mariaDbHost};"
+    + $"Port={mariaDbPort};"
+    + $"Database={mariaDbDatabase};"
+    + $"User={mariaDbUsername};"
+    + $"Password={mariaDbPassword};"
+    + $"CharSet=utf8mb4;"
+    + $"Pooling=true;"
+    + $"MinimumPoolSize=5;"
+    + $"MaximumPoolSize=100;"
+    + $"ConnectionLifeTime=300;"
+    + $"ConnectionIdleTimeout=180;"
+    + $"CancellationTimeout=5;"
+    + $"ConnectionReset=false;"
+    + $"DefaultCommandTimeout=30;";
 
 
 builder.Services.AddDbContext<AuxiliumDbContext>(options =>
@@ -173,23 +187,29 @@ builder.Services.AddDbContext<AuxiliumDbContext>(options =>
 });
 
 
+/*
+ * 1. log the request
+ * 2. enforce https
+ * 3. sort out cors stuff
+ * 4. manage ip and user blocking
+ */
+
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(swaggerUI =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(swaggerUI =>
-    {
-        swaggerUI.SwaggerEndpoint("/swagger/v3/swagger.json", "Auxilium API V3");
-    });
-}
+    swaggerUI.SwaggerEndpoint("/swagger/v3/swagger.json", "Auxilium API V3");
+});
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 
 app.UseCors();
+
+app.UseMiddleware<WafIpMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
