@@ -3,7 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Me;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
-using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
@@ -66,7 +66,7 @@ public class MeController : LoggedInControllerBase
             var additionalProperties = userDoc.AdditionalProperties?
                 .ToDictionary(
                     p => p.UrlSlug,
-                    p => new AdditionalPropertySubStructure
+                    p => new AdditionalPropertySubStructureDTO
                     {
                         Id = p.Id,
                         CreatedAt = p.CreatedAt,
@@ -78,7 +78,7 @@ public class MeController : LoggedInControllerBase
                         Content = p.Content,
                         ContentType = p.ContentType
                     }
-                ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
+                ) ?? new Dictionary<string, AdditionalPropertySubStructureDTO>();
 
             // build response
             var response = new UserResponseModel

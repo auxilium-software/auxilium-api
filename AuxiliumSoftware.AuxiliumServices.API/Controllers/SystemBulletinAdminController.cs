@@ -5,7 +5,6 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,10 +24,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
+            IWafService waf,
             ILogger<SystemBulletinAdminController> logger,
             ITotpService totpService
         )
-        : base(systemSettingsService, configuration, db, logger, totpService)
+        : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
         }
 
@@ -45,7 +45,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var adminError = await RequireAdminAsync();
             if (adminError != null) return adminError;
 
-            var query = this.Db.SystemBulletins;
+            var query = this.Db.System_Bulletins;
 
             var bulletins = await query
                 .OrderByDescending(b => b.Severity)
@@ -94,7 +94,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 SpecificUserId = request.SpecificUserId
             };
 
-            this.Db.SystemBulletins.Add(bulletin);
+            this.Db.System_Bulletins.Add(bulletin);
             await this.Db.SaveChangesAsync();
 
             return CreatedAtAction(nameof(CreateBulletin), new SystemBulletinResponseModel
@@ -120,7 +120,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var adminError = await RequireAdminAsync();
             if (adminError != null) return adminError;
 
-            var bulletin = await this.Db.SystemBulletins.FindAsync(id);
+            var bulletin = await this.Db.System_Bulletins.FindAsync(id);
 
             if (bulletin == null)
                 return NotFound();
@@ -145,7 +145,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             if (error != null) return error;
 
 
-            var bulletin = await this.Db.SystemBulletins
+            var bulletin = await this.Db.System_Bulletins
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.IsDismissible);
 
             if (bulletin == null)

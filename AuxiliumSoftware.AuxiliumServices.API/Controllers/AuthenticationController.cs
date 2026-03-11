@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -114,6 +115,7 @@ public class AuthenticationController : ControllerBase
                     HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
                     IsAdmin = false,
                     IsCaseWorker = false,
+                    IsCaseWorkerManager = false,
                     AllowLogin = true,
                     HasEmailAddressBeenVerified = false,
                     CreatedAt = DateTime.UtcNow,
@@ -205,6 +207,12 @@ public class AuthenticationController : ControllerBase
 
             if (user == null)
             {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: null,
+                    failureReason: LoginAttemptFailureReasonEnum.UserNotFound
+                );
                 return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid credentials"
@@ -213,6 +221,12 @@ public class AuthenticationController : ControllerBase
 
             if (!user.AllowLogin)
             {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: user,
+                    failureReason: LoginAttemptFailureReasonEnum.AccountLocked
+                );
                 return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Account blocked from logging in by the Auxilium IT department."
@@ -221,6 +235,12 @@ public class AuthenticationController : ControllerBase
 
             if (!_passwordService.VerifyPassword(request.RawPassword, user.PasswordHash))
             {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: user,
+                    failureReason: LoginAttemptFailureReasonEnum.InvalidPassword
+                );
                 return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid credentials"
@@ -248,6 +268,13 @@ public class AuthenticationController : ControllerBase
             // no TOTP for this account => issue tokens directly
             response = await IssueTokensForUserAsync(user);
             _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+
+
+            await this._wafService.RecordSuccessfulLoginAsync(
+                ipAddress: HttpContext.Connection.RemoteIpAddress,
+                email: request.EmailAddress,
+                user: user
+            );
 
             return Ok(response);
         }
@@ -318,6 +345,12 @@ public class AuthenticationController : ControllerBase
 
             response = await IssueTokensForUserAsync(user);
             _logger.LogInformation("User {UserId} completed MFA login", user.Id);
+
+            await this._wafService.RecordSuccessfulLoginAsync(
+                ipAddress: HttpContext.Connection.RemoteIpAddress,
+                email: user.EmailAddress,
+                user: user
+            );
 
             return Ok(response);
         }
@@ -436,11 +469,11 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserLoginResponseModel>> Refresh(
-        [FromBody] UserRefreshTokenRequestModel request)
+        [FromBody] UserRefreshTokenRequestModel request
+    )
     {
         try
         {
-            var strategy = this._db.Database.CreateExecutionStrategy();
             string? accessToken = null;
             string? newRefreshToken = null;
             int expiresIn = 0;
@@ -453,7 +486,8 @@ public class AuthenticationController : ControllerBase
                 .Include(rt => rt.CreatedByUser)
                 .FirstOrDefaultAsync(rt =>
                     rt.TokenHash == tokenHash &&
-                    rt.ExpiresAt > DateTime.UtcNow);
+                    rt.ExpiresAt > DateTime.UtcNow
+                );
 
             if (refreshToken == null || refreshToken.CreatedByUser == null)
             {

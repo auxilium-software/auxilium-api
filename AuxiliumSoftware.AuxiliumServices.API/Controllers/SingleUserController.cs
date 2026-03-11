@@ -4,7 +4,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserStatistic;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
-using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;

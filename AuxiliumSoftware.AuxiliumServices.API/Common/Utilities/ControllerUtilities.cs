@@ -1,6 +1,6 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
-using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using Microsoft.EntityFrameworkCore;
@@ -77,7 +77,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 var additionalProperties = userDoc.AdditionalProperties?
                     .ToDictionary(
                         p => p.UrlSlug,
-                        p => new AdditionalPropertySubStructure
+                        p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
                             CreatedAt = p.CreatedAt,
@@ -89,7 +89,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             Content = p.Content,
                             ContentType = p.ContentType
                         }
-                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>();
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructureDTO>();
 
                 return new UserResponseModel
                 {
@@ -135,7 +135,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 DateOfBirth = null,
                 LanguagePreference = "[REDACTED]",
 
-                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructureDTO>(),
                 Files = new List<string>(),
 
                 HowDidYouFindOutAboutOurService = "[REDACTED]",
@@ -199,7 +199,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 AdditionalProperties = caseEntity.AdditionalProperties?
                     .ToDictionary(
                         p => p.UrlSlug,
-                        p => new AdditionalPropertySubStructure
+                        p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
                             CreatedAt = p.CreatedAt,
@@ -211,7 +211,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             Content = p.Content,
                             ContentType = p.ContentType
                         }
-                    ) ?? new Dictionary<string, AdditionalPropertySubStructure>(),
+                    ) ?? new Dictionary<string, AdditionalPropertySubStructureDTO>(),
             };
         }
 

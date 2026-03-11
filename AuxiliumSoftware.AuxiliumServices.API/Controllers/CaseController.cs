@@ -3,7 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 using AuxiliumSoftware.AuxiliumServices.API.Models.File;
-using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
@@ -104,7 +104,7 @@ public class CaseController : LoggedInControllerBase
                 Messages = new List<string>(),
                 Todos = new Dictionary<string, object>(),
                 // Timeline = new Dictionary<string, object>(),
-                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructure>(),
+                AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructureDTO>(),
                 Referrer = null,
             };
 
