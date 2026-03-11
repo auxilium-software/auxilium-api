@@ -1,4 +1,4 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -63,7 +63,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.User
 
         [Required]
         [JsonPropertyName("additionalProperties")]
-        public required Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; set; }
+        public required Dictionary<string, AdditionalPropertySubStructureDTO> AdditionalProperties { get; set; }
 
         [Required]
         [JsonPropertyName("files")]
