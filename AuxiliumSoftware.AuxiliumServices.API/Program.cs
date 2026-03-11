@@ -21,7 +21,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 
-var configPath = Environment.GetEnvironmentVariable("AUXILIUM_CONFIG_PATH")
+var cliConfigPath = args
+    .SkipWhile(a => a != "--config-path")
+    .Skip(1)
+    .FirstOrDefault();
+
+var configPath = cliConfigPath
+    ?? Environment.GetEnvironmentVariable("AUXILIUM_CONFIG_PATH")
     ?? builder.Configuration["ConfigPath"]
     ?? "\\\\files.wraitheon.net\\Projects\\Auxilium\\aux3-dev.yaml";
 
