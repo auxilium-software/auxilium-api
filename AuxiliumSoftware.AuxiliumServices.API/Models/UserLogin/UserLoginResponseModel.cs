@@ -12,7 +12,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin
         public string? RefreshToken { get; set; }
 
         [JsonPropertyName("expiresIn")]
-        public int? ExpiresIn { get; set; }
+        public long? ExpiresIn { get; set; }
 
 
 
