@@ -27,7 +27,7 @@ public class MeController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<MeController> logger,
         ITotpService totpService,
 
@@ -90,7 +90,7 @@ public class MeController : LoggedInControllerBase
                 LastUpdatedBy = userDoc.LastUpdatedBy,
 
                 EmailAddress = userDoc.EmailAddress,
-                IsAdmin = userDoc.IsAdmin,
+                IsAdministrator = userDoc.IsAdministrator,
                 IsCaseWorker = userDoc.IsCaseWorker,
                 AllowLogin = userDoc.AllowLogin,
                 IsEmailVerified = userDoc.HasEmailAddressBeenVerified,

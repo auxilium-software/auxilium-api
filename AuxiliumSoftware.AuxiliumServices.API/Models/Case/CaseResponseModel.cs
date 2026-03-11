@@ -1,4 +1,4 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.DataStructures;
+﻿using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
@@ -86,6 +86,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.Case
 
         [Required]
         [JsonPropertyName("additionalProperties")]
-        public required Dictionary<string, AdditionalPropertySubStructure> AdditionalProperties { get; init; }
+        public required Dictionary<string, AdditionalPropertySubStructureDTO> AdditionalProperties { get; init; }
     }
 }

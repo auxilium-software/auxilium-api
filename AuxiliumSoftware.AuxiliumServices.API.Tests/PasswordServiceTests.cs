@@ -2,16 +2,18 @@
 using FluentAssertions;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
+using Microsoft.Extensions.Configuration;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Tests;
 
 public class PasswordServiceTests
 {
+    private readonly IConfiguration _configuration;
     private readonly PasswordService _passwordService;
 
     public PasswordServiceTests()
     {
-        _passwordService = new PasswordService();
+        _passwordService = new PasswordService(_configuration);
     }
 
     #region Argon2 Tests

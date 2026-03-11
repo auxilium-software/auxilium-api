@@ -15,13 +15,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
     {
         #region GenerateV5 Tests
         [Theory]
-        [InlineData(DatabaseObjectType.Case)]
-        [InlineData(DatabaseObjectType.CaseTimelineItem)]
-        [InlineData(DatabaseObjectType.CaseTodoItem)]
-        [InlineData(DatabaseObjectType.File)]
-        [InlineData(DatabaseObjectType.Message)]
-        [InlineData(DatabaseObjectType.User)]
-        public void GenerateV5_WithCaseObjectType_ReturnsValidGuid(DatabaseObjectType objectType)
+        [InlineData(DatabaseObjectTypeEnum.Case)]
+        // [InlineData(DatabaseObjectTypeEnum.CaseTimelineItem)]
+        [InlineData(DatabaseObjectTypeEnum.Case_Todo)]
+        [InlineData(DatabaseObjectTypeEnum.Case_File)]
+        [InlineData(DatabaseObjectTypeEnum.Case_Message)]
+        [InlineData(DatabaseObjectTypeEnum.User)]
+        public void GenerateV5_WithCaseObjectType_ReturnsValidGuid(DatabaseObjectTypeEnum objectType)
         {
             Guid uuid = UUIDUtilities.GenerateV5(objectType);
 
@@ -32,8 +32,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
         [Fact]
         public void GenerateV5_MultipleCallsSameType_ReturnsDifferentGuids()
         {
-            Guid uuid1 = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
-            Guid uuid2 = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
+            Guid uuid1 = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
+            Guid uuid2 = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
 
             uuid1.Should().NotBe(uuid2);
         }
@@ -41,8 +41,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
         [Fact]
         public void GenerateV5_DifferentObjectTypes_ReturnsDifferentGuids()
         {
-            Guid userUuid = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
-            Guid caseUuid = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
+            Guid userUuid = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
+            Guid caseUuid = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case);
 
             userUuid.Should().NotBe(caseUuid);
         }
@@ -52,7 +52,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
         [Fact]
         public void GenerateV5_ReturnsVersion5Uuid()
         {
-            Guid uuid = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
+            Guid uuid = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
             string uuidString = uuid.ToString();
 
             char versionChar = uuidString[14];
@@ -62,7 +62,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
         [Fact]
         public void GenerateV5_ReturnsRfc4122Variant()
         {
-            Guid uuid = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
+            Guid uuid = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
             byte[] bytes = uuid.ToByteArray();
 
             // rfc4122 variant has bits 10 in high 2 bits of byte 8
@@ -109,7 +109,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Tests
         [Fact]
         public void GenerateV5String_ReturnsCorrectFormat()
         {
-            var uuidString = UUIDUtilities.GenerateV5(DatabaseObjectType.Case).ToString();
+            var uuidString = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case).ToString();
 
             uuidString.Should().HaveLength(36);
             uuidString.Should().Contain("-");

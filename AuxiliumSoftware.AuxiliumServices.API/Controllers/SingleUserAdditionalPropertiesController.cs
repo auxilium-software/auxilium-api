@@ -19,7 +19,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleUserAdditionalPropertiesController> logger,
         ITotpService totpService,
 
@@ -41,7 +41,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
         var (user, error) = await GetCurrentUserAsync();
         if (error != null) return error;
 
-        if (!user!.IsAdmin && user.Id != userId)
+        if (!user!.IsAdministrator && user.Id != userId)
         {
             return StatusCode(403, new FailureResponseModel
             {
@@ -92,7 +92,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin && user.Id != userId)
+            if (!user!.IsAdministrator && user.Id != userId)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -165,7 +165,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin && user.Id != userId)
+            if (!user!.IsAdministrator && user.Id != userId)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -232,7 +232,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin && user.Id != userId)
+            if (!user!.IsAdministrator && user.Id != userId)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

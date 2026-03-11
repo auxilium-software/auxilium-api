@@ -77,7 +77,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.User
 
         [Required]
         [JsonPropertyName("isAdmin")]
-        public required bool? IsAdmin { get; set; }
+        public required bool? IsAdministrator { get; set; }
 
         [Required]
         [JsonPropertyName("isCaseWorker")]

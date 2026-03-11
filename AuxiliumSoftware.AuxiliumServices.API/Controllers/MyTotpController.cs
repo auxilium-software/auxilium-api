@@ -19,7 +19,7 @@ public class MyTotpController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<MyTotpController> logger,
         ITotpService totpService
     )

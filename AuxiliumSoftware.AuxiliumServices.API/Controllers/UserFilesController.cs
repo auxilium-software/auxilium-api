@@ -23,7 +23,7 @@ public class UserFilesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<UserFilesController> logger,
         ITotpService totpService,
 
@@ -248,7 +248,7 @@ public class UserFilesController : LoggedInControllerBase
             }
 
             // only admins can delete files
-            if (!user!.IsAdmin)
+            if (!user!.IsAdministrator)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

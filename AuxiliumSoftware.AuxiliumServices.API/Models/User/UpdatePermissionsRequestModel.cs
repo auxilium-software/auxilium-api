@@ -2,7 +2,7 @@
 {
     public class UpdatePermissionsRequestModel
     {
-        public bool? IsAdmin { get; set; }
+        public bool? IsAdministrator { get; set; }
         public bool? IsCaseWorker { get; set; }
     }
 }

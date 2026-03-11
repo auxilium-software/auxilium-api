@@ -28,7 +28,7 @@ public class SingleUserController : LoggedInControllerBase
         AuxiliumDbContext db,
         ILogger<SingleUserController> logger,
         ITotpService totpService,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
 
         IUserDocumentService userDocService
         )
@@ -73,7 +73,7 @@ public class SingleUserController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
 
-            return Ok(ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdmin));
+            return Ok(ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator));
         }
         catch (Exception ex)
         {

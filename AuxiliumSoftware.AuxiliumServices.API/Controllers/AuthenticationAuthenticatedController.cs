@@ -27,7 +27,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<AuthenticationAuthenticatedController> logger,
             ITotpService totpService,
 

@@ -19,7 +19,7 @@ public class WEMWBSController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ITotpService totpService,
 
         ILogger<WEMWBSController> logger
@@ -129,7 +129,7 @@ public class WEMWBSController : LoggedInControllerBase
             }
 
             // only allow user to see their own assessments (unless admin)
-            if (assessment.CreatedBy != user!.Id && !user.IsAdmin)
+            if (assessment.CreatedBy != user!.Id && !user.IsAdministrator)
             {
                 return NotFound(new FailureResponseModel { Detail = "Assessment not found" });
             }
@@ -292,7 +292,7 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin)
+            if (!user!.IsAdministrator)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -376,7 +376,7 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin)
+            if (!user!.IsAdministrator)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

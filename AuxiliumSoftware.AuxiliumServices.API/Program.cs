@@ -126,6 +126,7 @@ builder.Services.AddScoped<IUserDocumentService, UserDocumentService>();
 builder.Services.AddScoped<IFileDocumentService, FileDocumentService>();
 builder.Services.AddScoped<IMessageDocumentService, MessageDocumentService>();
 
+builder.Services.AddScoped<IWebApplicationFirewallService, WebApplicationFirewallService>();
 builder.Services.AddScoped<ITotpService, TotpService>();
 
 builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();

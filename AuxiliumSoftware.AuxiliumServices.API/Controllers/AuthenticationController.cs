@@ -27,7 +27,7 @@ public class AuthenticationController : ControllerBase
     private readonly ConfigurationStructure _configuration;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly AuxiliumDbContext _db;
-    private readonly IWafService _wafService;
+    private readonly IWebApplicationFirewallService _wafService;
     private readonly ITotpService _totpService;
 
     private readonly ICaptchaService _captchaService;
@@ -38,7 +38,7 @@ public class AuthenticationController : ControllerBase
         IConfiguration configuration,
         AuxiliumDbContext db,
         ILogger<AuthenticationController> logger,
-        IWafService wafService,
+        IWebApplicationFirewallService wafService,
         ITotpService totpService,
 
         ICaptchaService captchaService,
@@ -93,9 +93,9 @@ public class AuthenticationController : ControllerBase
                 }
 
                 // generate UUIDs
-                var userId = UUIDUtilities.GenerateV5(DatabaseObjectType.User);
-                var caseId = UUIDUtilities.GenerateV5(DatabaseObjectType.Case);
-                var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectType.CaseClient);
+                var userId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
+                var caseId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case);
+                var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case_Client);
 
                 // hash password
                 var passwordHash = _passwordService.HashPassword(request.RawPassword);
@@ -113,7 +113,7 @@ public class AuthenticationController : ControllerBase
                     DateOfBirth = DateOnly.Parse(request.DateOfBirth),
                     LanguagePreference = request.LanguagePreference,
                     HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
-                    IsAdmin = false,
+                    IsAdministrator = false,
                     IsCaseWorker = false,
                     IsCaseWorkerManager = false,
                     AllowLogin = true,
@@ -569,7 +569,7 @@ public class AuthenticationController : ControllerBase
         _db.RefreshTokens.RemoveRange(expiredTokens);
 
         // store the new refresh token
-        var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectType.RefreshToken);
+        var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User_RefreshToken);
         var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
         var expiresAtTime = DateTime.UtcNow.AddDays(_configuration.JWT.RefreshTokenExpirationInDays);
 

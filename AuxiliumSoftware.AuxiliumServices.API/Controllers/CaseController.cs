@@ -28,7 +28,7 @@ public class CaseController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<CaseController> logger,
         ITotpService totpService,
 
@@ -248,7 +248,7 @@ public class CaseController : LoggedInControllerBase
 
             IQueryable<CaseEntityModel> query;
 
-            if (user!.IsAdmin)
+            if (user!.IsAdministrator)
             {
                 // admins see all cases
                 query = Db.Cases

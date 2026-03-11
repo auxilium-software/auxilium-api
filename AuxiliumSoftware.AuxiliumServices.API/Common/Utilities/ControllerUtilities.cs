@@ -114,7 +114,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
                     IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
                     AllowLogin = userDoc.AllowLogin,
-                    IsAdmin = userDoc.IsAdmin,
+                    IsAdministrator = userDoc.IsAdministrator,
                     IsCaseWorker = userDoc.IsCaseWorker
                 };
             }
@@ -142,7 +142,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
                 IsEmailVerified = null,
                 AllowLogin = null,
-                IsAdmin = null,
+                IsAdministrator = null,
                 IsCaseWorker = null
             };
         }
@@ -271,7 +271,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
         public static async Task<bool> HasUserGotConnectionToUser(AuxiliumDbContext Db, UserEntityModel yourself, UserEntityModel targetUser)
         {
-            if (yourself.IsAdmin)
+            if (yourself.IsAdministrator)
                 return true;
 
             if (yourself.Id == targetUser.Id)
@@ -301,7 +301,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
         public static async Task<bool> CanUserModifyUser(AuxiliumDbContext Db, UserEntityModel yourself, UserEntityModel targetUser)
         {
-            if (yourself.IsAdmin)
+            if (yourself.IsAdministrator)
                 return true;
 
             if (yourself.Id == targetUser.Id)

@@ -25,7 +25,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<SingleCaseController> logger,
             ITotpService totpService,
 
@@ -73,7 +73,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 // check access -> is admin OR client OR worker
-                var hasAccess = user!.IsAdmin ||
+                var hasAccess = user!.IsAdministrator ||
                               (caseEntity.Clients ?? []).Any(cl => cl.UserId == user.Id) ||
                               (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
@@ -123,7 +123,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 // check the permissions - workers and clients can upload
-                var canUpload = user!.IsAdmin ||
+                var canUpload = user!.IsAdministrator ||
                               (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id) ||
                               (caseEntity.Clients ?? []).Any(c => c.UserId == user.Id);
 
@@ -199,7 +199,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 // only workers and admins can update cases
-                var canUpdate = user!.IsAdmin ||
+                var canUpdate = user!.IsAdministrator ||
                               (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 
                 if (!canUpdate)

@@ -20,7 +20,7 @@ public class SingleCaseTodoController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleCaseTodoController> logger,
         ITotpService totpService,
 
@@ -190,7 +190,7 @@ public class SingleCaseTodoController : LoggedInControllerBase
 
             // only admins and case workers can delete todos
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

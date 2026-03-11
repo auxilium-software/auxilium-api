@@ -23,7 +23,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleCaseAdditionalPropertiesController> logger,
         ITotpService totpService,
 
@@ -54,7 +54,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
         if (requireWorker)
         {
-            if (!user.IsAdmin && !isWorker)
+            if (!user.IsAdministrator && !isWorker)
             {
                 return (null, StatusCode(403, new FailureResponseModel
                 {
@@ -64,7 +64,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         }
         else
         {
-            if (!user.IsAdmin && !isWorker && !isClient)
+            if (!user.IsAdministrator && !isWorker && !isClient)
             {
                 return (null, StatusCode(403, new FailureResponseModel
                 {

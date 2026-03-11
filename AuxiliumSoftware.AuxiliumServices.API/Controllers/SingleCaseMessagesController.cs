@@ -21,7 +21,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleCaseMessagesController> logger,
         ITotpService totpService,
 
@@ -244,7 +244,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             }
 
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

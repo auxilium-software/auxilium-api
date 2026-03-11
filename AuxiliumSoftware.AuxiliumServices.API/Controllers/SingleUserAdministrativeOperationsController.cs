@@ -21,7 +21,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<SingleUserController> logger,
             ITotpService totpService,
 
@@ -65,7 +65,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 // Prevent admins from removing their own admin rights
-                if (userId == user!.Id && request.IsAdmin == false && userDoc.IsAdmin)
+                if (userId == user!.Id && request.IsAdministrator == false && userDoc.IsAdministrator)
                 {
                     return BadRequest(new FailureResponseModel
                     {
@@ -75,10 +75,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 var changes = new List<string>();
 
-                if (request.IsAdmin.HasValue && userDoc.IsAdmin != request.IsAdmin.Value)
+                if (request.IsAdministrator.HasValue && userDoc.IsAdministrator != request.IsAdministrator.Value)
                 {
-                    userDoc.IsAdmin = request.IsAdmin.Value;
-                    changes.Add(request.IsAdmin.Value ? "Granted admin" : "Revoked admin");
+                    userDoc.IsAdministrator = request.IsAdministrator.Value;
+                    changes.Add(request.IsAdministrator.Value ? "Granted admin" : "Revoked admin");
                 }
 
                 if (request.IsCaseWorker.HasValue && userDoc.IsCaseWorker != request.IsCaseWorker.Value)
@@ -149,7 +149,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 /*
                 await WriteAuditLog(
                     userId, user.Id, "user.force_password_reset",
-                    "Password reset enforced — user must change password on next login"
+                    "Password reset enforced - user must change password on next login"
                 );
                 */
 
@@ -215,8 +215,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 var action = request.Blocked ? "user.blocked" : "user.unblocked";
                 var desc = request.Blocked
-                    ? "Login blocked — user can no longer sign in"
-                    : "Login unblocked — user can sign in again";
+                    ? "Login blocked - user can no longer sign in"
+                    : "Login unblocked - user can sign in again";
 
                 await WriteAuditLog(userId, user.Id, action, desc);
 

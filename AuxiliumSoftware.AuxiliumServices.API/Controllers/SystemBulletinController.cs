@@ -19,14 +19,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Authorize]
     public class SystemBulletinController : ControllerBase
     {
-        private readonly IWafService _waf;
+        private readonly IWebApplicationFirewallService _waf;
         private readonly ILogger<SystemBulletinController> _logger;
         private readonly AuxiliumDbContext _db;
 
         public SystemBulletinController(
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<SystemBulletinController> logger,
             ITotpService totpService
             )

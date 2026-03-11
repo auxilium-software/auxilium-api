@@ -20,7 +20,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleCasePeopleController> logger,
         ITotpService totpService,
 
@@ -58,7 +58,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
 
             // only admins or existing workers can add clients
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -118,7 +118,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
 
             // only admins or existing workers can remove clients
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -171,7 +171,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
 
             // only admins or existing workers can add workers
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
@@ -232,7 +232,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
 
             // only admins or existing workers can remove workers
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {

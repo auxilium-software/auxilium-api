@@ -19,7 +19,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
         protected readonly ISystemSettingsService SystemSettings;
         protected readonly ConfigurationStructure Configuration;
         protected readonly AuxiliumDbContext Db;
-        protected readonly IWafService Waf;
+        protected readonly IWebApplicationFirewallService Waf;
         protected readonly ILogger Logger;
         protected readonly ITotpService TotpService;
 
@@ -33,7 +33,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger logger,
             ITotpService totpService
         )
@@ -101,7 +101,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdmin)
+            if (!user!.IsAdministrator)
             {
                 Logger.LogWarning("User {UserId} attempted admin action without permissions", user.Id);
                 return StatusCode(403, new FailureResponseModel
@@ -123,7 +123,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return (null, error);
 
-            if (!user!.IsCaseWorker && !user.IsAdmin)
+            if (!user!.IsCaseWorker && !user.IsAdministrator)
             {
                 Logger.LogWarning("User {UserId} attempted case worker action without permissions", user.Id);
                 return (null, StatusCode(403, new FailureResponseModel

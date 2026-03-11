@@ -11,11 +11,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Tags("Server")]
     public class ServerController : ControllerBase
     {
-        private readonly IWafService _wafService;
+        private readonly IWebApplicationFirewallService _wafService;
         private readonly ILogger<ServerController> _logger;
 
         public ServerController(
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<ServerController> logger
             )
         {

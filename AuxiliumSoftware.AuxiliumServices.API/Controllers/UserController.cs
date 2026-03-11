@@ -25,7 +25,7 @@ public class UserController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<UserController> logger,
         ITotpService totpService,
 
@@ -155,7 +155,7 @@ public class UserController : LoggedInControllerBase
 
                         IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
                         AllowLogin = userDoc.AllowLogin,
-                        IsAdmin = userDoc.IsAdmin,
+                        IsAdministrator = userDoc.IsAdmin,
                         IsCaseWorker = userDoc.IsCaseWorker
                     });
                 }
@@ -185,7 +185,7 @@ public class UserController : LoggedInControllerBase
 
                         IsEmailVerified = null,
                         AllowLogin = null,
-                        IsAdmin = null,
+                        IsAdministrator = null,
                         IsCaseWorker = null
                     });
                 }

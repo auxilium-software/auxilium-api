@@ -24,7 +24,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
-            IWafService waf,
+            IWebApplicationFirewallService waf,
             ILogger<SystemBulletinAdminController> logger,
             ITotpService totpService
         )
@@ -158,7 +158,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 this.Db.Log_SystemBulletinEntryDismissals.Add(new LogSystemBulletinEntryDismissalEventEntityModel
                 {
-                    Id = UUIDUtilities.GenerateV5(DatabaseObjectType.LogSystemBulletinEntryDismissalEvent),
+                    Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Log_SystemBulletinEntryDismissalEventEntry),
                     CreatedBy = user.Id,
                     CreatedAt = DateTime.UtcNow,
                     SystemBulletinId = id,

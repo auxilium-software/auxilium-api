@@ -21,7 +21,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
-        IWafService waf,
+        IWebApplicationFirewallService waf,
         ILogger<SingleCaseFilesController> logger,
         ITotpService totpService,
 
@@ -228,7 +228,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
 
             // only case workers and admins can delete files
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
-            if (!user!.IsAdmin && !isWorker)
+            if (!user!.IsAdministrator && !isWorker)
             {
                 return StatusCode(403, new FailureResponseModel
                 {
