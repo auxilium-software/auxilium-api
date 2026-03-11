@@ -1,6 +1,7 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Server;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
@@ -10,12 +11,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Tags("Server")]
     public class ServerController : ControllerBase
     {
+        private readonly IWafService _wafService;
         private readonly ILogger<ServerController> _logger;
 
         public ServerController(
+            IWafService waf,
             ILogger<ServerController> logger
             )
         {
+            _wafService = waf;
             _logger = logger;
         }
 
