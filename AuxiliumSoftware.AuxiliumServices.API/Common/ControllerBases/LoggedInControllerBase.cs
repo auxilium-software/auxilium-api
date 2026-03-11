@@ -88,6 +88,16 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
                 }));
             }
 
+            var userLockout = await Waf.IsUserBlacklistedAsync(user);
+            if (userLockout != null)
+            {
+                return (null, Unauthorized(new FailureResponseModel
+                {
+                    Detail = "User is locked out of using Auxilium"
+                }));
+            }
+
+
             return (user, null);
         }
 
