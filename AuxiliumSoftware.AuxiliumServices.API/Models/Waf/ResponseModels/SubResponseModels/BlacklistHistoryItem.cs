@@ -1,6 +1,6 @@
 ﻿namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
 {
-    public class BlockHistoryItem
+    public class BlacklistHistoryItem
     {
         public required Guid Id { get; set; }
         public required DateTime BlockedAt { get; set; }

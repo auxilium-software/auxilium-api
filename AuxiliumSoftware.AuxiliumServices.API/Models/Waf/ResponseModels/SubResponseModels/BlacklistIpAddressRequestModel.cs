@@ -2,7 +2,7 @@
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
 {
-    public class BlockIpRequestModel
+    public class BlacklistIpAddressRequestModel
     {
         public required IPAddress IpAddress { get; set; }
         public required string Reason { get; set; }

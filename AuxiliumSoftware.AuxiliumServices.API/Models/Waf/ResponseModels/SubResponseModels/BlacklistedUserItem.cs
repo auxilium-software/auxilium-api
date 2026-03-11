@@ -1,6 +1,6 @@
 ﻿namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
 {
-    public class LockedOutUserItem
+    public class BlacklistedUserItem
     {
         public required Guid UserId { get; set; }
         public required bool IsLockedOut { get; set; }

@@ -1,6 +1,6 @@
 ﻿namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
 {
-    public class BlockedIpItem
+    public class BlacklistedIpAddressItem
     {
         public required Guid Id { get; set; }
         public required string IpAddress { get; set; }
