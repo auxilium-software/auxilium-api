@@ -54,7 +54,7 @@ public class UserController : LoggedInControllerBase
 
             IQueryable<UserEntityModel> query;
 
-            if (user!.IsAdmin)
+            if (user!.IsAdministrator)
             {
                 // admins see all users
                 query = Db.Users.Include(u => u.AdditionalProperties);
@@ -112,7 +112,7 @@ public class UserController : LoggedInControllerBase
 
             foreach (var userDoc in users)
             {
-                if (user.IsAdmin)
+                if (user.IsAdministrator)
                 {
                     // admins get all data including additional properties
                     var additionalProperties = userDoc.AdditionalProperties?
@@ -155,7 +155,7 @@ public class UserController : LoggedInControllerBase
 
                         IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
                         AllowLogin = userDoc.AllowLogin,
-                        IsAdministrator = userDoc.IsAdmin,
+                        IsAdministrator = userDoc.IsAdministrator,
                         IsCaseWorker = userDoc.IsCaseWorker
                     });
                 }
@@ -257,7 +257,7 @@ public class UserController : LoggedInControllerBase
 
 
             // additional stats
-            var adminCount = await Db.Users.CountAsync(u => u.IsAdmin);
+            var adminCount = await Db.Users.CountAsync(u => u.IsAdministrator);
             var caseWorkerCount = await Db.Users.CountAsync(u => u.IsCaseWorker);
             var regularUserCount = totalUsers - adminCount - caseWorkerCount;
 
