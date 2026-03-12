@@ -21,15 +21,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 
-var cliConfigPath = args
+string? configPath = args
     .SkipWhile(a => a != "--config-path")
     .Skip(1)
-    .FirstOrDefault();
-
-var configPath = cliConfigPath
-    ?? Environment.GetEnvironmentVariable("AUXILIUM_CONFIG_PATH")
-    ?? builder.Configuration["ConfigPath"]
-    ?? "\\\\files.wraitheon.net\\Projects\\Auxilium\\aux3-dev.yaml";
+    .FirstOrDefault() ?? throw new InvalidOperationException("Configuration path not specified. Please provide a path via command line argument '--config-path'.");
 
 builder.Configuration.AddYamlFile(
     configPath,
