@@ -34,11 +34,14 @@ builder.Configuration.AddYamlFile(
 
 
 
-var urls = builder.Configuration.GetSection("API:AvailableAt").Get<string[]>();
-if (urls?.Length > 0)
-    builder.WebHost.UseUrls(urls);
-else
+var urls = builder.Configuration
+    .GetSection("API:AvailableAt")
+    .Get<string[]>();
+
+if (urls?.Length == 0)
     throw new InvalidOperationException("At least ONE API->AvailableAt MUST be specified.");
+
+builder.WebHost.UseUrls(urls);
 
 
 
