@@ -35,7 +35,7 @@ builder.Configuration.AddYamlFile(
 
 
 var urls = builder.Configuration
-    .GetSection("API:AvailableAt")
+    .GetSection("API:AvailableFrom")
     .Get<string[]>();
 
 if (urls?.Length == 0)
