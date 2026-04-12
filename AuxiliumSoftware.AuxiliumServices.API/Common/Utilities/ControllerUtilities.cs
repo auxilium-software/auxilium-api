@@ -115,6 +115,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                     IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
                     AllowLogin = userDoc.AllowLogin,
                     IsAdministrator = userDoc.IsAdministrator,
+                    IsCaseWorkerManager = userDoc.IsCaseWorkerManager,
                     IsCaseWorker = userDoc.IsCaseWorker
                 };
             }
@@ -143,6 +144,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 IsEmailVerified = null,
                 AllowLogin = null,
                 IsAdministrator = null,
+                IsCaseWorkerManager = null,
                 IsCaseWorker = null
             };
         }

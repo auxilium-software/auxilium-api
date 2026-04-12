@@ -91,6 +91,7 @@ public class MeController : LoggedInControllerBase
 
                 EmailAddress = userDoc.EmailAddress,
                 IsAdministrator = userDoc.IsAdministrator,
+                IsCaseWorkerManager = userDoc.IsCaseWorkerManager,
                 IsCaseWorker = userDoc.IsCaseWorker,
                 AllowLogin = userDoc.AllowLogin,
                 IsEmailVerified = userDoc.HasEmailAddressBeenVerified,

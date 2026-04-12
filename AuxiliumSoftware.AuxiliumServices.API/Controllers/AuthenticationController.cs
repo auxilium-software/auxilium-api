@@ -1,20 +1,22 @@
-﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
-using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
-using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
-using AuxiliumSoftware.AuxiliumServices.API.Models;
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserRefresh;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserRegistration;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
-using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
-using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
-using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -98,7 +100,8 @@ public class AuthenticationController : ControllerBase
                 var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case_Client);
 
                 // hash password
-                var passwordHash = _passwordService.HashPassword(request.RawPassword);
+                var normalised = NormalizePassword(request.RawPassword, request.PasswordSha512);
+                var passwordHash = _passwordService.HashPassword(normalised);
 
                 // create the user entity
                 var user = new UserEntityModel
@@ -233,7 +236,8 @@ public class AuthenticationController : ControllerBase
                 });
             }
 
-            if (!_passwordService.VerifyPassword(request.RawPassword, user.PasswordHash))
+            var normalised = NormalizePassword(request.RawPassword, request.PasswordSha512);
+            if (!_passwordService.VerifyPassword(normalised, user.PasswordHash))
             {
                 await this._wafService.RecordFailedLoginAsync(
                     ipAddress: HttpContext.Connection.RemoteIpAddress,
@@ -592,5 +596,20 @@ public class AuthenticationController : ControllerBase
             ExpiresIn = _configuration.JWT.AccessTokenExpirationInMinutes * 60,
             MfaRequired = false,
         };
+    }
+    private static string NormalizePassword(string? rawPassword, string? passwordSha256)
+    {
+        if (!string.IsNullOrEmpty(passwordSha256))
+        {
+            return passwordSha256;
+        }
+
+        if (!string.IsNullOrEmpty(rawPassword))
+        {
+            var bytes = SHA512.HashData(Encoding.UTF8.GetBytes(rawPassword));
+            return Convert.ToHexString(bytes).ToLowerInvariant();
+        }
+
+        throw new ArgumentException("Either RawPassword or PasswordSha256 must be provided");
     }
 }

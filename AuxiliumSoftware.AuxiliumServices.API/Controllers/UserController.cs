@@ -156,6 +156,7 @@ public class UserController : LoggedInControllerBase
                         IsEmailVerified = userDoc.HasEmailAddressBeenVerified,
                         AllowLogin = userDoc.AllowLogin,
                         IsAdministrator = userDoc.IsAdministrator,
+                        IsCaseWorkerManager = userDoc.IsCaseWorkerManager,
                         IsCaseWorker = userDoc.IsCaseWorker
                     });
                 }
@@ -186,6 +187,7 @@ public class UserController : LoggedInControllerBase
                         IsEmailVerified = null,
                         AllowLogin = null,
                         IsAdministrator = null,
+                        IsCaseWorkerManager = null,
                         IsCaseWorker = null
                     });
                 }
@@ -259,6 +261,7 @@ public class UserController : LoggedInControllerBase
             // additional stats
             var adminCount = await Db.Users.CountAsync(u => u.IsAdministrator);
             var caseWorkerCount = await Db.Users.CountAsync(u => u.IsCaseWorker);
+            var caseWorkerManagerCount = await Db.Users.CountAsync(u => u.IsCaseWorkerManager);
             var regularUserCount = totalUsers - adminCount - caseWorkerCount;
 
             var response = new UserStatisticsResponseModel
@@ -275,7 +278,8 @@ public class UserController : LoggedInControllerBase
                 {
                     Admins = adminCount,
                     CaseWorkers = caseWorkerCount,
-                    RegularUsers = regularUserCount
+                    CaseWorkerManagers = caseWorkerManagerCount,
+                    RegularUsers = regularUserCount,
                 },
 
                 GeneratedAt = now

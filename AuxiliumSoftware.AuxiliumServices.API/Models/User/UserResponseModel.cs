@@ -80,6 +80,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.User
         public required bool? IsAdministrator { get; set; }
 
         [Required]
+        [JsonPropertyName("isCaseWorkerManager")]
+        public required bool? IsCaseWorkerManager { get; set; }
+
+        [Required]
         [JsonPropertyName("isCaseWorker")]
         public required bool? IsCaseWorker { get; set; }
 
