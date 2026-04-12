@@ -6,11 +6,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.Me
     public class PasswordUpdateRequestModel
     {
         [Required]
-        [JsonPropertyName("currentPassword")]
-        public required string CurrentPassword { get; init; }
+        [JsonPropertyName("currentPasswordSha512")]
+        public required string CurrentPasswordSha512 { get; init; }
 
         [Required]
-        [JsonPropertyName("newPassword")]
-        public required string NewPassword { get; init; }
+        [JsonPropertyName("newPasswordSha512")]
+        public required string NewPasswordSha512 { get; init; }
     }
 }

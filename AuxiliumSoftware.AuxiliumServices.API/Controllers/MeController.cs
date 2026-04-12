@@ -179,11 +179,6 @@ public class MeController : LoggedInControllerBase
     }
 
     [HttpPost("change-password")]
-    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> ChangePassword(
         [FromBody] PasswordUpdateRequestModel request)
     {
@@ -192,8 +187,10 @@ public class MeController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // check if the new password is same as the old password
-            if (request.CurrentPassword == request.NewPassword)
+            var currentNormalized = this._passwordService.NormalisePassword(request.CurrentPasswordSha512, request.CurrentPasswordSha512);
+            var newNormalized = this._passwordService.NormalisePassword(request.NewPasswordSha512, request.NewPasswordSha512);
+
+            if (currentNormalized == newNormalized)
             {
                 return Conflict(new FailureResponseModel
                 {
@@ -201,15 +198,13 @@ public class MeController : LoggedInControllerBase
                 });
             }
 
-            // grab the user from database
             var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
             if (userDoc == null)
             {
                 return NotFound(new FailureResponseModel { Detail = "User not found" });
             }
 
-            // verify current password
-            if (!_passwordService.VerifyPassword(request.CurrentPassword, userDoc.PasswordHash))
+            if (!_passwordService.VerifyPassword(currentNormalized, userDoc.PasswordHash))
             {
                 return BadRequest(new FailureResponseModel
                 {
@@ -217,10 +212,8 @@ public class MeController : LoggedInControllerBase
                 });
             }
 
-            // hash new password
-            var newPasswordHash = _passwordService.HashPassword(request.NewPassword);
+            var newPasswordHash = _passwordService.HashPassword(newNormalized);
 
-            // update password
             userDoc.PasswordHash = newPasswordHash;
             userDoc.LastUpdatedAt = DateTime.UtcNow;
 

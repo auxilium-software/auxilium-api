@@ -116,7 +116,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .GroupBy(l => l.ClientIpAddress)
                 .Select(g => new TopOffenderItem
                 {
-                    IpAddress = g.Key,
+                    IpAddress = IPAddress.Parse(g.Key.ToString()),
                     FailedAttempts = g.Count(),
                     DistinctUsersTargeted = g.Select(x => x.TargetUserId).Distinct().Count(),
                     LastAttempt = g.Max(x => x.CreatedAt)
@@ -252,7 +252,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     Id = l.Id,
                     AttemptedAt = l.CreatedAt,
-                    IpAddress = l.ClientIpAddress,
+                    IpAddress = IPAddress.Parse(l.ClientIpAddress.ToString()),
                     TargetEmail = l.AttemptedEmailAddress,
                     TargetUserId = l.TargetUserId,
                     WasSuccessful = l.WasLoginSuccessful,
@@ -341,11 +341,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
 
             var now = DateTime.UtcNow;
-            var normalizedIp = Waf.NormalizeIpAddress(request.IpAddress);
+            var normalizedIp = Waf.NormaliseIpAddress(request.IpAddress);
 
             // Check if already blocked
             var existingBlock = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == normalizedIp && b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
                 .FirstOrDefaultAsync();
 
             if (existingBlock != null)
@@ -368,7 +368,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Fetch the created block to return
             var block = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == normalizedIp && b.UnblacklistedAt == null)
+                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAt == null)
                 .OrderByDescending(b => b.CreatedAt)
                 .FirstAsync();
 
@@ -399,10 +399,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             await this.RequireAdminAsync();
 
             var now = DateTime.UtcNow;
-            var normalizedIp = Waf.NormalizeIpAddress(ipAddress);
+            var normalizedIp = Waf.NormaliseIpAddress(ipAddress);
 
             var block = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == normalizedIp)
+                .Where(b => b.IpAddress == ipAddress)
                 .OrderByDescending(b => b.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -419,7 +419,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     Id = l.Id,
                     AttemptedAt = l.CreatedAt,
-                    IpAddress = l.ClientIpAddress,
+                    IpAddress = IPAddress.Parse(l.ClientIpAddress.ToString()),
                     WasSuccessful = l.WasLoginSuccessful,
                     WasBlockedByWaf = l.WasBlockedByWaf,
                     FailureReason = l.FailureReason,
@@ -429,7 +429,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .ToListAsync();
 
             var blockHistory = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == normalizedIp)
+                .Where(b => b.IpAddress == ipAddress)
                 .OrderByDescending(b => b.CreatedAt)
                 .Select(b => new BlacklistHistoryItem
                 {
@@ -734,7 +734,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
 
             var now = DateTime.UtcNow;
-            var normalizedIp = Waf.NormalizeIpAddress(request.IpAddress);
+            var normalizedIp = Waf.NormaliseIpAddress(request.IpAddress);
 
             // Check if already whitelisted
             var existingEntry = await this.Db.System_Waf_IpWhitelist

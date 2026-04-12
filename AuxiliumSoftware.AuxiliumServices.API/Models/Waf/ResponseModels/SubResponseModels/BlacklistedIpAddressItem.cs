@@ -1,9 +1,11 @@
-﻿namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
+﻿using System.Net;
+
+namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.ResponseModels.SubResponseModels
 {
     public class BlacklistedIpAddressItem
     {
         public required Guid Id { get; set; }
-        public required string IpAddress { get; set; }
+        public required IPAddress IpAddress { get; set; }
         public required string Justification { get; set; }
         public required bool IsPermanent { get; set; }
         public required bool IsActive { get; set; }

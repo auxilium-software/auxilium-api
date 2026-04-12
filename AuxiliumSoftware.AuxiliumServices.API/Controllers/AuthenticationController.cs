@@ -100,7 +100,7 @@ public class AuthenticationController : ControllerBase
                 var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case_Client);
 
                 // hash password
-                var normalised = NormalizePassword(request.RawPassword, request.PasswordSha512);
+                var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
                 var passwordHash = _passwordService.HashPassword(normalised);
 
                 // create the user entity
@@ -236,7 +236,7 @@ public class AuthenticationController : ControllerBase
                 });
             }
 
-            var normalised = NormalizePassword(request.RawPassword, request.PasswordSha512);
+            var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
             if (!_passwordService.VerifyPassword(normalised, user.PasswordHash))
             {
                 await this._wafService.RecordFailedLoginAsync(
@@ -596,20 +596,5 @@ public class AuthenticationController : ControllerBase
             ExpiresIn = _configuration.JWT.AccessTokenExpirationInMinutes * 60,
             MfaRequired = false,
         };
-    }
-    private static string NormalizePassword(string? rawPassword, string? passwordSha256)
-    {
-        if (!string.IsNullOrEmpty(passwordSha256))
-        {
-            return passwordSha256;
-        }
-
-        if (!string.IsNullOrEmpty(rawPassword))
-        {
-            var bytes = SHA512.HashData(Encoding.UTF8.GetBytes(rawPassword));
-            return Convert.ToHexString(bytes).ToLowerInvariant();
-        }
-
-        throw new ArgumentException("Either RawPassword or PasswordSha256 must be provided");
     }
 }
