@@ -247,7 +247,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 return SystemSettingVisibilityEnum.Administrator;
 
             // return SystemSettingVisibilityEnum.Authenticated;
-            return SystemSettingVisibilityEnum.Public
+            return SystemSettingVisibilityEnum.Public;
         }
 
         private static object? GetDefaultValue(
