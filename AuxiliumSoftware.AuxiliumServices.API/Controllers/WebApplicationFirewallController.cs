@@ -730,15 +730,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
-                return BadRequest(new { message = "Reason is required" });
+                return BadRequest(new { message = "Reason is required." });
+            }
+
+            if (!IPAddress.TryParse(request.IpAddress, out var parsedIpAddress))
+            {
+                return BadRequest(new { message = "Invalid IP Address format." });
             }
 
             var now = DateTime.UtcNow;
-            var normalizedIp = Waf.NormaliseIpAddress(request.IpAddress);
+            var normalizedIp = Waf.NormaliseIpAddress(parsedIpAddress);
 
             // Check if already whitelisted
             var existingEntry = await this.Db.System_Waf_IpWhitelist
-                .Where(w => w.IpAddress == request.IpAddress && w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now))
+                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now))
                 .FirstOrDefaultAsync();
 
             if (existingEntry != null)
@@ -747,14 +752,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
 
             await Waf.WhitelistIpAddressAsync(
-                ipAddress: request.IpAddress,
+                ipAddress: parsedIpAddress,
                 reason: request.Reason,
                 adminUser: user!,
                 permanent: request.IsPermanent
             );
 
             var entry = await this.Db.System_Waf_IpWhitelist
-                .Where(w => w.IpAddress == request.IpAddress && w.UnwhitelistedAt == null)
+                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAt == null)
                 .OrderByDescending(w => w.CreatedAt)
                 .FirstAsync();
 
