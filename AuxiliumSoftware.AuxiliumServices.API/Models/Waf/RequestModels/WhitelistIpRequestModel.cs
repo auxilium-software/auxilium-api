@@ -8,7 +8,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.Waf.RequestModels
     {
         [Required]
         [JsonPropertyName("ipAddress")]
-        public required IPAddress IpAddress { get; set; }
+        public required string IpAddress { get; set; }
 
         [Required]
         [JsonPropertyName("reason")]
