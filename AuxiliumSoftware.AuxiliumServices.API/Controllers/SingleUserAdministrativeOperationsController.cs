@@ -81,6 +81,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     changes.Add(request.IsAdministrator.Value ? "Granted admin" : "Revoked admin");
                 }
 
+                if (request.IsCaseWorkerManager.HasValue && userDoc.IsCaseWorkerManager != request.IsCaseWorkerManager.Value)
+                {
+                    userDoc.IsCaseWorkerManager = request.IsCaseWorkerManager.Value;
+                    changes.Add(request.IsCaseWorkerManager.Value ? "Granted case worker manager" : "Revoked case worker manager");
+                }
+
                 if (request.IsCaseWorker.HasValue && userDoc.IsCaseWorker != request.IsCaseWorker.Value)
                 {
                     userDoc.IsCaseWorker = request.IsCaseWorker.Value;
