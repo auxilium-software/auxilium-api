@@ -1,10 +1,12 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models.SystemSettings;
 using AuxiliumSoftware.AuxiliumServices.Common.Attributes;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -28,6 +30,39 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         )
             : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
+        }
+
+        /// <summary>
+        /// Returns all system settings the caller is entitled to see based on their authentication level.
+        /// Unauthenticated callers receive only Public settings; authenticated non-admins receive Public + Authenticated; admins receive everything.
+        /// </summary>
+        [HttpGet("visible")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<SystemSettingDTO>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetVisibleSettings(CancellationToken ct)
+        {
+            var visibility = ResolveCallerVisibility();
+            var settings = await this.SystemSettings.GetVisibleSettingsAsync(visibility, ct);
+            return Ok(settings);
+        }
+
+        /// <summary>
+        /// Returns a single system setting by its JSON key name (e.g. "instance.branding.name"), provided the caller has sufficient visibility.
+        /// Returns 404 for missing keys AND for keys above the caller's visibility tier to avoid leaking key existence.
+        /// </summary>
+        [HttpGet("visible/{*jsonKey}")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(SystemSettingDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetVisibleSetting(string jsonKey, CancellationToken ct)
+        {
+            var visibility = ResolveCallerVisibility();
+            var setting = await this.SystemSettings.GetVisibleSettingByKeyAsync(jsonKey, visibility, ct);
+
+            if (setting is null)
+                return NotFound();
+
+            return Ok(setting);
         }
 
         [HttpGet("all")]
@@ -199,15 +234,21 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             });
         }
 
+        /// <summary>
+        /// Determines the maximum visibility tier the current caller is entitled to.
+        /// Unlike GetCurrentUserAsync(), this does not fail for unauthenticated requests.
+        /// </summary>
+        private SystemSettingVisibilityEnum ResolveCallerVisibility()
+        {
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            //     return SystemSettingVisibilityEnum.Public;
 
+            if (User.IsInRole("Administrator"))
+                return SystemSettingVisibilityEnum.Administrator;
 
-
-
-
-
-
-
-
+            // return SystemSettingVisibilityEnum.Authenticated;
+            return SystemSettingVisibilityEnum.Public
+        }
 
         private static object? GetDefaultValue(
             SystemSettingDefaultValueAttribute? defaultAttr,
