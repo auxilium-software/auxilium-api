@@ -8,10 +8,14 @@ using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Channels;
+using System.Net.Mail;
+using System.Security.Cryptography;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -21,6 +25,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 public class SingleUserController : LoggedInControllerBase
 {
     private readonly IUserDocumentService _userDocService;
+    private readonly IMessageQueueProducer _messageQueue;
 
     public SingleUserController(
         ISystemSettingsService systemSettingsService,
@@ -29,12 +34,13 @@ public class SingleUserController : LoggedInControllerBase
         ILogger<SingleUserController> logger,
         ITotpService totpService,
         IWebApplicationFirewallService waf,
-
-        IUserDocumentService userDocService
+        IUserDocumentService userDocService,
+        IMessageQueueProducer messageQueue
         )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _userDocService = userDocService;
+        _messageQueue = messageQueue;
     }
 
 
@@ -52,7 +58,7 @@ public class SingleUserController : LoggedInControllerBase
             if (error != null) return error;
 
             UserEntityModel targetUser = Db.Users.FirstOrDefault(u => u.Id == userId);
-            if(targetUser == null)
+            if (targetUser == null)
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
                 {
                     Detail = "The targeted User does not exist."
@@ -227,9 +233,6 @@ public class SingleUserController : LoggedInControllerBase
     }
 
 
-
-
-
     [HttpDelete("")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -302,6 +305,133 @@ public class SingleUserController : LoggedInControllerBase
     }
 
 
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(Guid userId)
+    {
+        var (user, error) = await GetCurrentUserAsync();
+        if (error != null) return error;
+
+        var adminError = await RequireAdminAsync();
+        if (adminError != null) return adminError;
+
+        var target = await Db.Users.FindAsync(userId);
+        if (target == null) return NotFound();
+
+        // invalidate any existing unused tokens for this user
+        var oldTokens = await Db.PasswordSetTokens
+            .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
+            .ToListAsync();
+        foreach (var t in oldTokens)
+            t.UsedAt = DateTime.UtcNow;
+
+        // generate raw token bytes — store the hash, send the raw token
+        var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
+        var rawToken = Convert.ToBase64String(rawTokenBytes);
+        var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+        var token = new PasswordSetTokenEntityModel
+        {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = user!.Id,
+            UserId = userId,
+            TokenHash = tokenHash,
+            ExpiresAt = DateTime.UtcNow.AddHours(72),
+            UsedAt = null,
+            Reason = PasswordSetTokenReasonEnum.PasswordReset,
+        };
+
+        Db.PasswordSetTokens.Add(token);
+        await Db.SaveChangesAsync();
+
+        // queue the email
+        await _messageQueue.PublishAsync(new EmailQueueMessage
+        {
+            To = target.EmailAddress,
+            Subject = "Password Reset",
+            TemplateName = "password-reset",
+            Priority = EmailPriorityEnum.High,
+            TemplateData = new Dictionary<string, string>
+            {
+                ["fullName"] = target.FullName,
+                ["resetToken"] = rawToken,
+                ["expiryHours"] = "72",
+            }
+        });
+
+        Logger.LogInformation(
+            "Password reset token generated for user {UserId} by admin {AdminId}",
+            userId, user.Id
+        );
+
+        return Ok(new { success = true });
+    }
 
 
+    [HttpPost("expire-password")]
+    public async Task<IActionResult> ExpirePassword(Guid userId)
+    {
+        var (user, error) = await GetCurrentUserAsync();
+        if (error != null) return error;
+
+        var adminError = await RequireAdminAsync();
+        if (adminError != null) return adminError;
+
+        var target = await Db.Users.FindAsync(userId);
+        if (target == null) return NotFound();
+
+        // lock them out immediately
+        target.AllowLogin = false;
+
+        // invalidate existing tokens
+        var oldTokens = await Db.PasswordSetTokens
+            .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
+            .ToListAsync();
+        foreach (var t in oldTokens)
+            t.UsedAt = DateTime.UtcNow;
+
+        // generate raw token bytes — store the hash, send the raw token
+        var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
+        var rawToken = Convert.ToBase64String(rawTokenBytes);
+        var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+        var token = new PasswordSetTokenEntityModel
+        {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = user!.Id,
+            UserId = userId,
+            TokenHash = tokenHash,
+            ExpiresAt = DateTime.UtcNow.AddHours(72),
+            UsedAt = null,
+            Reason = PasswordSetTokenReasonEnum.PasswordExpired,
+        };
+
+        Db.PasswordSetTokens.Add(token);
+        await Db.SaveChangesAsync();
+
+        // TODO: also kill any active sessions for this user
+
+        // queue the email
+        await _messageQueue.PublishAsync(new EmailQueueMessage
+        {
+            To = target.EmailAddress,
+            Subject = "Password Expired",
+            TemplateName = "password-expired",
+            Priority = EmailPriorityEnum.High,
+            TemplateData = new Dictionary<string, string>
+            {
+                ["fullName"] = target.FullName,
+                ["resetToken"] = rawToken,
+                ["expiryHours"] = "72",
+            }
+        });
+
+        Logger.LogWarning(
+            "Password expired for user {UserId} by admin {AdminId}",
+            userId, user.Id
+        );
+
+        return Ok(new { success = true });
+    }
 }

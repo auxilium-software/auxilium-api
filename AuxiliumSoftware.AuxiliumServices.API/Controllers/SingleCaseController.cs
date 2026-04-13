@@ -198,7 +198,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     return NotFound(new FailureResponseModel { Detail = "Case not found" });
                 }
 
-                // only workers and admins can update cases
+                // only workers can update cases
                 var canUpdate = user!.IsAdministrator ||
                               (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
 

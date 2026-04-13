@@ -1,8 +1,10 @@
 using AuxiliumSoftware.AuxiliumServices.API.Filters;
 using AuxiliumSoftware.AuxiliumServices.API.Middleware;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration.Sections.Databases;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -142,6 +144,18 @@ builder.Services.AddScoped<IMessageDocumentService, MessageDocumentService>();
 
 builder.Services.AddScoped<IWebApplicationFirewallService, WebApplicationFirewallService>();
 builder.Services.AddScoped<ITotpService, TotpService>();
+
+
+var rabbitConfig = builder.Configuration
+    .GetSection("Databases:RabbitMQ")
+    .Get<RabbitMQConfigurationSection>()
+    ?? throw new InvalidOperationException("RabbitMQ configuration section is missing.");
+
+rabbitConfig.Validate();
+builder.Services.AddRabbitMqCore(rabbitConfig);
+builder.Services.AddRabbitMqProducer();
+
+
 
 builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
 

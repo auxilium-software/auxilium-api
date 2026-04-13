@@ -180,7 +180,64 @@ public class MeController : LoggedInControllerBase
 
     [HttpPost("change-password")]
     public async Task<ActionResult<SuccessResponseModel>> ChangePassword(
-        [FromBody] PasswordUpdateRequestModel request)
+        [FromBody] PasswordUpdateRequestModel request
+    )
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var currentNormalized = this._passwordService.NormalisePassword(request.CurrentPasswordSha512, request.CurrentPasswordSha512);
+            var newNormalized = this._passwordService.NormalisePassword(request.NewPasswordSha512, request.NewPasswordSha512);
+
+            if (currentNormalized == newNormalized)
+            {
+                return Conflict(new FailureResponseModel
+                {
+                    Detail = "New password may not be the same as the old password"
+                });
+            }
+
+            var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
+            if (userDoc == null)
+            {
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
+            }
+
+            if (!_passwordService.VerifyPassword(currentNormalized, userDoc.PasswordHash))
+            {
+                return BadRequest(new FailureResponseModel
+                {
+                    Detail = "Current password is incorrect"
+                });
+            }
+
+            var newPasswordHash = _passwordService.HashPassword(newNormalized);
+
+            userDoc.PasswordHash = newPasswordHash;
+            userDoc.LastUpdatedAt = DateTime.UtcNow;
+
+            await Db.SaveChangesAsync();
+
+            this.Logger.LogInformation("User {UserId} changed their password", user!.Id);
+
+            return Ok(new SuccessResponseModel());
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Failed to change password");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Error changing password"
+            });
+        }
+    }
+
+    [HttpPost("request-account-deletion")]
+    public async Task<ActionResult<SuccessResponseModel>> RequestAccountDeletion(
+        [FromBody] PasswordUpdateRequestModel request
+    )
     {
         try
         {
