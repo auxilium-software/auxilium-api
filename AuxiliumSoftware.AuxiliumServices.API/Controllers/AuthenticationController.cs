@@ -222,20 +222,6 @@ public class AuthenticationController : ControllerBase
                 });
             }
 
-            if (!user.AllowLogin)
-            {
-                await this._wafService.RecordFailedLoginAsync(
-                    ipAddress: HttpContext.Connection.RemoteIpAddress,
-                    attemptedEmail: request.EmailAddress,
-                    user: user,
-                    failureReason: LoginAttemptFailureReasonEnum.AccountLocked
-                );
-                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
-                {
-                    Detail = "Account blocked from logging in by the Auxilium IT department."
-                });
-            }
-
             var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
             if (!_passwordService.VerifyPassword(normalised, user.PasswordHash))
             {
@@ -248,6 +234,20 @@ public class AuthenticationController : ControllerBase
                 return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid credentials"
+                });
+            }
+
+            if (!user.AllowLogin)
+            {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: user,
+                    failureReason: LoginAttemptFailureReasonEnum.AccountLocked
+                );
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
+                {
+                    Detail = "Account blocked from logging in by the Auxilium IT department."
                 });
             }
 
