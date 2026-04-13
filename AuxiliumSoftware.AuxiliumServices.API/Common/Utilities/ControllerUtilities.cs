@@ -166,7 +166,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 Clients = caseEntity.Clients?.Select(c => c.UserId).ToList() ?? new List<Guid>(),
                 Workers = caseEntity.Workers?.Select(w => w.UserId).ToList() ?? new List<Guid>(),
 
-                Files = caseEntity.Files?.Select(f => $"auxlfs://localhost/files/{f.Id}").ToList() ?? new List<string>(),
+                Files = caseEntity.Files?.Select(f => $"auxlfs://localhost/file/{f.Id}").ToList() ?? new List<string>(),
                 Messages = caseEntity.Messages?.Select(m => $"auxmsg://localhost/message/{m.Id}").ToList() ?? new List<string>(),
 
                 Referrer = null,
