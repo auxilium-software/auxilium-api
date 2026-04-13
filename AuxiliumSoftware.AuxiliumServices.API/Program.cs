@@ -10,11 +10,13 @@ using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -116,6 +118,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+
+
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
+});
 
 
 
@@ -225,6 +235,8 @@ builder.Services.AddDbContext<AuxiliumDbContext>(options =>
 
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.UseSwagger();
 app.UseSwaggerUI(swaggerUI =>
