@@ -589,7 +589,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("blacklist/users/{userId}")]
+        [HttpPost("blacklist/users/{userId:guid}")]
         [ProducesResponseType(typeof(BlacklistedUserItem), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -646,7 +646,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("blacklist/users/{userId}/unlock")]
+        [HttpPost("blacklist/users/{userId:guid}/unlock")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveUserFromBlacklist(Guid userId, [FromBody] UnlockUserRequestModel? request = null)
@@ -886,7 +886,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("whitelist/users/{userId}")]
+        [HttpPost("whitelist/users/{userId:guid}")]
         [ProducesResponseType(typeof(WhitelistedUserItem), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -945,7 +945,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpDelete("whitelist/users/{userId}")]
+        [HttpDelete("whitelist/users/{userId:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveUserFromWhitelist(Guid userId, [FromQuery] string? reason = null)
