@@ -269,23 +269,6 @@ public class AuthenticationController : ControllerBase
                 });
             }
 
-            if (user.MustChangePassword)
-            {
-                var userData = new Dictionary<string, object>
-                {
-                    ["id"] = user.Id
-                };
-
-                _logger.LogInformation("User {UserId} must change password before login", user.Id);
-
-                return StatusCode(StatusCodes.Status403Forbidden, new UserLoginResponseModel
-                {
-                    MfaRequired = false,
-                    MustChangePassword = true,
-                    PasswordChangeToken = _tokenService.CreateMfaToken(userData)
-                });
-            }
-
             // no TOTP for this account => issue tokens directly
             response = await IssueTokensForUserAsync(user);
             _logger.LogInformation("User {UserId} logged in successfully", user.Id);
@@ -648,6 +631,22 @@ public class AuthenticationController : ControllerBase
         {
             ["id"] = user.Id
         };
+
+
+
+        if (user.MustChangePassword)
+        {
+            _logger.LogInformation("User {UserId} must change password before login", user.Id);
+
+            return new UserLoginResponseModel
+            {
+                MfaRequired = false,
+                MustChangePassword = true,
+                PasswordChangeToken = _tokenService.CreateMfaToken(userData)
+            };
+        }
+
+
 
         var accessToken = _tokenService.CreateAccessToken(userData);
         var refreshToken = _tokenService.CreateRefreshToken(userData);
