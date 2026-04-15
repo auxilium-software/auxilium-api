@@ -3,6 +3,9 @@ using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +18,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     public class SingleUserAdministrativeOperationsController : LoggedInControllerBase
     {
         private readonly IUserDocumentService _userDocService;
-        private readonly ITotpService _totpService;
+        private readonly IMessageQueueProducer _messageQueueProducer;
 
         public SingleUserAdministrativeOperationsController(
             ISystemSettingsService systemSettingsService,
@@ -25,12 +28,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ILogger<SingleUserController> logger,
             ITotpService totpService,
 
-            IUserDocumentService userDocService
+            IUserDocumentService userDocService,
+            IMessageQueueProducer messageQueueProducer
             )
             : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
             _userDocService = userDocService;
-            _totpService = totpService;
+            _messageQueueProducer = messageQueueProducer;
         }
 
 
@@ -118,64 +122,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
         }
 
-
-        [HttpPost("force-password-reset")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> ForcePasswordReset(Guid userId)
-        {
-            try
-            {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                var adminError = await RequireAdminAsync();
-                if (adminError != null) return adminError;
-
-                var totpError = await RequireTotpAsync(user!.Id);
-                if (totpError != null) return totpError;
-
-                var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (userDoc == null)
-                {
-                    return NotFound(new FailureResponseModel { Detail = "User not found" });
-                }
-
-                // TODO: Set a flag on the user entity that forces password change on next login
-                // e.g. userDoc.MustChangePassword = true;
-
-                userDoc.LastUpdatedAt = DateTime.UtcNow;
-                userDoc.LastUpdatedBy = user!.Id;
-
-                await Db.SaveChangesAsync();
-
-                /*
-                await WriteAuditLog(
-                    userId, user.Id, "user.force_password_reset",
-                    "Password reset enforced - user must change password on next login"
-                );
-                */
-
-                Logger.LogInformation(
-                    "Password reset forced for user {UserId} by admin {AdminId}",
-                    userId, user.Id
-                );
-
-                return Ok(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to force password reset for user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
-                {
-                    Detail = "Failed to force password reset"
-                });
-            }
-        }
-
         /*
         [HttpPost("block")]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
@@ -244,113 +190,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
         */
 
-        [HttpPost("terminate-sessions")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> TerminateSessions(Guid userId)
-        {
-            try
-            {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                var adminError = await RequireAdminAsync();
-                if (adminError != null) return adminError;
-
-                var totpError = await RequireTotpAsync(user!.Id);
-                if (totpError != null) return totpError;
-
-                var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (userDoc == null)
-                {
-                    return NotFound(new FailureResponseModel { Detail = "User not found" });
-                }
-
-                // TODO: Invalidate all refresh tokens / sessions for this user
-                // e.g. await Db.RefreshTokens.Where(t => t.UserId == userId).ExecuteDeleteAsync();
-                // or increment a security stamp to invalidate all JWTs
-
-                /*
-                await WriteAuditLog(
-                    userId, user!.Id, "user.sessions_terminated",
-                    "All active sessions terminated"
-                );
-                */
-
-                Logger.LogInformation(
-                    "All sessions terminated for user {UserId} by admin {AdminId}",
-                    userId, user.Id
-                );
-
-                return Ok(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to terminate sessions for user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
-                {
-                    Detail = "Failed to terminate sessions"
-                });
-            }
-        }
-
-
-        [HttpPost("send-password-reset")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> SendPasswordResetEmail(Guid userId)
-        {
-            try
-            {
-                var (user, error) = await GetCurrentUserAsync();
-                if (error != null) return error;
-
-                var adminError = await RequireAdminAsync();
-                if (adminError != null) return adminError;
-
-                var totpError = await RequireTotpAsync(user!.Id);
-                if (totpError != null) return totpError;
-
-                var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (userDoc == null)
-                {
-                    return NotFound(new FailureResponseModel { Detail = "User not found" });
-                }
-
-                // TODO: Generate a password reset token and send via your email service
-                // e.g. var token = await _passwordResetService.GenerateTokenAsync(userId);
-                //      await _emailService.SendPasswordResetAsync(userDoc.EmailAddress, token);
-
-                /*
-                await WriteAuditLog(
-                    userId, user!.Id, "user.password_reset_email_sent",
-                    $"Password reset email sent to {userDoc.EmailAddress}"
-                );
-                */
-
-                Logger.LogInformation(
-                    "Password reset email sent for user {UserId} by admin {AdminId}",
-                    userId, user.Id
-                );
-
-                return Ok(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to send password reset email for user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
-                {
-                    Detail = "Failed to send password reset email"
-                });
-            }
-        }
-
         /*
         [HttpGet("audit-log")]
         [ProducesResponseType(typeof(List<AuditLogEntryModel>), StatusCodes.Status200OK)]
@@ -365,8 +204,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 var (user, error) = await GetCurrentUserAsync();
                 if (error != null) return error;
-
-                await this.RequireAdminAsync();
+                var adminError = await this.RequireAdminAsync();
+                if (adminError != null) return adminError;
 
                 var entries = await Db.AuditLogs
                     .Where(a => a.TargetUserId == userId)
@@ -394,5 +233,73 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
         }
         */
+
+        [HttpPost("force-password-reset")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> ForcePasswordReset(Guid userId)
+        {
+            try
+            {
+                var (user, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                var totpError = await RequireTotpAsync(user!.Id);
+                if (totpError != null) return totpError;
+
+                var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (userDoc == null)
+                {
+                    return NotFound(new FailureResponseModel { Detail = "User not found" });
+                }
+
+                
+                if (userDoc.MustChangePassword)
+                {
+                    return Ok(new { success = true, message = "Password reset already pending" });
+                }
+                
+
+                userDoc.MustChangePassword = true;
+                userDoc.LastUpdatedAt = DateTime.UtcNow;
+                userDoc.LastUpdatedBy = user!.Id;
+
+                await _messageQueueProducer.PublishAsync(new EmailQueueMessage
+                {
+                    To = userDoc.EmailAddress,
+                    Subject = "Password Change Required",
+                    TemplateName = "force-password-reset",
+                    Priority = EmailPriorityEnum.High,
+                    TemplateData = new Dictionary<string, string>
+                        {
+                            { "displayName", userDoc.FullName },
+                            { "userId", userDoc.Id.ToString() }
+                        }
+                });
+
+                await Db.SaveChangesAsync();
+
+                Logger.LogInformation(
+                    "Password reset forced for user {UserId} by admin {AdminId}",
+                    userId, user.Id
+                );
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to force password reset for user {UserId}", userId);
+                return StatusCode(500, new FailureResponseModel
+                {
+                    Detail = "Failed to force password reset"
+                });
+            }
+        }
     }
 }
