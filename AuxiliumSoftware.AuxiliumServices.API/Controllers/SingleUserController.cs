@@ -76,6 +76,7 @@ public class SingleUserController : LoggedInControllerBase
 
             var userDoc = await Db.Users
                 .Include(u => u.AdditionalProperties)
+                .Include(u => u.Files)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (userDoc == null)
@@ -130,6 +131,7 @@ public class SingleUserController : LoggedInControllerBase
 
             var userDoc = await Db.Users
                 .Include(u => u.AdditionalProperties)
+                .Include(u => u.Files)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (userDoc == null)
@@ -266,6 +268,7 @@ public class SingleUserController : LoggedInControllerBase
 
             var userDoc = await Db.Users
                 .Include(u => u.AdditionalProperties)
+                .Include(u => u.Files)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (userDoc == null)
