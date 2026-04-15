@@ -39,7 +39,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
             var since = now.AddHours(-Math.Abs(hoursBack ?? 24));
@@ -214,7 +215,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var query = this.Db.Log_LoginAttempts.AsQueryable();
 
@@ -284,7 +286,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
             var query = this.Db.System_Waf_IpBlacklist.AsQueryable();
@@ -333,7 +336,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
@@ -396,7 +400,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
             var normalizedIp = Waf.NormaliseIpAddress(ipAddress);
@@ -478,7 +483,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             ipAddress = Uri.UnescapeDataString(ipAddress);
 
@@ -510,7 +516,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
 
@@ -582,7 +589,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("blacklist/users/{userId}")]
+        [HttpPost("blacklist/users/{userId:guid}")]
         [ProducesResponseType(typeof(BlacklistedUserItem), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -590,7 +597,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (adminUser, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
@@ -638,14 +646,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("blacklist/users/{userId}/unlock")]
+        [HttpPost("blacklist/users/{userId:guid}/unlock")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveUserFromBlacklist(Guid userId, [FromBody] UnlockUserRequestModel? request = null)
         {
             var (adminUser, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)
@@ -676,7 +685,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
             var query = this.Db.System_Waf_IpWhitelist.AsQueryable();
@@ -726,7 +736,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
@@ -784,7 +795,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             ipAddress = Uri.UnescapeDataString(ipAddress);
 
@@ -816,7 +828,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var now = DateTime.UtcNow;
             var query = this.Db.System_Waf_UserWhitelist.AsQueryable();
@@ -873,7 +886,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpPost("whitelist/users/{userId}")]
+        [HttpPost("whitelist/users/{userId:guid}")]
         [ProducesResponseType(typeof(WhitelistedUserItem), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -881,7 +894,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (adminUser, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
@@ -931,14 +945,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-        [HttpDelete("whitelist/users/{userId}")]
+        [HttpDelete("whitelist/users/{userId:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveUserFromWhitelist(Guid userId, [FromQuery] string? reason = null)
         {
             var (adminUser, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)

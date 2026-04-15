@@ -120,6 +120,7 @@ public class AuthenticationController : ControllerBase
                     IsCaseWorker = false,
                     IsCaseWorkerManager = false,
                     AllowLogin = true,
+                    MustChangePassword = false,
                     HasEmailAddressBeenVerified = false,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId
