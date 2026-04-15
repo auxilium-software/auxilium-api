@@ -22,5 +22,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin
 
         [JsonPropertyName("mfaSessionToken")]
         public string? MfaSessionToken { get; set; }
+
+
+
+
+        [Required]
+        [JsonPropertyName("mustChangePassword")]
+        public required bool MustChangePassword { get; set; } = false;
+
+        [JsonPropertyName("passwordChangeToken")]
+        public string? PasswordChangeToken { get; set; }
     }
 }

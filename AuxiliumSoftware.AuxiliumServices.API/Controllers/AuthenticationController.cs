@@ -260,14 +260,13 @@ public class AuthenticationController : ControllerBase
                     ["id"] = user.Id
                 };
 
-                response = new UserLoginResponseModel
+                _logger.LogInformation("MFA required for user {UserId}", user.Id);
+                return Ok(new UserLoginResponseModel
                 {
                     MfaRequired = true,
-                    MfaSessionToken = _tokenService.CreateMfaToken(userData)
-                };
-
-                _logger.LogInformation("MFA required for user {UserId}", user.Id);
-                return Ok(response);
+                    MfaSessionToken = _tokenService.CreateMfaToken(userData),
+                    MustChangePassword = false,
+                });
             }
 
             // no TOTP for this account => issue tokens directly
@@ -461,6 +460,73 @@ public class AuthenticationController : ControllerBase
 
 
 
+    [AllowAnonymous]
+    [HttpPost("forced-password-change")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> ForcedPasswordChange(
+    [FromBody] ForcedPasswordChangeRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.PasswordChangeToken);
+            if (userId == null)
+            {
+                return Unauthorized(new FailureResponseModel
+                {
+                    Detail = "Invalid or expired password change session"
+                });
+            }
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return Unauthorized(new FailureResponseModel { Detail = "Invalid session" });
+            }
+
+            if (!user.MustChangePassword)
+            {
+                return BadRequest(new FailureResponseModel
+                {
+                    Detail = "Password change is not required for this account"
+                });
+            }
+
+            // hash and set the new password
+            var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+            user.PasswordHash = _passwordService.HashPassword(normalised);
+            user.MustChangePassword = false;
+            user.LastUpdatedAt = DateTime.UtcNow;
+            user.LastUpdatedBy = user.Id;
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} completed forced password change", user.Id);
+
+            // don't issue tokens - make them log in fresh (goes through TOTP if enabled)
+            return Ok(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during forced password change");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred during password change"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -530,6 +596,7 @@ public class AuthenticationController : ControllerBase
                 RefreshToken = newRefreshToken!,
                 ExpiresIn = expiresIn,
                 MfaRequired = false,
+                MustChangePassword = false
             });
         }
         catch (UnauthorizedAccessException ex)
@@ -565,6 +632,22 @@ public class AuthenticationController : ControllerBase
             ["id"] = user.Id
         };
 
+
+
+        if (user.MustChangePassword)
+        {
+            _logger.LogInformation("User {UserId} must change password before login", user.Id);
+
+            return new UserLoginResponseModel
+            {
+                MfaRequired = false,
+                MustChangePassword = true,
+                PasswordChangeToken = _tokenService.CreateMfaToken(userData)
+            };
+        }
+
+
+
         var accessToken = _tokenService.CreateAccessToken(userData);
         var refreshToken = _tokenService.CreateRefreshToken(userData);
 
@@ -596,6 +679,7 @@ public class AuthenticationController : ControllerBase
             RefreshToken = refreshToken,
             ExpiresIn = _configuration.JWT.AccessTokenExpirationInMinutes * 60,
             MfaRequired = false,
+            MustChangePassword = false
         };
     }
 }
