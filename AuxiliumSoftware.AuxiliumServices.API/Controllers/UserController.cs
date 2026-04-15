@@ -398,7 +398,7 @@ public class UserController : LoggedInControllerBase
             {
                 TargetUserId = newUser.Id,
                 Subject = "Your Account Has Been Created",
-                TemplateName = "account-created",
+                TemplateName = "AccountCreated",
                 Priority = EmailPriorityEnum.High,
                 TemplateData = new Dictionary<string, string>
                 {
