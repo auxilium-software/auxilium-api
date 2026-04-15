@@ -144,7 +144,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.FullName;
                 userDoc.FullName = request.FullName;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "FullName", oldValue, request.FullName);
             }
 
@@ -164,7 +164,7 @@ public class SingleUserController : LoggedInControllerBase
 
                 var oldValue = userDoc.EmailAddress;
                 userDoc.EmailAddress = request.EmailAddress;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "EmailAddress", oldValue, request.EmailAddress);
             }
 
@@ -172,7 +172,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.TelephoneNumber;
                 userDoc.TelephoneNumber = request.TelephoneNumber;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "TelephoneNumber", oldValue, request.TelephoneNumber);
             }
 
@@ -180,7 +180,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.FullAddress;
                 userDoc.FullAddress = request.FullAddress;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "FullAddress", oldValue, request.FullAddress);
             }
 
@@ -188,7 +188,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.Gender;
                 userDoc.Gender = request.Gender;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "Gender", oldValue, request.Gender);
             }
 
@@ -196,7 +196,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.DateOfBirth?.ToString("yyyy-MM-dd");
                 userDoc.DateOfBirth = request.DateOfBirth.Value;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "DateOfBirth", oldValue, request.DateOfBirth.Value.ToString("yyyy-MM-dd"));
             }
 
@@ -204,7 +204,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.LanguagePreference;
                 userDoc.LanguagePreference = request.LanguagePreference;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "LanguagePreference", oldValue, request.LanguagePreference);
             }
 
@@ -212,7 +212,7 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.HowDidYouFindOutAboutOurService;
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
-                _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "HowDidYouFindOutAboutOurService", oldValue, request.HowDidYouFindOutAboutOurService);
             }
 
