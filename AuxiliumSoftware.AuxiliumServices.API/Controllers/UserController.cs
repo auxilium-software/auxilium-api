@@ -396,7 +396,7 @@ public class UserController : LoggedInControllerBase
             var portalBaseUrl = await SystemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
             await _messageQueue.PublishAsync(new EmailQueueMessage
             {
-                UserId = newUser.Id,
+                TargetUserId = newUser.Id,
                 Subject = "Your Account Has Been Created",
                 TemplateName = "account-created",
                 Priority = EmailPriorityEnum.High,
