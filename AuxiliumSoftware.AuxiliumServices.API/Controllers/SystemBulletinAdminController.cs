@@ -34,10 +34,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
 
 
-        [HttpGet("/all")]
+        [HttpGet("all")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<List<SystemBulletinResponseModel>>> GetAllMessages()
+        public async Task<ActionResult<List<SystemBulletinAdminResponseModel>>> GetAllMessages()
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
@@ -50,14 +50,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var bulletins = await query
                 .OrderByDescending(b => b.Severity)
                 .ThenByDescending(b => b.CreatedAt)
-                .Select(b => new SystemBulletinResponseModel
+                .Select(b => new SystemBulletinAdminResponseModel
                 {
                     Id = b.Id,
+                    CreatedAt = b.CreatedAt,
+                    CreatedBy = b.CreatedBy,
                     Severity = b.Severity,
                     Title = b.Title,
                     Content = b.Content,
+                    IsActive = b.IsActive,
                     IsDismissible = b.IsDismissible,
-                    CreatedAt = b.CreatedAt
+                    StartsAt = b.StartsAt,
+                    EndsAt = b.EndsAt,
+                    TargetAudience = b.TargetAudience,
+                    SpecificUserId = b.SpecificUserId
                 })
                 .ToListAsync();
 
@@ -65,10 +71,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
         [HttpPost("")]
-        [ProducesResponseType(typeof(SystemBulletinResponseModel), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(SystemBulletinAdminResponseModel), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<SystemBulletinResponseModel>> CreateBulletin(
+        public async Task<ActionResult<SystemBulletinAdminResponseModel>> CreateBulletin(
             [FromBody] SystemBulletinCreationRequestModel request)
         {
             var (user, error) = await GetCurrentUserAsync();
@@ -97,14 +103,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             this.Db.System_Bulletins.Add(bulletin);
             await this.Db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(CreateBulletin), new SystemBulletinResponseModel
+            return CreatedAtAction(nameof(CreateBulletin), new SystemBulletinAdminResponseModel
             {
                 Id = bulletin.Id,
+                CreatedAt = bulletin.CreatedAt,
+                CreatedBy = bulletin.CreatedBy,
                 Severity = bulletin.Severity,
                 Title = bulletin.Title,
                 Content = bulletin.Content,
+                IsActive = bulletin.IsActive,
                 IsDismissible = bulletin.IsDismissible,
-                CreatedAt = bulletin.CreatedAt
+                StartsAt = bulletin.StartsAt,
+                EndsAt = bulletin.EndsAt,
+                TargetAudience = bulletin.TargetAudience,
+                SpecificUserId = bulletin.SpecificUserId
             });
         }
 
@@ -135,7 +147,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
 
 
-
+        //  not an admin endpoint - but needs the `GetCurrentUserAsync()` method.
         [HttpPost("{id:guid}/dismiss")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
