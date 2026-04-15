@@ -682,4 +682,98 @@ public class AuthenticationController : ControllerBase
             MustChangePassword = false
         };
     }
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("initial-set-password")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SetPassword(
+    [FromBody] InitialSetPasswordRequestModel request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.RawPassword) && string.IsNullOrWhiteSpace(request.PasswordSha512))
+            {
+                return BadRequest(new FailureResponseModel
+                {
+                    Detail = "A password must be provided"
+                });
+            }
+
+            // hash the incoming token to match against stored hash
+            var rawTokenBytes = Convert.FromBase64String(request.Token);
+            var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+            var token = await _db.PasswordSetTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t =>
+                    t.TokenHash == tokenHash &&
+                    !t.UsedAt.HasValue &&
+                    t.ExpiresAt > DateTime.UtcNow);
+
+            if (token == null)
+            {
+                return Unauthorized(new FailureResponseModel
+                {
+                    Detail = "Invalid or expired token"
+                });
+            }
+
+            var user = token.User;
+            if (user == null)
+            {
+                return Unauthorized(new FailureResponseModel
+                {
+                    Detail = "Invalid token"
+                });
+            }
+
+            // invalidate all unused tokens for this user (including this one)
+            var allTokens = await _db.PasswordSetTokens
+                .Where(t => t.UserId == user.Id && !t.UsedAt.HasValue)
+                .ToListAsync();
+
+            foreach (var t in allTokens)
+                t.UsedAt = DateTime.UtcNow;
+
+            // hash and set the new password
+            var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+            user.PasswordHash = _passwordService.HashPassword(normalised);
+            user.AllowLogin = true;
+            user.MustChangePassword = false;
+            user.LastUpdatedAt = DateTime.UtcNow;
+            user.LastUpdatedBy = user.Id;
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Password set for user {UserId} via token (reason: {Reason})",
+                user.Id, token.Reason
+            );
+
+            return Ok(new { success = true });
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new FailureResponseModel
+            {
+                Detail = "Invalid token format"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during password set");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "An error occurred while setting the password"
+            });
+        }
+    }
 }
