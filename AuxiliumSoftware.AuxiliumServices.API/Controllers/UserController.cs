@@ -393,17 +393,17 @@ public class UserController : LoggedInControllerBase
             await Db.SaveChangesAsync();
 
             // send the welcome/password-set email
+            var portalBaseUrl = await SystemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
             await _messageQueue.PublishAsync(new EmailQueueMessage
             {
-                To = newUser.EmailAddress,
+                UserId = newUser.Id,
                 Subject = "Your Account Has Been Created",
                 TemplateName = "account-created",
                 Priority = EmailPriorityEnum.High,
                 TemplateData = new Dictionary<string, string>
                 {
-                    ["fullName"] = newUser.FullName ?? newUser.EmailAddress,
-                    ["resetToken"] = rawToken,
-                    ["expiryHours"] = "72",
+                    ["reset_link"] = $"{portalBaseUrl}/set-initial-password?token={Uri.EscapeDataString(rawToken)}",
+                    ["expiry_hours"] = "72",
                 }
             });
 
