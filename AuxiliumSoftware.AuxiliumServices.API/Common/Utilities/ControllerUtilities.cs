@@ -108,7 +108,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                     LanguagePreference = userDoc.LanguagePreference,
 
                     AdditionalProperties = additionalProperties,
-                    Files = new List<string>(),
+                    Files = userDoc.Files?.Select(f => $"auxlfs://localhost/file/{f.Id}").ToList() ?? new List<string>(),
 
                     HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
