@@ -105,7 +105,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
                 }));
             }
 
-            if (user.MustChangePassword == false)
+            if (user.MustChangePassword == true)
             {
                 return (null, Unauthorized(new FailureResponseModel
                 {
