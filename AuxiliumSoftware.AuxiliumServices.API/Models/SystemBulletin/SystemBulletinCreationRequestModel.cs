@@ -4,13 +4,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.SystemBulletin
 {
     public class SystemBulletinCreationRequestModel
     {
-        public SystemBulletinMessageSeverityEnum Severity { get; set; } = SystemBulletinMessageSeverityEnum.Informational;
+        public required SystemBulletinMessageSeverityEnum Severity { get; set; } = SystemBulletinMessageSeverityEnum.Informational;
         public required string Title { get; set; }
         public required string Content { get; set; }
-        public bool IsDismissible { get; set; } = true;
-        public DateTime? StartsAt { get; set; }
-        public DateTime? EndsAt { get; set; }
-        public SystemBulletinMessageTargetAudienceEnum TargetAudience { get; set; } = SystemBulletinMessageTargetAudienceEnum.Everyone;
-        public Guid? SpecificUserId { get; set; }
+        public required bool IsDismissible { get; set; } = true;
+        public required DateTime? StartsAt { get; set; }
+        public required DateTime? EndsAt { get; set; }
+        public required SystemBulletinMessageTargetAudienceEnum TargetAudience { get; set; } = SystemBulletinMessageTargetAudienceEnum.Everyone;
+        public required Guid? SpecificUserId { get; set; }
     }
 }
