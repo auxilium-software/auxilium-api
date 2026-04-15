@@ -1,6 +1,7 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.API.Models.UserStatistic;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
@@ -26,6 +27,7 @@ public class SingleUserController : LoggedInControllerBase
 {
     private readonly IUserDocumentService _userDocService;
     private readonly IMessageQueueProducer _messageQueue;
+    private readonly IFileDocumentService _fileService;
 
     public SingleUserController(
         ISystemSettingsService systemSettingsService,
@@ -35,12 +37,14 @@ public class SingleUserController : LoggedInControllerBase
         ITotpService totpService,
         IWebApplicationFirewallService waf,
         IUserDocumentService userDocService,
-        IMessageQueueProducer messageQueue
+        IMessageQueueProducer messageQueue,
+        IFileDocumentService fileService
         )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _userDocService = userDocService;
         _messageQueue = messageQueue;
+        _fileService = fileService;
     }
 
 
@@ -304,6 +308,101 @@ public class SingleUserController : LoggedInControllerBase
         }
     }
 
+    [HttpPost("upload")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SuccessResponseModel>> UploadFile(
+        Guid userId,
+        [FromForm] FileUploadRequestModel request
+    )
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var targetUser = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (targetUser == null)
+            {
+                return NotFound(new FailureResponseModel { Detail = "User not found" });
+            }
+
+            // access control
+            var canUpload = false;
+
+            // users can upload to themselves
+            if (user!.Id == userId)
+            {
+                canUpload = true;
+            }
+            // admins can upload to anyone
+            else if (user.IsAdministrator)
+            {
+                canUpload = true;
+            }
+            // case workers can upload to users who are clients on their cases
+            else if (user.IsCaseWorker)
+            {
+                canUpload = await Db.Cases
+                    .Where(c => c.Workers!.Any(w => w.UserId == user.Id))
+                    .AnyAsync(c => c.Clients!.Any(cl => cl.UserId == userId));
+            }
+
+            // case worker managers can upload to clients OR workers on their cases
+            if (!canUpload && user.IsCaseWorkerManager)
+            {
+                canUpload = await Db.Cases
+                    .Where(c => c.Workers!.Any(w => w.UserId == user.Id))
+                    .AnyAsync(c =>
+                        c.Clients!.Any(cl => cl.UserId == userId) ||
+                        c.Workers!.Any(w => w.UserId == userId));
+            }
+
+            if (!canUpload)
+            {
+                return StatusCode(403, new FailureResponseModel
+                {
+                    Detail = "You don't have permission to upload files to this user"
+                });
+            }
+
+            if (request.File == null || request.File.Length == 0)
+            {
+                return BadRequest(new FailureResponseModel { Detail = "No file provided" });
+            }
+
+            using var memoryStream = new MemoryStream();
+            await request.File.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            var contentType = request.File.ContentType ?? "application/octet-stream";
+
+            var (uri, metadata) = await _fileService.SaveUserFileAsync(
+                fileBytes,
+                request.File.FileName,
+                contentType,
+                user.Id,
+                userId,
+                request.Description
+            );
+
+            Logger.LogInformation(
+                "Uploaded file {FileId} ({Size} bytes) to user {UserId} by {UploadedBy}",
+                metadata.Id, fileBytes.Length, userId, user.Id
+            );
+
+            return StatusCode(201, new SuccessResponseModel());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to upload file to user {UserId}", userId);
+            return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
+        }
+    }
+
 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(Guid userId)
@@ -324,7 +423,7 @@ public class SingleUserController : LoggedInControllerBase
         foreach (var t in oldTokens)
             t.UsedAt = DateTime.UtcNow;
 
-        // generate raw token bytes — store the hash, send the raw token
+        // generate raw token bytes - store the hash, send the raw token
         var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
         var rawToken = Convert.ToBase64String(rawTokenBytes);
         var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
@@ -390,7 +489,7 @@ public class SingleUserController : LoggedInControllerBase
         foreach (var t in oldTokens)
             t.UsedAt = DateTime.UtcNow;
 
-        // generate raw token bytes — store the hash, send the raw token
+        // generate raw token bytes - store the hash, send the raw token
         var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
         var rawToken = Convert.ToBase64String(rawTokenBytes);
         var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
