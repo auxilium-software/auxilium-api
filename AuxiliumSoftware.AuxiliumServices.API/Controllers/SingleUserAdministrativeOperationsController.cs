@@ -281,7 +281,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     TargetUserId = userDoc.Id,
                     Subject = "Password Change Required",
-                    TemplateName = "force-password-reset",
+                    TemplateName = "ForcePasswordReset",
                     Priority = EmailPriorityEnum.High,
                     TemplateData = new Dictionary<string, string>
                         {
@@ -427,7 +427,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 TargetUserId = target.Id,
                 Subject = "Password Reset",
-                TemplateName = "password-reset",
+                TemplateName = "PasswordReset",
                 Priority = EmailPriorityEnum.High,
                 TemplateData = new Dictionary<string, string>
                 {
@@ -445,7 +445,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             return Ok(new { success = true });
         }
 
-
+        /*
         [HttpPost("expire-password")]
         public async Task<IActionResult> ExpirePassword(Guid userId)
         {
@@ -495,7 +495,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 TargetUserId = target.Id,
                 Subject = "Password Expired",
-                TemplateName = "password-expired",
+                TemplateName = "PasswordExpired",
                 Priority = EmailPriorityEnum.High,
                 TemplateData = new Dictionary<string, string>
                 {
@@ -512,5 +512,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             return Ok(new { success = true });
         }
+        */
     }
 }
