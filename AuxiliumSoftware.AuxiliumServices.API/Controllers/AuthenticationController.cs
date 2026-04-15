@@ -689,7 +689,7 @@ public class AuthenticationController : ControllerBase
 
 
     [AllowAnonymous]
-    [HttpPost("initial-set-password")]
+    [HttpPost("set-initial-password")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
