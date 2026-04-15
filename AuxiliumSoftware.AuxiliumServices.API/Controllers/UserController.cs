@@ -8,9 +8,15 @@ using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 
@@ -20,6 +26,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 public class UserController : LoggedInControllerBase
 {
     private readonly IUserDocumentService _userDocService;
+    private readonly IMessageQueueProducer _messageQueue;
 
     public UserController(
         ISystemSettingsService systemSettingsService,
@@ -29,11 +36,13 @@ public class UserController : LoggedInControllerBase
         ILogger<UserController> logger,
         ITotpService totpService,
 
-        IUserDocumentService userDocService
+        IUserDocumentService userDocService,
+        IMessageQueueProducer messageQueue
         )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _userDocService = userDocService;
+        _messageQueue = messageQueue;
     }
 
     [HttpGet("")]
@@ -293,6 +302,136 @@ public class UserController : LoggedInControllerBase
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Failed to fetch user statistics"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+    [HttpPost("")]
+    [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserResponseModel>> CreateUser(
+    [FromBody] AdminCreateUserRequestModel request)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            var totpError = await RequireTotpAsync(user!.Id);
+            if (totpError != null) return totpError;
+
+            // check for existing email
+            var emailExists = await Db.Users
+                .AnyAsync(u => u.EmailAddress == request.EmailAddress);
+
+            if (emailExists)
+            {
+                return Conflict(new FailureResponseModel
+                {
+                    Detail = "A user with this email address already exists"
+                });
+            }
+
+            var userId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
+
+            var newUser = new UserEntityModel
+            {
+                Id = userId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                EmailAddress = request.EmailAddress,
+                FullName = request.FullName,
+                FullAddress = "",
+                TelephoneNumber = "",
+                Gender = "",
+                DateOfBirth = new DateOnly(),
+                LanguagePreference = request.LanguagePreference,
+                PasswordHash = string.Empty, // no password yet — set via token
+                AllowLogin = false,          // locked until password is set
+                MustChangePassword = true,
+                HasEmailAddressBeenVerified = false,
+                IsAdministrator = false,
+                IsCaseWorker = false,
+                IsCaseWorkerManager = false,
+                HowDidYouFindOutAboutOurService = ""
+            };
+
+            Db.Users.Add(newUser);
+
+            // generate password-set token
+            var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
+            var rawToken = Convert.ToBase64String(rawTokenBytes);
+            var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+            var passwordToken = new PasswordSetTokenEntityModel
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                UserId = userId,
+                TokenHash = tokenHash,
+                ExpiresAt = DateTime.UtcNow.AddHours(72),
+                UsedAt = null,
+                Reason = PasswordSetTokenReasonEnum.NewAccount,
+            };
+
+            Db.PasswordSetTokens.Add(passwordToken);
+            await Db.SaveChangesAsync();
+
+            // send the welcome/password-set email
+            var portalBaseUrl = await SystemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
+            await _messageQueue.PublishAsync(new EmailQueueMessage
+            {
+                UserId = newUser.Id,
+                Subject = "Your Account Has Been Created",
+                TemplateName = "account-created",
+                Priority = EmailPriorityEnum.High,
+                TemplateData = new Dictionary<string, string>
+                {
+                    ["reset_link"] = $"{portalBaseUrl}/set-initial-password?token={Uri.EscapeDataString(rawToken)}",
+                    ["expiry_hours"] = "72",
+                }
+            });
+
+            await _userDocService.WriteToAuditLog(
+                currentUser: user,
+                targetUser: newUser,
+                entityType: UserEntityTypeEnum.User,
+                entityId: newUser.Id,
+                actionType: AuditLogActionTypeEnum.Creation
+            );
+
+            Logger.LogInformation(
+                "User {NewUserId} ({Email}) created by admin {AdminId}",
+                userId, newUser.EmailAddress, user.Id
+            );
+
+            return CreatedAtAction(
+                nameof(CreateUser),
+                new { userId },
+                ControllerUtilities.UserMapToUserResponseModel(newUser, true)
+            );
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create user");
+            return StatusCode(500, new FailureResponseModel
+            {
+                Detail = "Failed to create user"
             });
         }
     }
