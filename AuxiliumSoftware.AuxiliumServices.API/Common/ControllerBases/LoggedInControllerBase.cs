@@ -88,12 +88,28 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases
                 }));
             }
 
+            if (user.AllowLogin == false)
+            {
+                return (null, Unauthorized(new FailureResponseModel
+                {
+                    Detail = "User is locked out of using Auxilium"
+                }));
+            }
+
             var userLockout = await Waf.IsUserBlacklistedAsync(user);
             if (userLockout != null)
             {
                 return (null, Unauthorized(new FailureResponseModel
                 {
-                    Detail = "User is locked out of using Auxilium"
+                    Detail = "User is locked out of using Auxilium by the Automatated Auxilium Firewall"
+                }));
+            }
+
+            if (user.MustChangePassword == false)
+            {
+                return (null, Unauthorized(new FailureResponseModel
+                {
+                    Detail = "User MUST change their password."
                 }));
             }
 
