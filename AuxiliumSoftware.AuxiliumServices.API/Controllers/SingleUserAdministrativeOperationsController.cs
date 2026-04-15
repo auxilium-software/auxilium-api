@@ -279,7 +279,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 await _messageQueueProducer.PublishAsync(new EmailQueueMessage
                 {
-                    To = userDoc.EmailAddress,
+                    TargetUserId = userDoc.Id,
                     Subject = "Password Change Required",
                     TemplateName = "force-password-reset",
                     Priority = EmailPriorityEnum.High,
@@ -425,7 +425,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             // queue the email
             await _messageQueue.PublishAsync(new EmailQueueMessage
             {
-                To = target.EmailAddress,
+                TargetUserId = target.Id,
                 Subject = "Password Reset",
                 TemplateName = "password-reset",
                 Priority = EmailPriorityEnum.High,
@@ -493,7 +493,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             // queue the email
             await _messageQueue.PublishAsync(new EmailQueueMessage
             {
-                To = target.EmailAddress,
+                TargetUserId = target.Id,
                 Subject = "Password Expired",
                 TemplateName = "password-expired",
                 Priority = EmailPriorityEnum.High,
