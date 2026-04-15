@@ -3,12 +3,15 @@ using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 {
@@ -18,6 +21,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     public class SingleUserAdministrativeOperationsController : LoggedInControllerBase
     {
         private readonly IUserDocumentService _userDocService;
+        private readonly IMessageQueueProducer _messageQueue;
         private readonly IMessageQueueProducer _messageQueueProducer;
 
         public SingleUserAdministrativeOperationsController(
@@ -26,6 +30,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             AuxiliumDbContext db,
             IWebApplicationFirewallService waf,
             ILogger<SingleUserController> logger,
+            IMessageQueueProducer messageQueue,
             ITotpService totpService,
 
             IUserDocumentService userDocService,
@@ -34,6 +39,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
             _userDocService = userDocService;
+            _messageQueue = messageQueue;
             _messageQueueProducer = messageQueueProducer;
         }
 
@@ -260,12 +266,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     return NotFound(new FailureResponseModel { Detail = "User not found" });
                 }
 
-                
+
                 if (userDoc.MustChangePassword)
                 {
                     return Conflict(new { success = true, message = "Password reset already pending" });
                 }
-                
+
 
                 userDoc.MustChangePassword = true;
                 userDoc.LastUpdatedAt = DateTime.UtcNow;
@@ -301,6 +307,210 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     Detail = "Failed to force password reset"
                 });
             }
+        }
+
+
+        [HttpDelete("")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> DeleteUser(Guid userId)
+        {
+            try
+            {
+                var (user, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                var totpError = await RequireTotpAsync(user!.Id);
+                if (totpError != null) return totpError;
+
+                // prevent self-deletion
+                if (userId == user!.Id)
+                {
+                    return BadRequest(new FailureResponseModel
+                    {
+                        Detail = "You cannot delete your own account"
+                    });
+                }
+
+                var userDoc = await Db.Users
+                    .Include(u => u.AdditionalProperties)
+                    .Include(u => u.Files)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (userDoc == null)
+                {
+                    return NotFound(new FailureResponseModel { Detail = "Target User not found" });
+                }
+
+                // remove additional properties first
+                if (userDoc.AdditionalProperties != null && userDoc.AdditionalProperties.Any())
+                {
+                    Db.RemoveRange(userDoc.AdditionalProperties);
+                }
+
+                Db.Users.Remove(userDoc);
+
+                this._userDocService.WriteToAuditLog(
+                    currentUser: user,
+                    targetUser: userDoc,
+                    entityType: UserEntityTypeEnum.User,
+                    entityId: userDoc.Id,
+                    actionType: AuditLogActionTypeEnum.Deletion
+                );
+
+                await Db.SaveChangesAsync();
+
+                Logger.LogWarning(
+                    "User {UserId} ({Email}) deleted by admin {AdminId}",
+                    userId, userDoc.EmailAddress, user.Id
+                );
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to delete user {UserId}", userId);
+                return StatusCode(500, new FailureResponseModel
+                {
+                    Detail = "Failed to delete user"
+                });
+            }
+        }
+
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(Guid userId)
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            var target = await Db.Users.FindAsync(userId);
+            if (target == null) return NotFound();
+
+            // invalidate any existing unused tokens for this user
+            var oldTokens = await Db.PasswordSetTokens
+                .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
+                .ToListAsync();
+            foreach (var t in oldTokens)
+                t.UsedAt = DateTime.UtcNow;
+
+            // generate raw token bytes - store the hash, send the raw token
+            var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
+            var rawToken = Convert.ToBase64String(rawTokenBytes);
+            var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+            var token = new PasswordSetTokenEntityModel
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user!.Id,
+                UserId = userId,
+                TokenHash = tokenHash,
+                ExpiresAt = DateTime.UtcNow.AddHours(72),
+                UsedAt = null,
+                Reason = PasswordSetTokenReasonEnum.PasswordReset,
+            };
+
+            Db.PasswordSetTokens.Add(token);
+            await Db.SaveChangesAsync();
+
+            // queue the email
+            await _messageQueue.PublishAsync(new EmailQueueMessage
+            {
+                To = target.EmailAddress,
+                Subject = "Password Reset",
+                TemplateName = "password-reset",
+                Priority = EmailPriorityEnum.High,
+                TemplateData = new Dictionary<string, string>
+                {
+                    ["fullName"] = target.FullName,
+                    ["resetToken"] = rawToken,
+                    ["expiryHours"] = "72",
+                }
+            });
+
+            Logger.LogInformation(
+                "Password reset token generated for user {UserId} by admin {AdminId}",
+                userId, user.Id
+            );
+
+            return Ok(new { success = true });
+        }
+
+
+        [HttpPost("expire-password")]
+        public async Task<IActionResult> ExpirePassword(Guid userId)
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            var target = await Db.Users.FindAsync(userId);
+            if (target == null) return NotFound();
+
+            // lock them out immediately
+            target.AllowLogin = false;
+
+            // invalidate existing tokens
+            var oldTokens = await Db.PasswordSetTokens
+                .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
+                .ToListAsync();
+            foreach (var t in oldTokens)
+                t.UsedAt = DateTime.UtcNow;
+
+            // generate raw token bytes - store the hash, send the raw token
+            var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
+            var rawToken = Convert.ToBase64String(rawTokenBytes);
+            var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+
+            var token = new PasswordSetTokenEntityModel
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user!.Id,
+                UserId = userId,
+                TokenHash = tokenHash,
+                ExpiresAt = DateTime.UtcNow.AddHours(72),
+                UsedAt = null,
+                Reason = PasswordSetTokenReasonEnum.PasswordExpired,
+            };
+
+            Db.PasswordSetTokens.Add(token);
+            await Db.SaveChangesAsync();
+
+            // TODO: also kill any active sessions for this user
+
+            // queue the email
+            await _messageQueue.PublishAsync(new EmailQueueMessage
+            {
+                To = target.EmailAddress,
+                Subject = "Password Expired",
+                TemplateName = "password-expired",
+                Priority = EmailPriorityEnum.High,
+                TemplateData = new Dictionary<string, string>
+                {
+                    ["fullName"] = target.FullName,
+                    ["resetToken"] = rawToken,
+                    ["expiryHours"] = "72",
+                }
+            });
+
+            Logger.LogWarning(
+                "Password expired for user {UserId} by admin {AdminId}",
+                userId, user.Id
+            );
+
+            return Ok(new { success = true });
         }
     }
 }
