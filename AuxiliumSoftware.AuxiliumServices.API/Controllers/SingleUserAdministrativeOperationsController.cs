@@ -238,6 +238,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> ForcePasswordReset(Guid userId)
         {
@@ -262,7 +263,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 
                 if (userDoc.MustChangePassword)
                 {
-                    return Ok(new { success = true, message = "Password reset already pending" });
+                    return Conflict(new { success = true, message = "Password reset already pending" });
                 }
                 
 
