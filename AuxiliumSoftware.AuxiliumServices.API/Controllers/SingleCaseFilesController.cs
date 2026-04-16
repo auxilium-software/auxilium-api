@@ -198,16 +198,12 @@ public class SingleCaseFilesController : LoggedInControllerBase
             var disposition = FileUtilities.IsScriptCapable(contentType) ? "attachment" : "inline";
             var safeName = Path.GetFileName(fileMetadata.Filename).Replace("\"", "");
 
-            Response.Headers.Append("Accept-Ranges", "bytes");
-            Response.Headers.Append("Content-Length", fileBytes.Length.ToString());
-            Response.Headers.Append("Cache-Control", "private, max-age=3600");
-            Response.Headers.Append("X-Content-Type-Options", "nosniff");
-            Response.Headers.Append(
-                "Content-Security-Policy",
-                "default-src 'none'; style-src 'unsafe-inline'; sandbox"
-            );
-            Response.Headers.Append("Content-Disposition",
-                $"{disposition}; filename=\"{safeName}\"");
+            Response.Headers.Append("Accept-Ranges",            "bytes");
+            Response.Headers.Append("Content-Length",           fileBytes.Length.ToString());
+            Response.Headers.Append("Cache-Control",            "private, max-age=3600");
+            Response.Headers.Append("X-Content-Type-Options",   "nosniff");
+            Response.Headers.Append("Content-Security-Policy",  "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+            Response.Headers.Append("Content-Disposition",      $"{disposition}; filename=\"{safeName}\"");
 
             return File(fileBytes, contentType);
         }
