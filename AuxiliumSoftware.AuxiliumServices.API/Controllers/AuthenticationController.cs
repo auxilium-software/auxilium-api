@@ -8,13 +8,18 @@ using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Asn1.X509;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -27,6 +32,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 public class AuthenticationController : ControllerBase
 {
     private readonly ConfigurationStructure _configuration;
+    private readonly ISystemSettingsService _systemSettings;
     private readonly ILogger<AuthenticationController> _logger;
     private readonly AuxiliumDbContext _db;
     private readonly IWebApplicationFirewallService _wafService;
@@ -36,8 +42,12 @@ public class AuthenticationController : ControllerBase
     private readonly IPasswordService _passwordService;
     private readonly ITokenService _tokenService;
 
+    private readonly IMessageQueueProducer _messageQueue;
+    private readonly IMessageQueueProducer _messageQueueProducer;
+
     public AuthenticationController(
         IConfiguration configuration,
+        ISystemSettingsService systemSettingsService,
         AuxiliumDbContext db,
         ILogger<AuthenticationController> logger,
         IWebApplicationFirewallService wafService,
@@ -45,10 +55,14 @@ public class AuthenticationController : ControllerBase
 
         ICaptchaService captchaService,
         IPasswordService passwordService,
-        ITokenService tokenService
+        ITokenService tokenService,
+
+        IMessageQueueProducer messageQueue,
+        IMessageQueueProducer messageQueueProducer
         )
     {
         _configuration = configuration.Get<ConfigurationStructure>();
+        _systemSettings = systemSettingsService;
         _logger = logger;
         _db = db;
         _wafService = wafService;
@@ -57,6 +71,9 @@ public class AuthenticationController : ControllerBase
         _captchaService = captchaService;
         _passwordService = passwordService;
         _tokenService = tokenService;
+
+        _messageQueue = messageQueue;
+        _messageQueueProducer = messageQueueProducer;
     }
 
     [AllowAnonymous]
@@ -157,6 +174,24 @@ public class AuthenticationController : ControllerBase
 
                 // save all changes
                 await _db.SaveChangesAsync();
+
+                var portalBaseUrl = await _systemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
+                foreach (var caseWorkerManagerUser in _db.Users.Where(u=>u.IsCaseWorkerManager==true))
+                {
+
+                    await _messageQueue.PublishAsync(new EmailQueueMessage
+                    {
+                        TargetUserId = caseWorkerManagerUser.Id,
+                        Subject = "A new client has onboarded",
+                        TemplateName = "AccountOnboarded",
+                        Priority = EmailPriorityEnum.Normal,
+                        TemplateData = new Dictionary<string, string>
+                        {
+                            ["userId"] = user.Id.ToString(),
+                            ["view_link"] = $"{portalBaseUrl}/users/{user.Id}",
+                        }
+                    });
+                }
 
                 createdUserId = userId;
                 _logger.LogInformation("User {UserId} registered successfully", userId);
