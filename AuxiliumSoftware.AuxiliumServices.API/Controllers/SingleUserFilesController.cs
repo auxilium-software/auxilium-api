@@ -1,4 +1,5 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.File;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
@@ -12,16 +13,16 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 [ApiController]
 [Route("/api/v3/users/{userId:guid}/files")]
 [Tags("Users", "Files")]
-public class UserFilesController : LoggedInControllerBase
+public class SingleUserFilesController : LoggedInControllerBase
 {
     private readonly IFileDocumentService _fileService;
 
-    public UserFilesController(
+    public SingleUserFilesController(
         ISystemSettingsService systemSettingsService,
         IConfiguration configuration,
         AuxiliumDbContext db,
         IWebApplicationFirewallService waf,
-        ILogger<UserFilesController> logger,
+        ILogger<SingleUserFilesController> logger,
         ITotpService totpService,
         IFileDocumentService fileService
     )
@@ -188,12 +189,22 @@ public class UserFilesController : LoggedInControllerBase
                 return NotFound(new FailureResponseModel { Detail = "File content not found" });
             }
 
+            var contentType = fileMetadata.ContentType ?? "application/octet-stream";
+            var disposition = FileUtilities.IsScriptCapable(contentType) ? "attachment" : "inline";
+            var safeName = Path.GetFileName(fileMetadata.Filename).Replace("\"", "");
+
             Response.Headers.Append("Accept-Ranges", "bytes");
             Response.Headers.Append("Content-Length", fileBytes.Length.ToString());
-            Response.Headers.Append("Cache-Control", "public, max-age=3600");
-            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileMetadata.Filename}\"");
+            Response.Headers.Append("Cache-Control", "private, max-age=3600");
+            Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            Response.Headers.Append(
+                "Content-Security-Policy",
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+            );
+            Response.Headers.Append("Content-Disposition",
+                $"{disposition}; filename=\"{safeName}\"");
 
-            return File(fileBytes, fileMetadata.ContentType ?? "application/octet-stream");
+            return File(fileBytes, contentType);
         }
         catch (Exception ex)
         {
