@@ -364,6 +364,7 @@ public class UserController : LoggedInControllerBase
                 AllowLogin = false,          // locked until password is set
                 MustChangePassword = true,
                 HasEmailAddressBeenVerified = false,
+                DeletionRequested = false,
                 IsAdministrator = false,
                 IsCaseWorker = false,
                 IsCaseWorkerManager = false,

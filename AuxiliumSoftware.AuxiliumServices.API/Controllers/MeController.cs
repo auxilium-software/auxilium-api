@@ -236,7 +236,7 @@ public class MeController : LoggedInControllerBase
 
     [HttpPost("request-account-deletion")]
     public async Task<ActionResult<SuccessResponseModel>> RequestAccountDeletion(
-        [FromBody] PasswordUpdateRequestModel request
+        [FromBody] RequestMyAccountDeletionRequestModel request
     )
     {
         try
@@ -245,15 +245,6 @@ public class MeController : LoggedInControllerBase
             if (error != null) return error;
 
             var currentNormalized = this._passwordService.NormalisePassword(request.CurrentPasswordSha512, request.CurrentPasswordSha512);
-            var newNormalized = this._passwordService.NormalisePassword(request.NewPasswordSha512, request.NewPasswordSha512);
-
-            if (currentNormalized == newNormalized)
-            {
-                return Conflict(new FailureResponseModel
-                {
-                    Detail = "New password may not be the same as the old password"
-                });
-            }
 
             var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
             if (userDoc == null)
@@ -269,20 +260,18 @@ public class MeController : LoggedInControllerBase
                 });
             }
 
-            var newPasswordHash = _passwordService.HashPassword(newNormalized);
-
-            userDoc.PasswordHash = newPasswordHash;
-            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.DeletionRequested = true;
+            userDoc.DeletionRequestReason = request.Reason;
 
             await Db.SaveChangesAsync();
 
-            this.Logger.LogInformation("User {UserId} changed their password", user!.Id);
+            this.Logger.LogInformation("User {UserId} requested their account to be deleted", user!.Id);
 
             return Ok(new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Failed to change password");
+            this.Logger.LogError(ex, "Failed to request to delete account");
             return StatusCode(500, new FailureResponseModel
             {
                 Detail = "Error changing password"

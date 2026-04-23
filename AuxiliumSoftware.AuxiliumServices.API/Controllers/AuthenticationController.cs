@@ -17,7 +17,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Asn1.X509;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Security.Cryptography;
@@ -138,6 +137,7 @@ public class AuthenticationController : ControllerBase
                     IsCaseWorkerManager = false,
                     AllowLogin = true,
                     MustChangePassword = false,
+                    DeletionRequested = false,
                     HasEmailAddressBeenVerified = false,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId
