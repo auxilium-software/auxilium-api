@@ -43,13 +43,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         }
 
 
-
         [HttpPost("logout")]
         [Authorize]
         [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
         [ProducesDefaultResponseType]
         public async Task<ActionResult<SuccessResponseModel>> Logout()
         {
@@ -59,12 +58,18 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var userId = User.FindFirst("sub")?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new FailureResponseModel { Detail = "User ID not found in token" });
+                    return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                    {
+                        Detail = "User ID not found in token"
+                    });
                 }
 
                 if (!Guid.TryParse(userId, out var userGuid))
                 {
-                    return BadRequest(new FailureResponseModel { Detail = "Invalid user ID format" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                    {
+                        Detail = "Invalid user ID format"
+                    });
                 }
 
                 var strategy = this.Db.Database.CreateExecutionStrategy();
@@ -77,12 +82,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 this.Logger.LogInformation("User {UserId} logged out successfully", userGuid);
 
-                return Ok(new SuccessResponseModel());
+                return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, "Error during logout");
-                return StatusCode(500, new FailureResponseModel
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
                 {
                     Detail = "An error occurred during logout"
                 });

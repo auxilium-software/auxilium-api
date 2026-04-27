@@ -52,7 +52,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             // check case access
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to add messages to this case"
                 });
@@ -75,7 +75,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             // get read-by details (should be empty for new message)
             var readByDetails = await _messageService.GetReadByDetailsAsync(messageDoc.Id);
 
-            return StatusCode(201, new MessageResponseModel
+            return StatusCode(StatusCodes.Status201Created, new MessageResponseModel
             {
                 Id = messageDoc.Id,
                 CreatedBy = messageDoc.CreatedBy,
@@ -90,12 +90,12 @@ public class SingleCaseMessagesController : LoggedInControllerBase
         catch (KeyNotFoundException ex)
         {
             this.Logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
-            return NotFound(new FailureResponseModel { Detail = "Case not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to create message in case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to create message"
             });
@@ -117,7 +117,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
 
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to view messages in this case"
                 });
@@ -144,12 +144,12 @@ public class SingleCaseMessagesController : LoggedInControllerBase
                 });
             }
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to get messages for case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to retrieve messages"
             });
@@ -174,7 +174,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
 
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to view messages in this case"
                 });
@@ -183,13 +183,13 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             var messageDoc = await _messageService.GetMessageAsync(messageId);
             if (messageDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Message not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Message not found" });
             }
 
             // verify the message belongs to this case
             if (messageDoc.CaseId != caseId)
             {
-                return NotFound(new FailureResponseModel { Detail = "Message not found in this case" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Message not found in this case" });
             }
 
             // mark the message as read
@@ -198,7 +198,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             // get read-by details
             var readByDetails = await _messageService.GetReadByDetailsAsync(messageId);
 
-            return Ok(new MessageResponseModel
+            return StatusCode(StatusCodes.Status200OK, new MessageResponseModel
             {
                 Id = messageDoc.Id,
                 CreatedAt = messageDoc.CreatedAt,
@@ -213,7 +213,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to get message {MessageId}", messageId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to retrieve message"
             });
@@ -240,13 +240,13 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Only case workers and admins can delete messages"
                 });
@@ -256,12 +256,12 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             var message = await _messageService.GetMessageAsync(messageId);
             if (message == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Message not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Message not found" });
             }
 
             if (message.CaseId != caseId)
             {
-                return NotFound(new FailureResponseModel { Detail = "Message not found in this case" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Message not found in this case" });
             }
 
             await _messageService.DeleteMessageAsync(messageId);
@@ -271,12 +271,12 @@ public class SingleCaseMessagesController : LoggedInControllerBase
                 messageId, caseId, user.Id
             );
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to delete message {MessageId}", messageId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to delete message"
             });

@@ -53,13 +53,13 @@ public class SingleCaseFilesController : LoggedInControllerBase
 
             if (request.File == null || request.File.Length == 0)
             {
-                return BadRequest(new FailureResponseModel { Detail = "No file provided" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "No file provided" });
             }
 
             // check case access
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to upload files to this case"
                 });
@@ -85,7 +85,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
                 fileMetadata.Id, fileBytes.Length, caseId
             );
 
-            return StatusCode(201, new FileDetailsResponseModel
+            return StatusCode(StatusCodes.Status201Created, new FileDetailsResponseModel
             {
                 Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
@@ -100,7 +100,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to upload file to case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
 
@@ -119,7 +119,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
 
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to access this case"
                 });
@@ -128,16 +128,16 @@ public class SingleCaseFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             // verify file belongs to this case
             if (fileMetadata.CaseId != caseId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found in this case" });
             }
 
-            return Ok(new FileDetailsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new FileDetailsResponseModel
             {
                 Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
@@ -152,7 +152,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to get file {FileId} from case {CaseId}", fileId, caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to get file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to get file" });
         }
     }
 
@@ -171,7 +171,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
 
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to access this case"
                 });
@@ -180,18 +180,18 @@ public class SingleCaseFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             if (fileMetadata.CaseId != caseId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found in this case" });
             }
 
             var fileBytes = await _fileService.GetFileContentsAsync(fileId);
             if (fileBytes == null || fileBytes.Length == 0)
             {
-                return NotFound(new FailureResponseModel { Detail = "File content not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File content not found" });
             }
 
             var contentType = fileMetadata.ContentType ?? "application/octet-stream";
@@ -210,7 +210,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to render file {FileId} from case {CaseId}", fileId, caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to render file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to render file" });
         }
     }
 
@@ -230,14 +230,14 @@ public class SingleCaseFilesController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only case workers and admins can delete files
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Only case workers and admins can delete files"
                 });
@@ -246,12 +246,12 @@ public class SingleCaseFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetCaseFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             if (fileMetadata.CaseId != caseId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found in this case" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found in this case" });
             }
 
             await _fileService.DeleteCaseFileAsync(fileId);
@@ -261,12 +261,12 @@ public class SingleCaseFilesController : LoggedInControllerBase
                 fileId, caseId, user.Id
             );
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to delete file {FileId} from case {CaseId}", fileId, caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to delete file" });
         }
     }
 }

@@ -49,12 +49,12 @@ public class SingleUserFilesController : LoggedInControllerBase
             var targetUser = await Db.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (targetUser == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             if (!await CanUploadToUser(user!, userId))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to upload files to this user"
                 });
@@ -62,7 +62,7 @@ public class SingleUserFilesController : LoggedInControllerBase
 
             if (request.File == null || request.File.Length == 0)
             {
-                return BadRequest(new FailureResponseModel { Detail = "No file provided" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "No file provided" });
             }
 
             using var memoryStream = new MemoryStream();
@@ -83,7 +83,7 @@ public class SingleUserFilesController : LoggedInControllerBase
                 fileMetadata.Id, fileBytes.Length, userId, user.Id
             );
 
-            return StatusCode(201, new FileDetailsResponseModel
+            return StatusCode(StatusCodes.Status201Created, new FileDetailsResponseModel
             {
                 Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
@@ -98,7 +98,7 @@ public class SingleUserFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to upload file to user {UserId}", userId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to upload file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to upload file" });
         }
     }
 
@@ -116,7 +116,7 @@ public class SingleUserFilesController : LoggedInControllerBase
 
             if (!await _fileService.CheckUserFileAccessAsync(fileId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to access this file"
                 });
@@ -125,15 +125,15 @@ public class SingleUserFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetUserFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             if (fileMetadata.UserId != userId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found for this user" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found for this user" });
             }
 
-            return Ok(new FileDetailsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new FileDetailsResponseModel
             {
                 Id = fileMetadata.Id,
                 Filename = fileMetadata.Filename,
@@ -148,7 +148,7 @@ public class SingleUserFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to get file {FileId} for user {UserId}", fileId, userId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to get file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to get file" });
         }
     }
 
@@ -166,7 +166,7 @@ public class SingleUserFilesController : LoggedInControllerBase
 
             if (!await _fileService.CheckUserFileAccessAsync(fileId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to access this file"
                 });
@@ -175,18 +175,18 @@ public class SingleUserFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetUserFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             if (fileMetadata.UserId != userId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found for this user" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found for this user" });
             }
 
             var fileBytes = await _fileService.GetFileContentsAsync(fileId);
             if (fileBytes == null || fileBytes.Length == 0)
             {
-                return NotFound(new FailureResponseModel { Detail = "File content not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File content not found" });
             }
 
             var contentType = fileMetadata.ContentType ?? "application/octet-stream";
@@ -205,7 +205,7 @@ public class SingleUserFilesController : LoggedInControllerBase
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to render file {FileId} for user {UserId}", fileId, userId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to render file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to render file" });
         }
     }
 
@@ -224,18 +224,18 @@ public class SingleUserFilesController : LoggedInControllerBase
             var fileMetadata = await _fileService.GetUserFileMetadataAsync(fileId);
             if (fileMetadata == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found" });
             }
 
             if (fileMetadata.UserId != userId)
             {
-                return NotFound(new FailureResponseModel { Detail = "File not found for this user" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "File not found for this user" });
             }
 
             // only the file owner or admins can delete
             if (!user!.IsAdministrator && user.Id != fileMetadata.UserId)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Only file owners and administrators can delete files"
                 });
@@ -248,12 +248,12 @@ public class SingleUserFilesController : LoggedInControllerBase
                 fileId, userId, user.Id
             );
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to delete file {FileId} from user {UserId}", fileId, userId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete file" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to delete file" });
         }
     }
 

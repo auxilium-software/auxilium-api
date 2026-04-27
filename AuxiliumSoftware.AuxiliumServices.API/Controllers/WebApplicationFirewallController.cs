@@ -174,7 +174,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var wafEnabled = await this.SystemSettings.GetBoolAsync(SystemSettingKeyEnum.Policies_WebApplicationFirewall_Enabled);
 
-            return Ok(new WafStatisticsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new WafStatisticsResponseModel
             {
                 WafEnabled = wafEnabled,
                 PeriodStart = since,
@@ -263,7 +263,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new LoginAttemptsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new LoginAttemptsResponseModel
             {
                 Attempts = attempts,
                 TotalCount = totalCount,
@@ -318,7 +318,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new BlacklistedIpAddressesResponseModel
+            return StatusCode(StatusCodes.Status200OK, new BlacklistedIpAddressesResponseModel
             {
                 Blocks = blocks,
                 TotalCount = totalCount,
@@ -341,7 +341,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
-                return BadRequest(new { message = "Reason is required" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Reason is required" });
             }
 
             var now = DateTime.UtcNow;
@@ -354,13 +354,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (existingBlock != null)
             {
-                return BadRequest(new { message = "This IP is already blocked" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "This IP is already blocked" });
             }
 
             // Check against whitelist
             if (await Waf.IsWhitelistedAsync(request.IpAddress))
             {
-                return BadRequest(new { message = "Cannot block a whitelisted IP address. Remove it from the whitelist first." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Cannot block a whitelisted IP address. Remove it from the whitelist first." });
             }
 
             await Waf.BlacklistIpAddressAsync(
@@ -413,7 +413,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (block == null)
             {
-                return NotFound(new { message = $"No block record found for IP: {ipAddress}" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = $"No block record found for IP: {ipAddress}" });
             }
 
             var recentAttempts = await this.Db.Log_LoginAttempts
@@ -451,7 +451,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var isCurrentlyActive = block.UnblacklistedAt == null && (block.ExpiresAt == null || block.ExpiresAt > now);
 
-            return Ok(new BlacklistedIpAddressDetailResponseModel
+            return StatusCode(StatusCodes.Status200OK, new BlacklistedIpAddressDetailResponseModel
             {
                 IpAddress = ipAddress,
                 CurrentBlock = isCurrentlyActive
@@ -490,17 +490,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!IPAddress.TryParse(ipAddress, out var parsedIpAddress))
             {
-                return BadRequest(new { message = "Invalid IP address format" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Invalid IP address format" });
             }
 
             var unblocked = await Waf.RemoveIpAddressFromBlacklistAsync(parsedIpAddress, user!);
 
             if (!unblocked)
             {
-                return NotFound(new { message = $"No active block found for IP: {ipAddress}" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = $"No active block found for IP: {ipAddress}" });
             }
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
         #endregion
 
@@ -578,7 +578,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 return item;
             }).ToList();
 
-            return Ok(new LockedOutUsersResponseModel
+            return StatusCode(StatusCodes.Status200OK, new LockedOutUsersResponseModel
             {
                 Users = lockedUsers,
                 TotalCount = totalCount,
@@ -602,13 +602,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
-                return BadRequest(new { message = "Reason is required" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Reason is required" });
             }
 
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)
             {
-                return NotFound(new { message = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = "User not found" });
             }
 
             var now = DateTime.UtcNow;
@@ -620,7 +620,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (existingLock != null)
             {
-                return BadRequest(new { message = "User is already locked out" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "User is already locked out" });
             }
 
             await Waf.BlacklistUserAsync(
@@ -635,7 +635,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .OrderByDescending(b => b.CreatedAt)
                 .FirstAsync();
 
-            return CreatedAtAction(nameof(GetBlacklistedUsers), null, new BlacklistedUserItem
+            return StatusCode(StatusCodes.Status201Created, new BlacklistedUserItem
             {
                 UserId = targetUser.Id,
                 IsLockedOut = true,
@@ -659,17 +659,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)
             {
-                return NotFound(new { message = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = "User not found" });
             }
 
             var unlocked = await Waf.RemoveUserFromBlacklist(targetUser, adminUser!);
 
             if (!unlocked)
             {
-                return BadRequest(new { message = "User is not currently locked out" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "User is not currently locked out" });
             }
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
         #endregion
 
@@ -718,7 +718,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new WhitelistedIpsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new WhitelistedIpsResponseModel
             {
                 Entries = entries,
                 TotalCount = totalCount,
@@ -741,12 +741,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
-                return BadRequest(new { message = "Reason is required." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Reason is required." });
             }
 
             if (!IPAddress.TryParse(request.IpAddress, out var parsedIpAddress))
             {
-                return BadRequest(new { message = "Invalid IP Address format." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Invalid IP Address format." });
             }
 
             var now = DateTime.UtcNow;
@@ -759,7 +759,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (existingEntry != null)
             {
-                return BadRequest(new { message = "This IP is already whitelisted" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "This IP is already whitelisted" });
             }
 
             await Waf.WhitelistIpAddressAsync(
@@ -774,7 +774,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .OrderByDescending(w => w.CreatedAt)
                 .FirstAsync();
 
-            return CreatedAtAction(nameof(GetWhitelistedIpAddresses), null, new WhitelistedIpItem
+            return StatusCode(StatusCodes.Status201Created, new WhitelistedIpItem
             {
                 Id = entry.Id,
                 IpAddress = entry.IpAddress,
@@ -802,17 +802,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!IPAddress.TryParse(ipAddress, out var parsedIpAddress))
             {
-                return BadRequest(new { message = "Invalid IP address format" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Invalid IP address format" });
             }
 
             var removed = await Waf.RemoveIpAddressFromWhitelistAsync(parsedIpAddress, user!);
 
             if (!removed)
             {
-                return NotFound(new { message = $"No active whitelist entry found for IP: {ipAddress}" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = $"No active whitelist entry found for IP: {ipAddress}" });
             }
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
         #endregion
 
@@ -875,7 +875,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 return item;
             }).ToList();
 
-            return Ok(new WhitelistedUsersResponseModel
+            return StatusCode(StatusCodes.Status200OK, new WhitelistedUsersResponseModel
             {
                 Entries = entries,
                 TotalCount = totalCount,
@@ -899,13 +899,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
-                return BadRequest(new { message = "Reason is required" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Reason is required" });
             }
 
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)
             {
-                return NotFound(new { message = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = "User not found" });
             }
 
             var now = DateTime.UtcNow;
@@ -917,7 +917,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (existingEntry != null)
             {
-                return BadRequest(new { message = "User is already whitelisted" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "User is already whitelisted" });
             }
 
             await Waf.WhitelistUserAsync(
@@ -932,7 +932,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .OrderByDescending(w => w.CreatedAt)
                 .FirstAsync();
 
-            return CreatedAtAction(nameof(GetWhitelistedUsers), null, new WhitelistedUserItem
+            return StatusCode(StatusCodes.Status201Created, new WhitelistedUserItem
             {
                 UserId = targetUser.Id,
                 Reason = entry.JustificationForWhitelist,
@@ -958,17 +958,17 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var targetUser = await this.Db.Users.FindAsync(userId);
             if (targetUser == null)
             {
-                return NotFound(new { message = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = "User not found" });
             }
 
             var removed = await Waf.RemoveUserFromWhitelistAsync(targetUser, adminUser!);
 
             if (!removed)
             {
-                return NotFound(new { message = "User is not currently whitelisted" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = "User is not currently whitelisted" });
             }
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
         #endregion
     }

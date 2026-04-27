@@ -46,7 +46,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
         if (caseEntity == null)
         {
-            return (null, NotFound(new FailureResponseModel { Detail = "Case not found" }));
+            return (null, StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" }));
         }
 
         var isWorker = (caseEntity.Workers ?? []).Any(w => w.UserId == user.Id);
@@ -56,7 +56,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         {
             if (!user.IsAdministrator && !isWorker)
             {
-                return (null, StatusCode(403, new FailureResponseModel
+                return (null, StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Only case workers can modify properties"
                 }));
@@ -66,7 +66,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         {
             if (!user.IsAdministrator && !isWorker && !isClient)
             {
-                return (null, StatusCode(403, new FailureResponseModel
+                return (null, StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to view this case"
                 }));
@@ -96,10 +96,10 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
         if (property == null)
         {
-            return NotFound(new FailureResponseModel { Detail = "Property not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
         }
 
-        return Ok(new AdditionalPropertyResponseModel
+        return StatusCode(StatusCodes.Status200OK, new AdditionalPropertyResponseModel
         {
             UrlSlug = property.UrlSlug,
             OriginalName = property.OriginalName,
@@ -133,7 +133,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             var sanitizedName = ControllerUtilities.SanitisePropertyName(request.OriginalName);
             if (string.IsNullOrEmpty(sanitizedName))
             {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid property name" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "Invalid property name" });
             }
 
             var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
@@ -142,7 +142,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp != null)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "Property already exists"
                 });
@@ -161,12 +161,12 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
                 "Created property {PropertyName} for case {CaseId} by {CurrentUserId}",
                 sanitizedName, caseId, user!.Id);
 
-            return StatusCode(201, new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status201Created, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to create property for case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to create property"
             });
@@ -198,7 +198,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Property not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
             existingProp.Content = request.Content;
@@ -215,13 +215,13 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
                 "Updated property {PropertyName} for case {CaseId} by {CurrentUserId}",
                 propertyName, caseId, user.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to update property {PropertyName} for case {CaseId}",
                 propertyName, caseId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to update property"
             });
@@ -251,7 +251,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Property not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
             await _caseDocService.DeleteAdditionalPropertyAsync(caseId, existingProp.Id);
@@ -260,13 +260,13 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
                 "Deleted property {PropertyName} from case {CaseId} by {CurrentUserId}",
                 propertyName, caseId, user!.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to delete property {PropertyName} from case {CaseId}",
                 propertyName, caseId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to delete property"
             });

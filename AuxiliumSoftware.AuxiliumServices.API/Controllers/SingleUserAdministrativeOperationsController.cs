@@ -71,13 +71,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (userDoc == null)
                 {
-                    return NotFound(new FailureResponseModel { Detail = "User not found" });
+                    return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
                 }
 
                 // Prevent admins from removing their own admin rights
                 if (userId == user!.Id && request.IsAdministrator == false && userDoc.IsAdministrator)
                 {
-                    return BadRequest(new FailureResponseModel
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                     {
                         Detail = "You cannot remove your own administrator privileges"
                     });
@@ -116,12 +116,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     );
                 }
 
-                return Ok(ControllerUtilities.UserMapToUserResponseModel(userDoc, true));
+                return StatusCode(StatusCodes.Status200OK, ControllerUtilities.UserMapToUserResponseModel(userDoc, true));
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to update permissions for user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
                 {
                     Detail = "Failed to update permissions"
                 });
@@ -263,15 +263,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (userDoc == null)
                 {
-                    return NotFound(new FailureResponseModel { Detail = "User not found" });
+                    return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
                 }
-
 
                 if (userDoc.MustChangePassword)
                 {
-                    return Conflict(new { success = true, message = "Password reset already pending" });
+                    return StatusCode(StatusCodes.Status409Conflict, new { success = true, message = "Password reset already pending" });
                 }
-
 
                 userDoc.MustChangePassword = true;
                 userDoc.LastUpdatedAt = DateTime.UtcNow;
@@ -297,12 +295,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     userId, user.Id
                 );
 
-                return Ok(new { success = true });
+                return StatusCode(StatusCodes.Status200OK, new { success = true });
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to force password reset for user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
                 {
                     Detail = "Failed to force password reset"
                 });
@@ -331,7 +329,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 // prevent self-deletion
                 if (userId == user!.Id)
                 {
-                    return BadRequest(new FailureResponseModel
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                     {
                         Detail = "You cannot delete your own account"
                     });
@@ -344,7 +342,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (userDoc == null)
                 {
-                    return NotFound(new FailureResponseModel { Detail = "Target User not found" });
+                    return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Target User not found" });
                 }
 
                 // remove additional properties first
@@ -370,12 +368,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     userId, userDoc.EmailAddress, user.Id
                 );
 
-                return NoContent();
+                return StatusCode(StatusCodes.Status204NoContent);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to delete user {UserId}", userId);
-                return StatusCode(500, new FailureResponseModel
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
                 {
                     Detail = "Failed to delete user"
                 });
@@ -393,7 +391,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             if (adminError != null) return adminError;
 
             var target = await Db.Users.FindAsync(userId);
-            if (target == null) return NotFound();
+            if (target == null) return StatusCode(StatusCodes.Status404NotFound);
 
             // invalidate any existing unused tokens for this user
             var oldTokens = await Db.PasswordSetTokens
@@ -442,7 +440,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 userId, user.Id
             );
 
-            return Ok(new { success = true });
+            return StatusCode(StatusCodes.Status200OK, new { success = true });
         }
 
         /*

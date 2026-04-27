@@ -103,21 +103,16 @@ public class CaseController : LoggedInControllerBase
                 Files = new List<string>(),
                 Messages = new List<string>(),
                 Todos = new Dictionary<string, object>(),
-                // Timeline = new Dictionary<string, object>(),
                 AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructureDTO>(),
                 Referrer = null,
             };
 
-            return CreatedAtAction(
-                nameof(CreateCase),
-                new { caseId = caseEntity.Id },
-                response
-            );
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to create case");
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to create case" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to create case" });
         }
     }
 
@@ -166,12 +161,12 @@ public class CaseController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch my cases");
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 
@@ -220,12 +215,12 @@ public class CaseController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch assigned cases");
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 
@@ -311,12 +306,12 @@ public class CaseController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to search cases");
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch cases" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to fetch cases" });
         }
     }
 }

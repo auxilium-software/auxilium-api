@@ -59,7 +59,7 @@ public class MeController : LoggedInControllerBase
 
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User profile not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User profile not found" });
             }
 
             // get additional properties
@@ -105,16 +105,15 @@ public class MeController : LoggedInControllerBase
                 HowDidYouFindOutAboutOurService = userDoc.HowDidYouFindOutAboutOurService ?? string.Empty,
 
                 AdditionalProperties = additionalProperties,
-                Files = new List<string>() // Files list from file service if needed
+                Files = new List<string>() //TODO: sort this out
             };
 
-            // return
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch user details for current user");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch user details"
             });
@@ -123,9 +122,9 @@ public class MeController : LoggedInControllerBase
 
     [HttpPatch("")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UpdateMyProfile(
         [FromBody] ProfileUpdateRequestModel request)
     {
@@ -137,7 +136,7 @@ public class MeController : LoggedInControllerBase
             var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             // update fields if provided
@@ -166,12 +165,12 @@ public class MeController : LoggedInControllerBase
 
             this.Logger.LogInformation("User {UserId} updated their profile", user.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to update user profile");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to update profile"
             });
@@ -179,6 +178,11 @@ public class MeController : LoggedInControllerBase
     }
 
     [HttpPost("change-password")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> ChangePassword(
         [FromBody] PasswordUpdateRequestModel request
     )
@@ -193,7 +197,7 @@ public class MeController : LoggedInControllerBase
 
             if (currentNormalized == newNormalized)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "New password may not be the same as the old password"
                 });
@@ -202,12 +206,15 @@ public class MeController : LoggedInControllerBase
             var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "User not found"
+                });
             }
 
             if (!_passwordService.VerifyPassword(currentNormalized, userDoc.PasswordHash))
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Current password is incorrect"
                 });
@@ -222,12 +229,12 @@ public class MeController : LoggedInControllerBase
 
             this.Logger.LogInformation("User {UserId} changed their password", user!.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to change password");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Error changing password"
             });
@@ -235,6 +242,10 @@ public class MeController : LoggedInControllerBase
     }
 
     [HttpPost("request-account-deletion")]
+    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> RequestAccountDeletion(
         [FromBody] RequestMyAccountDeletionRequestModel request
     )
@@ -249,12 +260,15 @@ public class MeController : LoggedInControllerBase
             var userDoc = await Db.Users.FirstOrDefaultAsync(u => u.Id == user!.Id);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "User not found"
+                });
             }
 
             if (!_passwordService.VerifyPassword(currentNormalized, userDoc.PasswordHash))
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Current password is incorrect"
                 });
@@ -267,14 +281,14 @@ public class MeController : LoggedInControllerBase
 
             this.Logger.LogInformation("User {UserId} requested their account to be deleted", user!.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to request to delete account");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
-                Detail = "Error changing password"
+                Detail = "Error requesting account deletion"
             });
         }
     }

@@ -30,7 +30,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             try
             {
-                return Ok(new PingResponseModel
+                return StatusCode(StatusCodes.Status200OK, new PingResponseModel
                 {
                     Response = "pong!"
                 });
@@ -38,7 +38,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to ping");
-                return StatusCode(500, new FailureResponseModel { Detail = "Internal server error" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Internal server error" });
             }
         }
     }

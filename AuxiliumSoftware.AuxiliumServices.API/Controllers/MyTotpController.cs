@@ -41,7 +41,7 @@ public class MyTotpController : LoggedInControllerBase
 
             var isEnabled = await _totpService.IsTotpEnabledAsync(user!.Id);
 
-            return Ok(new TotpStatusResponseModel { IsEnabled = isEnabled });
+            return StatusCode(StatusCodes.Status200OK, new TotpStatusResponseModel { IsEnabled = isEnabled });
         }
         catch (Exception ex)
         {
@@ -69,7 +69,7 @@ public class MyTotpController : LoggedInControllerBase
             // stop setup attempt if totp is already enabled
             if (await _totpService.IsTotpEnabledAsync(user!.Id))
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "TOTP is already enabled on your account. Disable it first to re-enrol."
                 });
@@ -77,7 +77,7 @@ public class MyTotpController : LoggedInControllerBase
 
             var result = await _totpService.CreateSetupAsync(user.Id, user.EmailAddress);
 
-            return Ok(new TotpSetupResponseModel
+            return StatusCode(StatusCodes.Status200OK, new TotpSetupResponseModel
             {
                 Secret = result.Secret,
                 ProvisioningUri = result.ProvisioningUri
@@ -112,14 +112,14 @@ public class MyTotpController : LoggedInControllerBase
 
             if (result == null)
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Invalid code or no pending setup found. " +
                              "Check your authenticator app and try again."
                 });
             }
 
-            return Ok(new TotpEnableResponseModel
+            return StatusCode(StatusCodes.Status200OK, new TotpEnableResponseModel
             {
                 IsEnabled = true,
                 RecoveryCodes = result.RecoveryCodes
@@ -154,14 +154,14 @@ public class MyTotpController : LoggedInControllerBase
 
             if (!success)
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Invalid code or TOTP is not currently enabled. " +
                              "You must verify your identity to disable two-factor authentication."
                 });
             }
 
-            return Ok(new TotpStatusResponseModel { IsEnabled = false });
+            return StatusCode(StatusCodes.Status200OK, new TotpStatusResponseModel { IsEnabled = false });
         }
         catch (Exception ex)
         {
@@ -187,7 +187,7 @@ public class MyTotpController : LoggedInControllerBase
 
             var remaining = await _totpService.GetRemainingRecoveryCodeCountAsync(user!.Id);
 
-            return Ok(new RecoveryCodeCountResponseModel { Remaining = remaining });
+            return StatusCode(StatusCodes.Status200OK, new RecoveryCodeCountResponseModel { Remaining = remaining });
         }
         catch (Exception ex)
         {
@@ -218,13 +218,13 @@ public class MyTotpController : LoggedInControllerBase
 
             if (codes == null)
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Invalid TOTP code. You must verify your identity to regenerate recovery codes."
                 });
             }
 
-            return Ok(new RecoveryCodesResponseModel { RecoveryCodes = codes });
+            return StatusCode(StatusCodes.Status200OK, new RecoveryCodesResponseModel { RecoveryCodes = codes });
         }
         catch (Exception ex)
         {

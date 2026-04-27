@@ -80,7 +80,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(bulletins);
+            return StatusCode(StatusCodes.Status200OK, bulletins);
         }
     }
 }

@@ -212,12 +212,12 @@ public class UserController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to search users");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch users"
             });
@@ -294,12 +294,12 @@ public class UserController : LoggedInControllerBase
                 GeneratedAt = now
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to fetch user statistics");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch user statistics"
             });
@@ -340,7 +340,7 @@ public class UserController : LoggedInControllerBase
 
             if (emailExists)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "A user with this email address already exists"
                 });
@@ -421,16 +421,12 @@ public class UserController : LoggedInControllerBase
                 userId, newUser.EmailAddress, user.Id
             );
 
-            return CreatedAtAction(
-                nameof(CreateUser),
-                new { userId },
-                ControllerUtilities.UserMapToUserResponseModel(newUser, true)
-            );
+            return StatusCode(StatusCodes.Status201Created, ControllerUtilities.UserMapToUserResponseModel(newUser, true));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to create user");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to create user"
             });

@@ -67,7 +67,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(bulletins);
+            return StatusCode(StatusCodes.Status200OK, bulletins);
         }
 
         [HttpPost("")]
@@ -103,7 +103,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             this.Db.System_Bulletins.Add(bulletin);
             await this.Db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(CreateBulletin), new SystemBulletinAdminResponseModel
+            return StatusCode(StatusCodes.Status201Created, new SystemBulletinAdminResponseModel
             {
                 Id = bulletin.Id,
                 CreatedAt = bulletin.CreatedAt,
@@ -135,13 +135,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var bulletin = await this.Db.System_Bulletins.FindAsync(id);
 
             if (bulletin == null)
-                return NotFound();
+                return StatusCode(StatusCodes.Status404NotFound);
 
             // don't delete the record, just set it to be inactive
             bulletin.IsActive = false;
             await this.Db.SaveChangesAsync();
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
 
 
@@ -161,7 +161,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsActive && b.IsDismissible);
 
             if (bulletin == null)
-                return NotFound();
+                return StatusCode(StatusCodes.Status404NotFound);
 
             var alreadyDismissed = await this.Db.Log_SystemBulletinEntryDismissals
                 .AnyAsync(d => d.SystemBulletinId == id && d.CreatedBy == user.Id);
@@ -178,7 +178,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 await this.Db.SaveChangesAsync();
             }
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
     }
 }

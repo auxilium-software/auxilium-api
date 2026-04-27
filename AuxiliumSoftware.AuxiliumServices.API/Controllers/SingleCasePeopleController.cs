@@ -53,14 +53,14 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only admins or existing workers can add clients
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to add clients to this case"
                 });
@@ -70,7 +70,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var isAlreadyClient = caseDoc.Clients?.Any(c => c.UserId == request.UserID) ?? false;
             if (isAlreadyClient)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "Client is already added to this case"
                 });
@@ -84,12 +84,12 @@ public class SingleCasePeopleController : LoggedInControllerBase
                 request.UserID, caseId, user.Id
             );
 
-            return StatusCode(201, new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status201Created, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to add client to case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to add client" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to add client" });
         }
     }
 
@@ -113,14 +113,14 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only admins or existing workers can remove clients
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to remove clients from this case"
                 });
@@ -134,16 +134,16 @@ public class SingleCasePeopleController : LoggedInControllerBase
                 clientId, caseId, user.Id
             );
 
-            // return
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to remove client from case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to remove client" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to remove client" });
         }
     }
     #endregion
+
     #region ========================= WORKERS =========================
     [HttpPost("workers")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
@@ -166,14 +166,14 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only admins or existing workers can add workers
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to add workers to this case"
                 });
@@ -183,7 +183,7 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var isAlreadyWorker = caseDoc.Workers?.Any(w => w.UserId == request.UserID) ?? false;
             if (isAlreadyWorker)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "Worker is already added to this case"
                 });
@@ -197,13 +197,12 @@ public class SingleCasePeopleController : LoggedInControllerBase
                 request.UserID, caseId, user.Id
             );
 
-            // return
-            return StatusCode(201, new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status201Created, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to add worker to case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to add worker" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to add worker" });
         }
     }
 
@@ -227,14 +226,14 @@ public class SingleCasePeopleController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only admins or existing workers can remove workers
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to remove workers from this case"
                 });
@@ -248,13 +247,12 @@ public class SingleCasePeopleController : LoggedInControllerBase
                 workerId, caseId, user.Id
             );
 
-            // return
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to remove worker from case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to remove worker" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to remove worker" });
         }
     }
     #endregion

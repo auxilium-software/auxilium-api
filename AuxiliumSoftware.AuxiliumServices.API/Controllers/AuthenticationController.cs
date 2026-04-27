@@ -78,9 +78,9 @@ public class AuthenticationController : ControllerBase
     [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserRegistrationResponseModel), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserRegistrationResponseModel>> Register(
         [FromBody] UserRegistrationRequestModel request
     )
@@ -90,7 +90,10 @@ public class AuthenticationController : ControllerBase
             // verify the reCAPTCHA token
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
-                return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "reCAPTCHA token is required"
+                });
             }
 
             string? clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -176,7 +179,7 @@ public class AuthenticationController : ControllerBase
                 await _db.SaveChangesAsync();
 
                 var portalBaseUrl = await _systemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
-                foreach (var caseWorkerManagerUser in _db.Users.Where(u=>u.IsCaseWorkerManager==true))
+                foreach (var caseWorkerManagerUser in _db.Users.Where(u => u.IsCaseWorkerManager == true))
                 {
 
                     await _messageQueue.PublishAsync(new EmailQueueMessage
@@ -197,16 +200,17 @@ public class AuthenticationController : ControllerBase
                 _logger.LogInformation("User {UserId} registered successfully", userId);
             });
 
-            return CreatedAtAction(
-                nameof(Register),
-                new UserRegistrationResponseModel
-                {
-                    Id = createdUserId!.Value
-                });
+            return StatusCode(StatusCodes.Status201Created, new UserRegistrationResponseModel
+            {
+                Id = createdUserId!.Value
+            });
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(new FailureResponseModel { Detail = ex.Message });
+            return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
+            {
+                Detail = ex.Message
+            });
         }
         catch (Exception ex)
         {
@@ -222,10 +226,10 @@ public class AuthenticationController : ControllerBase
     [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserLoginResponseModel>> Login(
         [FromBody] UserLoginRequestModel request)
     {
@@ -233,7 +237,10 @@ public class AuthenticationController : ControllerBase
         {
             if (string.IsNullOrEmpty(request.RecaptchaToken))
             {
-                return BadRequest(new FailureResponseModel { Detail = "reCAPTCHA token is required" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "reCAPTCHA token is required"
+                });
             }
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -296,7 +303,7 @@ public class AuthenticationController : ControllerBase
                 };
 
                 _logger.LogInformation("MFA required for user {UserId}", user.Id);
-                return Ok(new UserLoginResponseModel
+                return StatusCode(StatusCodes.Status200OK, new UserLoginResponseModel
                 {
                     MfaRequired = true,
                     MfaSessionToken = _tokenService.CreateMfaToken(userData),
@@ -315,16 +322,19 @@ public class AuthenticationController : ControllerBase
                 user: user
             );
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+            {
+                Detail = ex.Message
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during user login");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during login"
             });
@@ -354,7 +364,7 @@ public class AuthenticationController : ControllerBase
             var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
             if (userId == null)
             {
-                return Unauthorized(new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid or expired MFA session" });
             }
 
             var strategy = _db.Database.CreateExecutionStrategy();
@@ -391,16 +401,16 @@ public class AuthenticationController : ControllerBase
                 user: user
             );
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during TOTP verification");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during verification"
             });
@@ -422,7 +432,7 @@ public class AuthenticationController : ControllerBase
             var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
             if (userId == null)
             {
-                return Unauthorized(new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid or expired MFA session" });
             }
 
             var strategy = _db.Database.CreateExecutionStrategy();
@@ -471,16 +481,16 @@ public class AuthenticationController : ControllerBase
                 );
             });
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during recovery code verification");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during verification"
             });
@@ -509,7 +519,7 @@ public class AuthenticationController : ControllerBase
             var userId = _tokenService.ValidateMfaToken(request.PasswordChangeToken);
             if (userId == null)
             {
-                return Unauthorized(new FailureResponseModel
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid or expired password change session"
                 });
@@ -519,12 +529,12 @@ public class AuthenticationController : ControllerBase
 
             if (user == null)
             {
-                return Unauthorized(new FailureResponseModel { Detail = "Invalid session" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid session" });
             }
 
             if (!user.MustChangePassword)
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "Password change is not required for this account"
                 });
@@ -542,12 +552,12 @@ public class AuthenticationController : ControllerBase
             _logger.LogInformation("User {UserId} completed forced password change", user.Id);
 
             // don't issue tokens - make them log in fresh (goes through TOTP if enabled)
-            return Ok(new { success = true });
+            return StatusCode(StatusCodes.Status200OK, new { success = true });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during forced password change");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during password change"
             });
@@ -625,7 +635,7 @@ public class AuthenticationController : ControllerBase
 
             this._logger.LogInformation("Refresh token renewed for user {UserId}", user.Id);
 
-            return Ok(new UserLoginResponseModel
+            return StatusCode(StatusCodes.Status200OK, new UserLoginResponseModel
             {
                 AccessToken = accessToken!,
                 RefreshToken = newRefreshToken!,
@@ -636,12 +646,12 @@ public class AuthenticationController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new FailureResponseModel { Detail = ex.Message });
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
         }
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Error during token refresh");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred during token refresh"
             });
@@ -736,7 +746,7 @@ public class AuthenticationController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(request.RawPassword) && string.IsNullOrWhiteSpace(request.PasswordSha512))
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "A password must be provided"
                 });
@@ -755,7 +765,7 @@ public class AuthenticationController : ControllerBase
 
             if (token == null)
             {
-                return Unauthorized(new FailureResponseModel
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid or expired token"
                 });
@@ -764,7 +774,7 @@ public class AuthenticationController : ControllerBase
             var user = token.User;
             if (user == null)
             {
-                return Unauthorized(new FailureResponseModel
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
                 {
                     Detail = "Invalid token"
                 });
@@ -793,11 +803,11 @@ public class AuthenticationController : ControllerBase
                 user.Id, token.Reason
             );
 
-            return Ok(new { success = true });
+            return StatusCode(StatusCodes.Status200OK, new { success = true });
         }
         catch (FormatException)
         {
-            return BadRequest(new FailureResponseModel
+            return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
             {
                 Detail = "Invalid token format"
             });
@@ -805,7 +815,7 @@ public class AuthenticationController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during password set");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "An error occurred while setting the password"
             });

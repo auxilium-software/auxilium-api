@@ -43,7 +43,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var visibility = ResolveCallerVisibility();
             var settings = await this.SystemSettings.GetVisibleSettingsAsync(visibility, ct);
-            return Ok(settings);
+            return StatusCode(StatusCodes.Status200OK, settings);
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var setting = await this.SystemSettings.GetVisibleSettingByKeyAsync(jsonKey, visibility, ct);
 
             if (setting is null)
-                return NotFound();
+                return StatusCode(StatusCodes.Status404NotFound);
 
-            return Ok(setting);
+            return StatusCode(StatusCodes.Status200OK, setting);
         }
 
         [HttpGet("all")]
@@ -125,7 +125,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 });
             }
 
-            return Ok(new AllSystemSettingsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new AllSystemSettingsResponseModel
             {
                 Settings = settings,
                 TotalCount = settings.Count
@@ -152,9 +152,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .FirstOrDefaultAsync();
 
             if (setting is null)
-                return NotFound(new { message = $"Setting not found: {settingKey}" });
+                return StatusCode(StatusCodes.Status404NotFound, new { message = $"Setting not found: {settingKey}" });
 
-            return Ok(new SystemSettingResponseModel
+            return StatusCode(StatusCodes.Status200OK, new SystemSettingResponseModel
             {
                 Key = setting.ConfigKey,
                 Value = setting.ConfigValue,
@@ -184,7 +184,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .Include(s => s.CreatedByUser)
                 .ToListAsync();
 
-            return Ok(history.Select(s => new SystemSettingHistoryResponseModel
+            return StatusCode(StatusCodes.Status200OK, history.Select(s => new SystemSettingHistoryResponseModel
             {
                 Value = s.ConfigValue,
                 ValueType = s.ValueType,
@@ -222,7 +222,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .Include(s => s.CreatedByUser)
                 .FirstAsync();
 
-            return Ok(new SystemSettingResponseModel
+            return StatusCode(StatusCodes.Status200OK, new SystemSettingResponseModel
             {
                 Key = setting.ConfigKey,
                 Value = setting.ConfigValue,

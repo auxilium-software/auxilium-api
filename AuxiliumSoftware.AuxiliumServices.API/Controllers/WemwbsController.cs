@@ -94,12 +94,12 @@ public class WEMWBSController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch WEMWBS assessments");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch WEMWBS assessments"
             });
@@ -125,13 +125,19 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (assessment == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Assessment not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Assessment not found"
+                });
             }
 
             // only allow user to see their own assessments (unless admin)
             if (assessment.CreatedBy != user!.Id && !user.IsAdministrator)
             {
-                return NotFound(new FailureResponseModel { Detail = "Assessment not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Assessment not found"
+                });
             }
 
             var response = new WEMWBSResponseModel
@@ -159,12 +165,12 @@ public class WEMWBSController : LoggedInControllerBase
                 }
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch WEMWBS assessment {AssessmentId}", assessmentId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch WEMWBS assessment"
             });
@@ -206,7 +212,7 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (scores.Any(s => s < 1 || s > 5))
             {
-                return BadRequest(new FailureResponseModel
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
                     Detail = "All scores must be between 1 and 5"
                 });
@@ -261,12 +267,12 @@ public class WEMWBSController : LoggedInControllerBase
                 }
             };
 
-            return CreatedAtAction(nameof(GetAssessment), new { assessmentId = assessment.Id }, response);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to create WEMWBS assessment");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to create WEMWBS assessment"
             });
@@ -294,7 +300,7 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (!user!.IsAdministrator)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Forbidden"
                 });
@@ -349,12 +355,12 @@ public class WEMWBSController : LoggedInControllerBase
                 HasMore = page < totalPages
             };
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch user WEMWBS assessments for user {UserId}", targetUserId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch user WEMWBS assessments"
             });
@@ -378,7 +384,7 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (!user!.IsAdministrator)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Forbidden"
                 });
@@ -388,18 +394,21 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (assessment == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Assessment not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Assessment not found"
+                });
             }
 
             Db.WemwbsAssessments.Remove(assessment);
             await Db.SaveChangesAsync();
 
-            return NoContent();
+            return StatusCode(StatusCodes.Status204NoContent);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to delete WEMWBS assessment {AssessmentId}", assessmentId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to delete WEMWBS assessment"
             });
@@ -426,7 +435,7 @@ public class WEMWBSController : LoggedInControllerBase
 
             if (!assessments.Any())
             {
-                return Ok(new WEMWBSStatisticsResponseModel
+                return StatusCode(StatusCodes.Status200OK, new WEMWBSStatisticsResponseModel
                 {
                     TotalAssessments = 0,
                     AverageScore = 0,
@@ -448,7 +457,7 @@ public class WEMWBSController : LoggedInControllerBase
                 else if (latestScore < previousScore - 3) trend = "Declining";
             }
 
-            return Ok(new WEMWBSStatisticsResponseModel
+            return StatusCode(StatusCodes.Status200OK, new WEMWBSStatisticsResponseModel
             {
                 TotalAssessments = assessments.Count,
                 AverageScore = scores.Average(),
@@ -461,7 +470,7 @@ public class WEMWBSController : LoggedInControllerBase
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch WEMWBS statistics");
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch WEMWBS statistics"
             });

@@ -43,7 +43,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
         if (!user!.IsAdministrator && user.Id != userId)
         {
-            return StatusCode(403, new FailureResponseModel
+            return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
             {
                 Detail = "You can only view your own properties"
             });
@@ -52,7 +52,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
         var userDoc = await _userDocService.GetDocumentAsync(userId);
         if (userDoc == null)
         {
-            return NotFound(new FailureResponseModel { Detail = "User not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
         }
 
         var properties = await _userDocService.GetAdditionalPropertiesAsync(userId);
@@ -61,10 +61,10 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
         if (property == null)
         {
-            return NotFound(new FailureResponseModel { Detail = "Property not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
         }
 
-        return Ok(new AdditionalPropertyResponseModel
+        return StatusCode(StatusCodes.Status200OK, new AdditionalPropertyResponseModel
         {
             UrlSlug = property.UrlSlug,
             OriginalName = property.OriginalName,
@@ -94,7 +94,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (!user!.IsAdministrator && user.Id != userId)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You can only modify your own properties"
                 });
@@ -103,13 +103,13 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var userDoc = await _userDocService.GetDocumentAsync(userId);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             var sanitizedName = ControllerUtilities.SanitisePropertyName(request.OriginalName);
             if (string.IsNullOrEmpty(sanitizedName))
             {
-                return BadRequest(new FailureResponseModel { Detail = "Invalid property name" });
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "Invalid property name" });
             }
 
             var properties = await _userDocService.GetAdditionalPropertiesAsync(userId);
@@ -118,7 +118,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp != null)
             {
-                return Conflict(new FailureResponseModel
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
                 {
                     Detail = "Property already exists"
                 });
@@ -137,12 +137,12 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 "Created property {PropertyName} for user {UserId} by {CurrentUserId}",
                 sanitizedName, userId, user.Id);
 
-            return StatusCode(201, new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status201Created, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to create property for user {UserId}", userId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to create property"
             });
@@ -167,7 +167,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (!user!.IsAdministrator && user.Id != userId)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You can only modify your own properties"
                 });
@@ -176,7 +176,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var userDoc = await _userDocService.GetDocumentAsync(userId);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             var properties = await _userDocService.GetAdditionalPropertiesAsync(userId);
@@ -185,7 +185,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Property not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
             existingProp.Content = request.Content;
@@ -205,13 +205,13 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 "Updated property {PropertyName} for user {UserId} by {CurrentUserId}",
                 propertyName, userId, user.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to update property {PropertyName} for user {UserId}",
                 propertyName, userId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to update property"
             });
@@ -234,7 +234,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (!user!.IsAdministrator && user.Id != userId)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You can only modify your own properties"
                 });
@@ -243,7 +243,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             var userDoc = await _userDocService.GetDocumentAsync(userId);
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             var properties = await _userDocService.GetAdditionalPropertiesAsync(userId);
@@ -252,7 +252,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             if (existingProp == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Property not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
             await _userDocService.DeleteAdditionalPropertyAsync(userId, existingProp.Id);
@@ -261,13 +261,13 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 "Deleted property {PropertyName} from user {UserId} by {CurrentUserId}",
                 propertyName, userId, user.Id);
 
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to delete property {PropertyName} from user {UserId}",
                 propertyName, userId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to delete property"
             });

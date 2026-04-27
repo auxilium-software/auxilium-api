@@ -50,7 +50,7 @@ public class SingleCaseTodoController : LoggedInControllerBase
             // check the user's access to the case
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to add todos to this case"
                 });
@@ -68,36 +68,32 @@ public class SingleCaseTodoController : LoggedInControllerBase
                 reminder: request.Reminder
             );
 
-            // return
-            return CreatedAtAction(
-                nameof(CreateTodo),
-                new TodoResponseModel
-                {
-                    Id = todo.Id,
-                    CaseId = caseId,
-                    Summary = todo.Summary,
-                    Description = todo.Description,
-                    Status = todo.Status,
-                    Priority = todo.Priority,
-                    CreatedAt = todo.CreatedAt,
-                    CreatedBy = todo.CreatedBy,
-                    DueDate = todo.DueDate,
-                    CompletedAt = todo.CompletedAt,
-                    CompletedBy = todo.CompletedBy,
-                    AssignedTo = todo.AssignedTo,
-                    CompletionNote = todo.CompletionNote
-                }
-            );
+            return StatusCode(StatusCodes.Status201Created, new TodoResponseModel
+            {
+                Id = todo.Id,
+                CaseId = caseId,
+                Summary = todo.Summary,
+                Description = todo.Description,
+                Status = todo.Status,
+                Priority = todo.Priority,
+                CreatedAt = todo.CreatedAt,
+                CreatedBy = todo.CreatedBy,
+                DueDate = todo.DueDate,
+                CompletedAt = todo.CompletedAt,
+                CompletedBy = todo.CompletedBy,
+                AssignedTo = todo.AssignedTo,
+                CompletionNote = todo.CompletionNote
+            });
         }
         catch (KeyNotFoundException ex)
         {
             this.Logger.LogWarning(ex, "Case not found: {CaseId}", caseId);
-            return NotFound(new FailureResponseModel { Detail = "Case not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to create todo in case {CaseId}", caseId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to create todo" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to create todo" });
         }
     }
 
@@ -121,7 +117,7 @@ public class SingleCaseTodoController : LoggedInControllerBase
             // check the user's access to the case
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "You don't have permission to update todos for this case"
                 });
@@ -151,17 +147,16 @@ public class SingleCaseTodoController : LoggedInControllerBase
                 );
             }
 
-            // return
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (KeyNotFoundException)
         {
-            return NotFound(new FailureResponseModel { Detail = "Todo not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Todo not found" });
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to update todo {TodoId}", todoId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to update todo" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to update todo" });
         }
     }
 
@@ -185,14 +180,14 @@ public class SingleCaseTodoController : LoggedInControllerBase
             var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
             if (caseDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
             }
 
             // only admins and case workers can delete todos
             var isWorker = caseDoc.Workers?.Any(w => w.UserId == user!.Id) ?? false;
             if (!user!.IsAdministrator && !isWorker)
             {
-                return StatusCode(403, new FailureResponseModel
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                 {
                     Detail = "Only case workers and admins can delete todos"
                 });
@@ -201,17 +196,16 @@ public class SingleCaseTodoController : LoggedInControllerBase
             // delete the todo
             await _caseDocService.DeleteTodoAsync(caseId, todoId);
 
-            // return
-            return Ok(new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (KeyNotFoundException)
         {
-            return NotFound(new FailureResponseModel { Detail = "Todo not found" });
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Todo not found" });
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to delete todo {TodoId}", todoId);
-            return StatusCode(500, new FailureResponseModel { Detail = "Failed to delete todo" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to delete todo" });
         }
     }
 }

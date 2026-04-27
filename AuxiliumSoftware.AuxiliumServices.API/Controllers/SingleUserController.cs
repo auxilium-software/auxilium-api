@@ -81,15 +81,15 @@ public class SingleUserController : LoggedInControllerBase
 
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
-            return Ok(ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator));
+            return StatusCode(StatusCodes.Status200OK, ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator));
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "Failed to fetch user {UserId}", userId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to fetch user"
             });
@@ -136,7 +136,7 @@ public class SingleUserController : LoggedInControllerBase
 
             if (userDoc == null)
             {
-                return NotFound(new FailureResponseModel { Detail = "User not found" });
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
             // apply changes only for fields that were provided
@@ -156,7 +156,7 @@ public class SingleUserController : LoggedInControllerBase
 
                 if (emailExists)
                 {
-                    return BadRequest(new FailureResponseModel
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                     {
                         Detail = "A user with this email address already exists"
                     });
@@ -226,12 +226,12 @@ public class SingleUserController : LoggedInControllerBase
                 userId, user.Id
             );
 
-            return Ok(ControllerUtilities.UserMapToUserResponseModel(userDoc, true));
+            return StatusCode(StatusCodes.Status200OK, ControllerUtilities.UserMapToUserResponseModel(userDoc, true));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to update user {UserId}", userId);
-            return StatusCode(500, new FailureResponseModel
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to update user"
             });

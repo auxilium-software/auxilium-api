@@ -69,7 +69,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (caseEntity == null)
                 {
-                    return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                    return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
                 }
 
                 // check access -> is admin OR client OR worker
@@ -79,19 +79,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (!hasAccess)
                 {
-                    return StatusCode(403, new FailureResponseModel
+                    return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                     {
                         Detail = "You don't have permission to view this case"
                     });
                 }
 
                 var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity);
-                return Ok(response);
+                return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, "Failed to fetch case {CaseId}", caseId);
-                return StatusCode(500, new FailureResponseModel { Detail = "Failed to fetch case" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to fetch case" });
             }
         }
 
@@ -118,7 +118,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (caseEntity == null)
                 {
-                    return NotFound(new FailureResponseModel { Detail = "Case not found" });
+                    return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
                 }
 
                 // only workers can update cases
@@ -127,7 +127,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (!canUpdate)
                 {
-                    return StatusCode(403, new FailureResponseModel
+                    return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
                     {
                         Detail = "Only case workers can update cases"
                     });
@@ -161,12 +161,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 await Db.Entry(caseEntity).Collection(c => c.AdditionalProperties!).LoadAsync();
 
                 var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity);
-                return Ok(response);
+                return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
             {
                 this.Logger.LogError(ex, "Failed to update case {CaseId}", caseId);
-                return StatusCode(500, new FailureResponseModel { Detail = "Failed to update case" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel { Detail = "Failed to update case" });
             }
         }
     }
