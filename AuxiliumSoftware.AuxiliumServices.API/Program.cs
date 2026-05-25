@@ -246,7 +246,10 @@ app.UseSwaggerUI(swaggerUI =>
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 
-app.UseHttpsRedirection();
+if (builder.Configuration.GetValue<bool>("API:UseHttpsRedirection"))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors();
 
