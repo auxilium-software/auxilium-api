@@ -44,7 +44,7 @@ var urls = builder.Configuration
     .Get<string[]>();
 
 if (urls?.Length == 0)
-    throw new InvalidOperationException("At least ONE API->AvailableAt MUST be specified.");
+    throw new InvalidOperationException("At least ONE API->AvailableFrom MUST be specified.");
 
 builder.WebHost.UseUrls(urls);
 
