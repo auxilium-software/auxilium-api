@@ -72,7 +72,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
-            await this.RequireAdminAsync();
+
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var settings = new List<SystemSettingItemResponseModel>();
 
@@ -142,7 +144,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError!= null) return adminError;
 
             var setting = await this.Db.System_Settings
                 .AsNoTracking()
@@ -175,7 +178,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var history = await this.Db.System_Settings
                 .AsNoTracking()
@@ -206,7 +210,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            await this.RequireAdminAsync();
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             await this.SystemSettings.SetAsync(
                 settingKey,
