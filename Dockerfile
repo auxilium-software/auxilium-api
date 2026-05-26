@@ -27,7 +27,7 @@ EXPOSE 1938
 ENTRYPOINT ["dotnet", "watch", "run", \
             "--project", "AuxiliumSoftware.AuxiliumServices.API", \
             "--no-launch-profile", \
-            "--urls", "http://+:1938"]
+            "--", "--config-path", "/etc/auxilium/config.yaml"]
 
 
 
@@ -39,5 +39,6 @@ COPY --from=publish /app/publish .
 RUN mkdir -p /etc/auxilium
 
 EXPOSE 1938
-ENTRYPOINT ["dotnet", "AuxiliumSoftware.AuxiliumServices.API.dll"]
+ENTRYPOINT ["dotnet", "AuxiliumSoftware.AuxiliumServices.API.dll", \
+            "--config-path", "/etc/auxilium/config.yaml"]
 
