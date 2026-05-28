@@ -259,7 +259,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
 
             Logger.LogInformation(
                 "Deleted property {PropertyName} from user {UserId} by {CurrentUserId}",
-                propertyName, userId, user.Id);
+                propertyName, userId, user!.Id);
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
