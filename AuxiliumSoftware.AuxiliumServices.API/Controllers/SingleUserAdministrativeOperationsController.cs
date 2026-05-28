@@ -394,7 +394,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             if (target == null) return StatusCode(StatusCodes.Status404NotFound);
 
             // invalidate any existing unused tokens for this user
-            var oldTokens = await Db.PasswordSetTokens
+            var oldTokens = await Db.UserPasswordSetTokens
                 .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
                 .ToListAsync();
             foreach (var t in oldTokens)
@@ -417,7 +417,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Reason = PasswordSetTokenReasonEnum.PasswordReset,
             };
 
-            Db.PasswordSetTokens.Add(token);
+            Db.UserPasswordSetTokens.Add(token);
             await Db.SaveChangesAsync();
 
             // queue the email

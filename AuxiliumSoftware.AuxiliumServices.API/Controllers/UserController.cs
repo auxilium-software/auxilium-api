@@ -390,7 +390,7 @@ public class UserController : LoggedInControllerBase
                 Reason = PasswordSetTokenReasonEnum.NewAccount,
             };
 
-            Db.PasswordSetTokens.Add(passwordToken);
+            Db.UserPasswordSetTokens.Add(passwordToken);
             await Db.SaveChangesAsync();
 
             // send the welcome/password-set email

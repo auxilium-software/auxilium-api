@@ -46,7 +46,7 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            var query = Db.WemwbsAssessments.AsQueryable();
+            var query = Db.UserWemwbsAssessments.AsQueryable();
 
             // apply sorting
             query = ApplySorting(query, sortBy, sortOrder);
@@ -120,7 +120,7 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            var assessment = await Db.WemwbsAssessments
+            var assessment = await Db.UserWemwbsAssessments
                 .FirstOrDefaultAsync(w => w.Id == assessmentId);
 
             if (assessment == null)
@@ -239,7 +239,7 @@ public class WEMWBSController : LoggedInControllerBase
                 FeelingCheerfulScore = request.FeelingCheerfulScore
             };
 
-            Db.WemwbsAssessments.Add(assessment);
+            Db.UserWemwbsAssessments.Add(assessment);
             await Db.SaveChangesAsync();
 
             var response = new WEMWBSResponseModel
@@ -306,7 +306,7 @@ public class WEMWBSController : LoggedInControllerBase
                 });
             }
 
-            var query = Db.WemwbsAssessments
+            var query = Db.UserWemwbsAssessments
                 .Where(w => w.CreatedBy == targetUserId);
 
             // apply sorting
@@ -390,7 +390,7 @@ public class WEMWBSController : LoggedInControllerBase
                 });
             }
 
-            var assessment = await Db.WemwbsAssessments.FindAsync(assessmentId);
+            var assessment = await Db.UserWemwbsAssessments.FindAsync(assessmentId);
 
             if (assessment == null)
             {
@@ -400,7 +400,7 @@ public class WEMWBSController : LoggedInControllerBase
                 });
             }
 
-            Db.WemwbsAssessments.Remove(assessment);
+            Db.UserWemwbsAssessments.Remove(assessment);
             await Db.SaveChangesAsync();
 
             return StatusCode(StatusCodes.Status204NoContent);
@@ -428,7 +428,7 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            var assessments = await Db.WemwbsAssessments
+            var assessments = await Db.UserWemwbsAssessments
                 .Where(w => w.CreatedBy == user!.Id)
                 .OrderBy(w => w.CreatedAt)
                 .ToListAsync();

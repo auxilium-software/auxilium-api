@@ -41,7 +41,6 @@ public class AuthenticationController : ControllerBase
     private readonly IPasswordService _passwordService;
     private readonly ITokenService _tokenService;
 
-    private readonly IMessageQueueProducer _messageQueue;
     private readonly IMessageQueueProducer _messageQueueProducer;
 
     public AuthenticationController(
@@ -56,7 +55,6 @@ public class AuthenticationController : ControllerBase
         IPasswordService passwordService,
         ITokenService tokenService,
 
-        IMessageQueueProducer messageQueue,
         IMessageQueueProducer messageQueueProducer
         )
     {
@@ -71,7 +69,6 @@ public class AuthenticationController : ControllerBase
         _passwordService = passwordService;
         _tokenService = tokenService;
 
-        _messageQueue = messageQueue;
         _messageQueueProducer = messageQueueProducer;
     }
 
@@ -182,7 +179,7 @@ public class AuthenticationController : ControllerBase
                 foreach (var caseWorkerManagerUser in _db.Users.Where(u => u.IsCaseWorkerManager == true))
                 {
 
-                    await _messageQueue.PublishAsync(new EmailQueueMessage
+                    await _messageQueueProducer.PublishAsync(new EmailQueueMessage
                     {
                         TargetUserId = caseWorkerManagerUser.Id,
                         Subject = "A new client has onboarded",
@@ -266,6 +263,50 @@ public class AuthenticationController : ControllerBase
             }
 
             var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+
+            // Legacy BCrypt account — can't verify without raw password.
+            // Trigger an email-based reset instead.
+            if (user.PasswordHash.StartsWith("$2a$") ||
+                user.PasswordHash.StartsWith("$2b$") ||
+                user.PasswordHash.StartsWith("$2y$"))
+            {
+                var (rawToken, tokenHash) = _passwordService.GeneratePasswordSetToken();
+
+                _db.UserPasswordSetTokens.Add(new PasswordSetTokenEntityModel
+                {
+                    Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User_PasswordSetToken),
+                    UserId = user.Id,
+                    TokenHash = tokenHash,
+                    Reason = PasswordSetTokenReasonEnum.Auxilium1BCryptMigration,
+                    ExpiresAt = DateTime.UtcNow.AddHours(24),
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = user.Id,
+                });
+                await _db.SaveChangesAsync();
+
+                var portalBaseUrl = await _systemSettings.GetStringAsync(
+                    SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl
+                );
+
+                await _messageQueueProducer.PublishAsync(new EmailQueueMessage
+                {
+                    TargetUserId = user.Id,
+                    Subject = "Action required: please reset your password",
+                    TemplateName = "PasswordMigrationRequired",
+                    Priority = EmailPriorityEnum.High,
+                    TemplateData = new Dictionary<string, string>
+                    {
+                        ["set_password_link"] = $"{portalBaseUrl}/set-password?token={Uri.EscapeDataString(rawToken)}"
+                    }
+                });
+
+                // Return 401 with a distinct detail string the frontend can key off
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "PasswordResetRequired"
+                });
+            }
+
             if (!_passwordService.VerifyPassword(normalised, user.PasswordHash))
             {
                 await this._wafService.RecordFailedLoginAsync(
@@ -322,7 +363,10 @@ public class AuthenticationController : ControllerBase
                 user: user
             );
 
-            return StatusCode(StatusCodes.Status200OK, response);
+            return StatusCode(
+                StatusCodes.Status200OK,
+                response
+            );
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -455,7 +499,7 @@ public class AuthenticationController : ControllerBase
                 // hash the provided recovery code and look for a match
                 var codeHash = HashingUtilities.SHA256Hash(request.RecoveryCode);
 
-                var recoveryCode = await _db.TotpRecoveryCodes
+                var recoveryCode = await _db.UserTotpRecoveryCodes
                     .FirstOrDefaultAsync(rc =>
                         rc.CreatedBy == userId &&
                         rc.CodeHash == codeHash &&
@@ -598,7 +642,7 @@ public class AuthenticationController : ControllerBase
             var tokenHash = HashingUtilities.SHA256Hash(request.RefreshToken);
 
             // verify the refresh token and get user
-            var refreshToken = await this._db.RefreshTokens
+            var refreshToken = await this._db.UserRefreshTokens
                 .Include(rt => rt.CreatedByUser)
                 .FirstOrDefaultAsync(rt =>
                     rt.TokenHash == tokenHash &&
@@ -697,9 +741,9 @@ public class AuthenticationController : ControllerBase
         var refreshToken = _tokenService.CreateRefreshToken(userData);
 
         // remove expired refresh tokens
-        var expiredTokens = _db.RefreshTokens
+        var expiredTokens = _db.UserRefreshTokens
             .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAt < DateTime.UtcNow);
-        _db.RefreshTokens.RemoveRange(expiredTokens);
+        _db.UserRefreshTokens.RemoveRange(expiredTokens);
 
         // store the new refresh token
         var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User_RefreshToken);
@@ -714,7 +758,7 @@ public class AuthenticationController : ControllerBase
             TokenHash = tokenHash,
             ExpiresAt = expiresAtTime
         };
-        _db.RefreshTokens.Add(refreshTokenEntity);
+        _db.UserRefreshTokens.Add(refreshTokenEntity);
 
         await _db.SaveChangesAsync();
 
@@ -756,7 +800,7 @@ public class AuthenticationController : ControllerBase
             var rawTokenBytes = Convert.FromBase64String(request.Token);
             var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
 
-            var token = await _db.PasswordSetTokens
+            var token = await _db.UserPasswordSetTokens
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t =>
                     t.TokenHash == tokenHash &&
@@ -781,7 +825,7 @@ public class AuthenticationController : ControllerBase
             }
 
             // invalidate all unused tokens for this user (including this one)
-            var allTokens = await _db.PasswordSetTokens
+            var allTokens = await _db.UserPasswordSetTokens
                 .Where(t => t.UserId == user.Id && !t.UsedAt.HasValue)
                 .ToListAsync();
 
