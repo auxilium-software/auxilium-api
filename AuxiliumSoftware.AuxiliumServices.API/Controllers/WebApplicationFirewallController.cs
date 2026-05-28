@@ -376,20 +376,16 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .OrderByDescending(b => b.CreatedAt)
                 .FirstAsync();
 
-            return CreatedAtAction(
-                nameof(GetIpAddressBlacklistEntryDetails),
-                new { ipAddress = block.IpAddress },
-                new BlacklistedIpAddressItem
-                    {
-                        Id = block.Id,
-                        IpAddress = block.IpAddress,
-                        Justification = block.JustificationForBlacklist,
-                        IsPermanent = block.IsPermanent,
-                        IsActive = true,
-                        BlockedAt = block.CreatedAt,
-                        ExpiresAt = block.ExpiresAt
-                    }
-            );
+            return StatusCode(StatusCodes.Status201Created, new BlacklistedIpAddressItem
+            {
+                Id = block.Id,
+                IpAddress = block.IpAddress,
+                Justification = block.JustificationForBlacklist,
+                IsPermanent = block.IsPermanent,
+                IsActive = true,
+                BlockedAt = block.CreatedAt,
+                ExpiresAt = block.ExpiresAt
+            });
         }
 
 
