@@ -170,7 +170,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 this.Db.Log_SystemBulletinEntryDismissals.Add(new LogSystemBulletinEntryDismissalEventEntityModel
                 {
-                    Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Log_SystemBulletinEntryDismissalEventEntry),
+                    Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Log_SystemBulletin_EntryDismissal_EventEntry),
                     CreatedBy = user.Id,
                     CreatedAt = DateTime.UtcNow,
                     SystemBulletinId = id,
