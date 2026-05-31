@@ -296,7 +296,7 @@ public class AuthenticationController : ControllerBase
                     Priority = EmailPriorityEnum.High,
                     TemplateData = new Dictionary<string, string>
                     {
-                        ["set_password_link"] = $"{portalBaseUrl}/migrate-password?token={Uri.EscapeDataString(rawToken)}"
+                        ["set_password_link"] = $"{portalBaseUrl}/set-initial-password?token={Uri.EscapeDataString(rawToken)}"
                     }
                 });
 
