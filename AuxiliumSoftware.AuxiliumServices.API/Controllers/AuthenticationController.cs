@@ -797,8 +797,7 @@ public class AuthenticationController : ControllerBase
             }
 
             // hash the incoming token to match against stored hash
-            var rawTokenBytes = Convert.FromBase64String(request.Token);
-            var tokenHash = Convert.ToBase64String(SHA256.HashData(rawTokenBytes));
+            var tokenHash = _passwordService.HashToken(request.Token);
 
             var token = await _db.UserPasswordSetTokens
                 .Include(t => t.User)
