@@ -92,7 +92,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
                 ContentType = fileMetadata.ContentType,
                 Hash = fileMetadata.Hash,
                 Size = fileMetadata.Size,
-                CreatedAt = fileMetadata.CreatedAt,
+                CreatedAt = fileMetadata.CreatedAtUtc,
                 CreatedBy = fileMetadata.CreatedBy,
                 Description = fileMetadata.Description ?? string.Empty
             });
@@ -144,7 +144,7 @@ public class SingleCaseFilesController : LoggedInControllerBase
                 ContentType = fileMetadata.ContentType,
                 Hash = fileMetadata.Hash,
                 Size = fileMetadata.Size,
-                CreatedAt = fileMetadata.CreatedAt,
+                CreatedAt = fileMetadata.CreatedAtUtc,
                 CreatedBy = fileMetadata.CreatedBy,
                 Description = fileMetadata.Description ?? string.Empty
             });

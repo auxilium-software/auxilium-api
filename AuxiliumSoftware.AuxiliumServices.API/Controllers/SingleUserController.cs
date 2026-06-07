@@ -216,7 +216,7 @@ public class SingleUserController : LoggedInControllerBase
                     AuditLogActionTypeEnum.Modification, "HowDidYouFindOutAboutOurService", oldValue, request.HowDidYouFindOutAboutOurService);
             }
 
-            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
             userDoc.LastUpdatedBy = user!.Id;
 
             await Db.SaveChangesAsync();

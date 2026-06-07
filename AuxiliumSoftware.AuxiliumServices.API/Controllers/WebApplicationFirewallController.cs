@@ -46,58 +46,58 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var since = now.AddHours(-Math.Abs(hoursBack ?? 24));
 
             var totalLoginAttempts = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since)
+                .Where(l => l.CreatedAtUtc >= since)
                 .CountAsync();
 
             var failedLoginAttempts = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && !l.WasLoginSuccessful)
+                .Where(l => l.CreatedAtUtc >= since && !l.WasLoginSuccessful)
                 .CountAsync();
 
             var successfulLoginAttempts = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && l.WasLoginSuccessful)
+                .Where(l => l.CreatedAtUtc >= since && l.WasLoginSuccessful)
                 .CountAsync();
 
             var blockedIpAttempts = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && l.WasBlockedByWaf)
+                .Where(l => l.CreatedAtUtc >= since && l.WasBlockedByWaf)
                 .CountAsync();
 
             var currentlyBlockedIps = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now))
                 .CountAsync();
 
             var permanentlyBannedIps = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.UnblacklistedAt == null && b.IsPermanent)
+                .Where(b => b.UnblacklistedAtUtc == null && b.IsPermanent)
                 .CountAsync();
 
             var temporarilyBlockedIps = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.UnblacklistedAt == null && !b.IsPermanent && b.ExpiresAt > now)
+                .Where(b => b.UnblacklistedAtUtc == null && !b.IsPermanent && b.ExpiresAtUtc > now)
                 .CountAsync();
 
             var lockedOutUsers = await this.Db.System_Waf_UserBlacklist
-                .Where(b => b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now))
                 .Select(b => b.UserId)
                 .Distinct()
                 .CountAsync();
 
             var distinctIpsWithFailures = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && !l.WasLoginSuccessful)
+                .Where(l => l.CreatedAtUtc >= since && !l.WasLoginSuccessful)
                 .Select(l => l.ClientIpAddress)
                 .Distinct()
                 .CountAsync();
 
             var distinctUsersTargeted = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && !l.WasLoginSuccessful && l.TargetUserId != null)
+                .Where(l => l.CreatedAtUtc >= since && !l.WasLoginSuccessful && l.TargetUserId != null)
                 .Select(l => l.TargetUserId)
                 .Distinct()
                 .CountAsync();
 
             var loginAttemptsRaw = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since)
-                .Select(l => new { l.CreatedAt, l.WasLoginSuccessful, l.WasBlockedByWaf })
+                .Where(l => l.CreatedAtUtc >= since)
+                .Select(l => new { l.CreatedAtUtc, l.WasLoginSuccessful, l.WasBlockedByWaf })
                 .ToListAsync();
 
             var hourlyBreakdown = loginAttemptsRaw
-                .GroupBy(l => new DateTime(l.CreatedAt.Year, l.CreatedAt.Month, l.CreatedAt.Day, l.CreatedAt.Hour, 0, 0, DateTimeKind.Utc))
+                .GroupBy(l => new DateTime(l.CreatedAtUtc.Year, l.CreatedAtUtc.Month, l.CreatedAtUtc.Day, l.CreatedAtUtc.Hour, 0, 0, DateTimeKind.Utc))
                 .Select(g => new HourlyBreakdownItem
                 {
                     Hour = g.Key,
@@ -109,8 +109,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .ToList();
 
             var failedAttemptsRaw = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && !l.WasLoginSuccessful)
-                .Select(l => new { l.ClientIpAddress, l.TargetUserId, l.CreatedAt })
+                .Where(l => l.CreatedAtUtc >= since && !l.WasLoginSuccessful)
+                .Select(l => new { l.ClientIpAddress, l.TargetUserId, l.CreatedAtUtc })
                 .ToListAsync();
 
             var topOffendingIps = failedAttemptsRaw
@@ -120,7 +120,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     IpAddress = IPAddress.Parse(g.Key.ToString()),
                     FailedAttempts = g.Count(),
                     DistinctUsersTargeted = g.Select(x => x.TargetUserId).Distinct().Count(),
-                    LastAttempt = g.Max(x => x.CreatedAt)
+                    LastAttempt = g.Max(x => x.CreatedAtUtc)
                 })
                 .OrderByDescending(x => x.FailedAttempts)
                 .Take(10)
@@ -128,7 +128,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var offendingIpAddresses = topOffendingIps.Select(x => x.IpAddress).ToList();
             var blockedIpSet = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now) && offendingIpAddresses.Contains(b.IpAddress))
+                .Where(b => b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now) && offendingIpAddresses.Contains(b.IpAddress))
                 .Select(b => b.IpAddress)
                 .ToListAsync();
 
@@ -138,8 +138,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             }
 
             var targetedAttemptsRaw = await this.Db.Log_LoginAttempts
-                .Where(l => l.CreatedAt >= since && !l.WasLoginSuccessful && l.TargetUserId != null)
-                .Select(l => new { l.TargetUserId, l.ClientIpAddress, l.CreatedAt })
+                .Where(l => l.CreatedAtUtc >= since && !l.WasLoginSuccessful && l.TargetUserId != null)
+                .Select(l => new { l.TargetUserId, l.ClientIpAddress, l.CreatedAtUtc })
                 .ToListAsync();
 
             var topTargetedUsers = targetedAttemptsRaw
@@ -149,7 +149,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     UserId = g.Key!.Value,
                     FailedAttempts = g.Count(),
                     DistinctIpAddresses = g.Select(x => x.ClientIpAddress).Distinct().Count(),
-                    LastAttempt = g.Max(x => x.CreatedAt)
+                    LastAttempt = g.Max(x => x.CreatedAtUtc)
                 })
                 .OrderByDescending(x => x.FailedAttempts)
                 .Take(10)
@@ -162,7 +162,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 .ToDictionaryAsync(u => u.Id);
 
             var lockedUserIds = await this.Db.System_Waf_UserBlacklist
-                .Where(b => targetedUserIds.Contains(b.UserId) && b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => targetedUserIds.Contains(b.UserId) && b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now))
                 .Select(b => b.UserId)
                 .Distinct()
                 .ToListAsync();
@@ -239,21 +239,21 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 query = query.Where(l => l.WasBlockedByWaf);
 
             if (from.HasValue)
-                query = query.Where(l => l.CreatedAt >= from.Value);
+                query = query.Where(l => l.CreatedAtUtc >= from.Value);
 
             if (to.HasValue)
-                query = query.Where(l => l.CreatedAt <= to.Value);
+                query = query.Where(l => l.CreatedAtUtc <= to.Value);
 
             var totalCount = await query.CountAsync();
 
             var attempts = await query
-                .OrderByDescending(l => l.CreatedAt)
+                .OrderByDescending(l => l.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(l => new LoginAttemptItem
                 {
                     Id = l.Id,
-                    AttemptedAt = l.CreatedAt,
+                    AttemptedAt = l.CreatedAtUtc,
                     IpAddress = IPAddress.Parse(l.ClientIpAddress.ToString()),
                     TargetEmail = l.AttemptedEmailAddress,
                     TargetUserId = l.TargetUserId,
@@ -294,13 +294,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!includeExpired)
             {
-                query = query.Where(b => b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now));
+                query = query.Where(b => b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now));
             }
 
             var totalCount = await query.CountAsync();
 
             var blocks = await query
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(b => new BlacklistedIpAddressItem
@@ -309,10 +309,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     IpAddress = b.IpAddress,
                     Justification = b.JustificationForBlacklist,
                     IsPermanent = b.IsPermanent,
-                    IsActive = b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now),
-                    BlockedAt = b.CreatedAt,
-                    ExpiresAt = b.ExpiresAt,
-                    UnblockedAt = b.UnblacklistedAt,
+                    IsActive = b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now),
+                    BlockedAt = b.CreatedAtUtc,
+                    ExpiresAt = b.ExpiresAtUtc,
+                    UnblockedAt = b.UnblacklistedAtUtc,
                     UnblockedByUserId = b.UnblacklistedBy,
                     UnblockJustification = b.JustificationForUnblacklist
                 })
@@ -349,7 +349,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Check if already blocked
             var existingBlock = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now))
                 .FirstOrDefaultAsync();
 
             if (existingBlock != null)
@@ -372,8 +372,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Fetch the created block to return
             var block = await this.Db.System_Waf_IpBlacklist
-                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAt == null)
-                .OrderByDescending(b => b.CreatedAt)
+                .Where(b => b.IpAddress == request.IpAddress && b.UnblacklistedAtUtc == null)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .FirstAsync();
 
             return StatusCode(StatusCodes.Status201Created, new BlacklistedIpAddressItem
@@ -383,8 +383,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Justification = block.JustificationForBlacklist,
                 IsPermanent = block.IsPermanent,
                 IsActive = true,
-                BlockedAt = block.CreatedAt,
-                ExpiresAt = block.ExpiresAt
+                BlockedAt = block.CreatedAtUtc,
+                ExpiresAt = block.ExpiresAtUtc
             });
         }
 
@@ -404,7 +404,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var block = await this.Db.System_Waf_IpBlacklist
                 .Where(b => b.IpAddress == ipAddress)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .FirstOrDefaultAsync();
 
             if (block == null)
@@ -414,12 +414,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var recentAttempts = await this.Db.Log_LoginAttempts
                 .Where(l => l.ClientIpAddress == normalizedIp)
-                .OrderByDescending(l => l.CreatedAt)
+                .OrderByDescending(l => l.CreatedAtUtc)
                 .Take(50)
                 .Select(l => new LoginAttemptItem
                 {
                     Id = l.Id,
-                    AttemptedAt = l.CreatedAt,
+                    AttemptedAt = l.CreatedAtUtc,
                     IpAddress = IPAddress.Parse(l.ClientIpAddress.ToString()),
                     WasSuccessful = l.WasLoginSuccessful,
                     WasBlockedByWaf = l.WasBlockedByWaf,
@@ -431,21 +431,21 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var blockHistory = await this.Db.System_Waf_IpBlacklist
                 .Where(b => b.IpAddress == ipAddress)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .Select(b => new BlacklistHistoryItem
                 {
                     Id = b.Id,
-                    BlockedAt = b.CreatedAt,
-                    ExpiresAt = b.ExpiresAt,
+                    BlockedAt = b.CreatedAtUtc,
+                    ExpiresAt = b.ExpiresAtUtc,
                     IsPermanent = b.IsPermanent,
                     Reason = b.JustificationForBlacklist,
-                    WasManuallyUnblocked = b.UnblacklistedAt != null,
-                    UnblockedAt = b.UnblacklistedAt,
+                    WasManuallyUnblocked = b.UnblacklistedAtUtc != null,
+                    UnblockedAt = b.UnblacklistedAtUtc,
                     UnblockReason = b.JustificationForUnblacklist
                 })
                 .ToListAsync();
 
-            var isCurrentlyActive = block.UnblacklistedAt == null && (block.ExpiresAt == null || block.ExpiresAt > now);
+            var isCurrentlyActive = block.UnblacklistedAtUtc == null && (block.ExpiresAtUtc == null || block.ExpiresAtUtc > now);
 
             return StatusCode(StatusCodes.Status200OK, new BlacklistedIpAddressDetailResponseModel
             {
@@ -458,8 +458,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                         Justification = block.JustificationForBlacklist,
                         IsPermanent = block.IsPermanent,
                         IsActive = true,
-                        BlockedAt = block.CreatedAt,
-                        ExpiresAt = block.ExpiresAt
+                        BlockedAt = block.CreatedAtUtc,
+                        ExpiresAt = block.ExpiresAtUtc
                     }
                     : null,
                 RecentLoginAttempts = recentAttempts,
@@ -521,7 +521,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!includeExpired)
             {
-                query = query.Where(b => b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now));
+                query = query.Where(b => b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now));
             }
 
             var totalCount = await query.Select(b => b.UserId).Distinct().CountAsync();
@@ -529,13 +529,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             // grab the ids of the most recent entry per user
             var latestEntryIds = await query
                 .GroupBy(b => b.UserId)
-                .Select(g => g.OrderByDescending(b => b.CreatedAt).First().Id)
+                .Select(g => g.OrderByDescending(b => b.CreatedAtUtc).First().Id)
                 .ToListAsync();
 
             // then fetch the full entities with pagination
             var userBlocks = await query
                 .Where(b => latestEntryIds.Contains(b.Id))
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -549,7 +549,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var recentAttemptCounts = await this.Db.Log_LoginAttempts
                 .Where(l => l.TargetUserId != null && userIds.Contains(l.TargetUserId.Value) && !l.WasLoginSuccessful)
-                .Where(l => l.CreatedAt >= now.AddHours(-24))
+                .Where(l => l.CreatedAtUtc >= now.AddHours(-24))
                 .GroupBy(l => l.TargetUserId)
                 .Select(g => new { UserId = g.Key, Count = g.Count(), DistinctIps = g.Select(x => x.ClientIpAddress).Distinct().Count() })
                 .ToDictionaryAsync(x => x.UserId!.Value);
@@ -559,9 +559,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var item = new BlacklistedUserItem
                 {
                     UserId = b.UserId,
-                    IsLockedOut = b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now),
-                    LockedOutAt = b.CreatedAt,
-                    LockoutEndsAt = b.ExpiresAt,
+                    IsLockedOut = b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now),
+                    LockedOutAt = b.CreatedAtUtc,
+                    LockoutEndsAt = b.ExpiresAtUtc,
                     LockoutReason = b.JustificationForBlacklist
                 };
 
@@ -611,7 +611,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Check if already locked
             var existingLock = await this.Db.System_Waf_UserBlacklist
-                .Where(b => b.UserId == userId && b.UnblacklistedAt == null && (b.ExpiresAt == null || b.ExpiresAt > now))
+                .Where(b => b.UserId == userId && b.UnblacklistedAtUtc == null && (b.ExpiresAtUtc == null || b.ExpiresAtUtc > now))
                 .FirstOrDefaultAsync();
 
             if (existingLock != null)
@@ -627,16 +627,16 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             );
 
             var block = await this.Db.System_Waf_UserBlacklist
-                .Where(b => b.UserId == userId && b.UnblacklistedAt == null)
-                .OrderByDescending(b => b.CreatedAt)
+                .Where(b => b.UserId == userId && b.UnblacklistedAtUtc == null)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .FirstAsync();
 
             return StatusCode(StatusCodes.Status201Created, new BlacklistedUserItem
             {
                 UserId = targetUser.Id,
                 IsLockedOut = true,
-                LockedOutAt = block.CreatedAt,
-                LockoutEndsAt = block.ExpiresAt,
+                LockedOutAt = block.CreatedAtUtc,
+                LockoutEndsAt = block.ExpiresAtUtc,
                 LockoutReason = block.JustificationForBlacklist,
             });
         }
@@ -689,13 +689,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!includeExpired)
             {
-                query = query.Where(w => w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now));
+                query = query.Where(w => w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now));
             }
 
             var totalCount = await query.CountAsync();
 
             var entries = await query
-                .OrderByDescending(w => w.CreatedAt)
+                .OrderByDescending(w => w.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(w => new WhitelistedIpItem
@@ -704,11 +704,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     IpAddress = w.IpAddress,
                     Reason = w.JustificationForWhitelist,
                     IsPermanent = w.IsPermanent,
-                    IsActive = w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now),
-                    WhitelistedAt = w.CreatedAt,
+                    IsActive = w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now),
+                    WhitelistedAt = w.CreatedAtUtc,
                     WhitelistedByUserId = w.CreatedBy,
-                    ExpiresAt = w.ExpiresAt,
-                    RemovedAt = w.UnwhitelistedAt,
+                    ExpiresAt = w.ExpiresAtUtc,
+                    RemovedAt = w.UnwhitelistedAtUtc,
                     RemovedByUserId = w.UnwhitelistedBy,
                     RemovalReason = w.JustificationForUnwhitelist
                 })
@@ -750,7 +750,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Check if already whitelisted
             var existingEntry = await this.Db.System_Waf_IpWhitelist
-                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now))
+                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now))
                 .FirstOrDefaultAsync();
 
             if (existingEntry != null)
@@ -766,8 +766,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             );
 
             var entry = await this.Db.System_Waf_IpWhitelist
-                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAt == null)
-                .OrderByDescending(w => w.CreatedAt)
+                .Where(w => w.IpAddress == parsedIpAddress && w.UnwhitelistedAtUtc == null)
+                .OrderByDescending(w => w.CreatedAtUtc)
                 .FirstAsync();
 
             return StatusCode(StatusCodes.Status201Created, new WhitelistedIpItem
@@ -777,9 +777,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Reason = entry.JustificationForWhitelist,
                 IsPermanent = entry.IsPermanent,
                 IsActive = true,
-                WhitelistedAt = entry.CreatedAt,
+                WhitelistedAt = entry.CreatedAtUtc,
                 WhitelistedByUserId = entry.CreatedBy,
-                ExpiresAt = entry.ExpiresAt
+                ExpiresAt = entry.ExpiresAtUtc
             });
         }
 
@@ -832,15 +832,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!includeExpired)
             {
-                query = query.Where(w => w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now));
+                query = query.Where(w => w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now));
             }
 
             var totalCount = await query.Select(w => w.UserId).Distinct().CountAsync();
 
             var userWhitelists = await query
                 .GroupBy(w => w.UserId)
-                .Select(g => g.OrderByDescending(w => w.CreatedAt).First())
-                .OrderByDescending(w => w.CreatedAt)
+                .Select(g => g.OrderByDescending(w => w.CreatedAtUtc).First())
+                .OrderByDescending(w => w.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -859,11 +859,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     UserId = w.UserId,
                     Reason = w.JustificationForWhitelist,
                     IsPermanent = w.IsPermanent,
-                    IsActive = w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now),
-                    WhitelistedAt = w.CreatedAt,
+                    IsActive = w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now),
+                    WhitelistedAt = w.CreatedAtUtc,
                     WhitelistedByUserId = w.CreatedBy,
-                    ExpiresAt = w.ExpiresAt,
-                    RemovedAt = w.UnwhitelistedAt,
+                    ExpiresAt = w.ExpiresAtUtc,
+                    RemovedAt = w.UnwhitelistedAtUtc,
                     RemovedByUserId = w.UnwhitelistedBy,
                     RemovalReason = w.JustificationForUnwhitelist
                 };
@@ -908,7 +908,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // Check if already whitelisted
             var existingEntry = await this.Db.System_Waf_UserWhitelist
-                .Where(w => w.UserId == userId && w.UnwhitelistedAt == null && (w.ExpiresAt == null || w.ExpiresAt > now))
+                .Where(w => w.UserId == userId && w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now))
                 .FirstOrDefaultAsync();
 
             if (existingEntry != null)
@@ -924,8 +924,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             );
 
             var entry = await this.Db.System_Waf_UserWhitelist
-                .Where(w => w.UserId == userId && w.UnwhitelistedAt == null)
-                .OrderByDescending(w => w.CreatedAt)
+                .Where(w => w.UserId == userId && w.UnwhitelistedAtUtc == null)
+                .OrderByDescending(w => w.CreatedAtUtc)
                 .FirstAsync();
 
             return StatusCode(StatusCodes.Status201Created, new WhitelistedUserItem
@@ -934,9 +934,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Reason = entry.JustificationForWhitelist,
                 IsPermanent = entry.IsPermanent,
                 IsActive = true,
-                WhitelistedAt = entry.CreatedAt,
+                WhitelistedAt = entry.CreatedAtUtc,
                 WhitelistedByUserId = entry.CreatedBy,
-                ExpiresAt = entry.ExpiresAt
+                ExpiresAt = entry.ExpiresAtUtc
             });
         }
 

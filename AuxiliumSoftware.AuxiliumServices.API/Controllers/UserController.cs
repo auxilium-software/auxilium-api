@@ -130,9 +130,9 @@ public class UserController : LoggedInControllerBase
                             p => new AdditionalPropertySubStructureDTO
                             {
                                 Id = p.Id,
-                                CreatedAt = p.CreatedAt,
+                                CreatedAt = p.CreatedAtUtc,
                                 CreatedBy = p.CreatedBy,
-                                UpdatedAt = p.LastUpdatedAt,
+                                UpdatedAt = p.LastUpdatedAtUtc,
                                 LastUpdatedBy = p.LastUpdatedBy,
                                 OriginalName = p.OriginalName,
                                 UrlSlug = p.UrlSlug,
@@ -144,9 +144,9 @@ public class UserController : LoggedInControllerBase
                     userResponses.Add(new UserResponseModel
                     {
                         ID = userDoc.Id,
-                        CreatedAt = userDoc.CreatedAt,
+                        CreatedAt = userDoc.CreatedAtUtc,
                         CreatedBy = userDoc.CreatedBy,
-                        LastUpdatedAt = userDoc.LastUpdatedAt,
+                        LastUpdatedAt = userDoc.LastUpdatedAtUtc,
                         LastUpdatedBy = userDoc.LastUpdatedBy,
 
                         EmailAddress = userDoc.EmailAddress,
@@ -175,7 +175,7 @@ public class UserController : LoggedInControllerBase
                     userResponses.Add(new UserResponseModel
                     {
                         ID = userDoc.Id,
-                        CreatedAt = userDoc.CreatedAt,
+                        CreatedAt = userDoc.CreatedAtUtc,
                         CreatedBy = userDoc.CreatedBy,
                         LastUpdatedAt = null,
                         LastUpdatedBy = null,
@@ -249,9 +249,9 @@ public class UserController : LoggedInControllerBase
             var startOfLastMonth = startOfThisMonth.AddMonths(-1);
 
             var usersCreatedThisMonth = await Db.Users
-                .CountAsync(u => u.CreatedAt >= startOfThisMonth);
+                .CountAsync(u => u.CreatedAtUtc >= startOfThisMonth);
             var usersCreatedLastMonth = await Db.Users
-                .CountAsync(u => u.CreatedAt >= startOfLastMonth && u.CreatedAt < startOfThisMonth);
+                .CountAsync(u => u.CreatedAtUtc >= startOfLastMonth && u.CreatedAtUtc < startOfThisMonth);
 
             double growthPercentage = 0;
             if (usersCreatedLastMonth > 0)
@@ -351,7 +351,7 @@ public class UserController : LoggedInControllerBase
             var newUser = new UserEntityModel
             {
                 Id = userId,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 EmailAddress = request.EmailAddress,
                 FullName = request.FullName,
@@ -381,12 +381,12 @@ public class UserController : LoggedInControllerBase
             var passwordToken = new PasswordSetTokenEntityModel
             {
                 Id = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 UserId = userId,
                 TokenHash = tokenHash,
-                ExpiresAt = DateTime.UtcNow.AddHours(72),
-                UsedAt = null,
+                ExpiresAtUtc = DateTime.UtcNow.AddHours(72),
+                UsedAtUtc = null,
                 Reason = PasswordSetTokenReasonEnum.NewAccount,
             };
 

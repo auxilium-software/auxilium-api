@@ -91,7 +91,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var dbSetting = await this.Db.System_Settings
                     .AsNoTracking()
                     .Where(s => s.ConfigKey == key)
-                    .OrderByDescending(s => s.CreatedAt)
+                    .OrderByDescending(s => s.CreatedAtUtc)
                     .FirstOrDefaultAsync();
 
                 object? currentValue;
@@ -103,7 +103,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     currentValue = DeserializeValue(dbSetting.ConfigValue, typeAttr?.ValueType ?? SystemSettingValueTypeEnum.String);
                     isDefault = false;
-                    lastModified = dbSetting.CreatedAt;
+                    lastModified = dbSetting.CreatedAtUtc;
                     lastModifiedBy = dbSetting.CreatedBy;
                 }
                 else
@@ -150,7 +150,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var setting = await this.Db.System_Settings
                 .AsNoTracking()
                 .Where(s => s.ConfigKey == settingKey)
-                .OrderByDescending(s => s.CreatedAt)
+                .OrderByDescending(s => s.CreatedAtUtc)
                 .Include(s => s.CreatedByUser)
                 .FirstOrDefaultAsync();
 
@@ -162,7 +162,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Key = setting.ConfigKey,
                 Value = setting.ConfigValue,
                 ValueType = setting.ValueType,
-                ModifiedAt = setting.CreatedAt,
+                ModifiedAt = setting.CreatedAtUtc,
                 ModifiedBy = setting.CreatedBy,
                 ModifiedByName = setting.CreatedByUser?.FullName,
                 ReasonForModification = setting.ReasonForModification
@@ -184,7 +184,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var history = await this.Db.System_Settings
                 .AsNoTracking()
                 .Where(s => s.ConfigKey == settingKey)
-                .OrderByDescending(s => s.CreatedAt)
+                .OrderByDescending(s => s.CreatedAtUtc)
                 .Include(s => s.CreatedByUser)
                 .ToListAsync();
 
@@ -192,7 +192,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 Value = s.ConfigValue,
                 ValueType = s.ValueType,
-                ModifiedAt = s.CreatedAt,
+                ModifiedAt = s.CreatedAtUtc,
                 ModifiedBy = s.CreatedBy,
                 ModifiedByName = s.CreatedByUser?.FullName,
                 ReasonForModification = s.ReasonForModification
@@ -223,7 +223,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var setting = await this.Db.System_Settings
                 .AsNoTracking()
                 .Where(s => s.ConfigKey == settingKey)
-                .OrderByDescending(s => s.CreatedAt)
+                .OrderByDescending(s => s.CreatedAtUtc)
                 .Include(s => s.CreatedByUser)
                 .FirstAsync();
 
@@ -232,7 +232,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Key = setting.ConfigKey,
                 Value = setting.ConfigValue,
                 ValueType = setting.ValueType,
-                ModifiedAt = setting.CreatedAt,
+                ModifiedAt = setting.CreatedAtUtc,
                 ModifiedBy = setting.CreatedBy,
                 ModifiedByName = setting.CreatedByUser?.FullName,
                 ReasonForModification = setting.ReasonForModification

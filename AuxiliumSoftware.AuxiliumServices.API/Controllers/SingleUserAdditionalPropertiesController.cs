@@ -3,6 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -70,8 +71,8 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             OriginalName = property.OriginalName,
             Content = property.Content,
             ContentType = property.ContentType,
-            CreatedAt = property.CreatedAt,
-            LastUpdatedAt = property.LastUpdatedAt
+            CreatedAt = property.CreatedAtUtc,
+            LastUpdatedAt = property.LastUpdatedAtUtc
         });
     }
 
@@ -188,18 +189,30 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
+            var previousContent = existingProp.Content;
+            
             existingProp.Content = request.Content;
             existingProp.ContentType = request.ContentType;
-            existingProp.LastUpdatedAt = DateTime.UtcNow;
+            existingProp.LastUpdatedAtUtc = DateTime.UtcNow;
             existingProp.LastUpdatedBy = user.Id;
-            await Db.SaveChangesAsync();
 
             var userEntity = await Db.Users.FindAsync(userId);
             if (userEntity != null)
             {
-                userEntity.LastUpdatedAt = DateTime.UtcNow;
-                await Db.SaveChangesAsync();
+                userEntity.LastUpdatedAtUtc = DateTime.UtcNow;
             }
+
+            await _userDocService.WriteToAuditLog(
+                currentUser: user,
+                targetUser: userDoc,
+                entityType: UserEntityTypeEnum.User_AdditionalProperty,
+                entityId: existingProp.Id,
+                actionType: AuditLogActionTypeEnum.Modification,
+                propertyName: propertyName,
+                oldValue: previousContent,
+                newValue: existingProp.Content
+            );
+            await Db.SaveChangesAsync();
 
             Logger.LogInformation(
                 "Updated property {PropertyName} for user {UserId} by {CurrentUserId}",

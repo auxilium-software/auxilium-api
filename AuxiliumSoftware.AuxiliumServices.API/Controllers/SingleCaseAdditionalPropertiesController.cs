@@ -105,8 +105,8 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             OriginalName = property.OriginalName,
             Content = property.Content,
             ContentType = property.ContentType,
-            CreatedAt = property.CreatedAt,
-            LastUpdatedAt = property.LastUpdatedAt
+            CreatedAt = property.CreatedAtUtc,
+            LastUpdatedAt = property.LastUpdatedAtUtc
         });
     }
 
@@ -203,11 +203,11 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
             existingProp.Content = request.Content;
             existingProp.ContentType = request.ContentType;
-            existingProp.LastUpdatedAt = DateTime.UtcNow;
+            existingProp.LastUpdatedAtUtc = DateTime.UtcNow;
             existingProp.LastUpdatedBy = user!.Id;
             await Db.SaveChangesAsync();
 
-            caseEntity!.LastUpdatedAt = DateTime.UtcNow;
+            caseEntity!.LastUpdatedAtUtc = DateTime.UtcNow;
             caseEntity.LastUpdatedBy = user.Id;
             await Db.SaveChangesAsync();
 

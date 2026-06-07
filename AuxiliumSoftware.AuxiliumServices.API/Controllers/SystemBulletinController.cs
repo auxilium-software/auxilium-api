@@ -48,8 +48,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var query = _db.System_Bulletins
                 .Where(b => b.IsActive)
-                .Where(b => b.StartsAt <= now)
-                .Where(b => b.EndsAt == null || b.EndsAt > now);
+                .Where(b => b.StartsAtUtc <= now)
+                .Where(b => b.EndsAtUtc == null || b.EndsAtUtc > now);
 
             // filter by audience
             query = query.Where(b =>
@@ -68,7 +68,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var bulletins = await query
                 .OrderByDescending(b => b.Severity)
-                .ThenByDescending(b => b.CreatedAt)
+                .ThenByDescending(b => b.CreatedAtUtc)
                 .Select(b => new SystemBulletinResponseModel
                 {
                     Id = b.Id,
@@ -76,7 +76,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     Title = b.Title,
                     Content = b.Content,
                     IsDismissible = b.IsDismissible,
-                    CreatedAt = b.CreatedAt
+                    CreatedAt = b.CreatedAtUtc
                 })
                 .ToListAsync();
 

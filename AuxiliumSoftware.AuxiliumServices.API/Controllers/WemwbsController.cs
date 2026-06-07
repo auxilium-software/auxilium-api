@@ -62,7 +62,7 @@ public class WEMWBSController : LoggedInControllerBase
             var assessmentResponses = assessments.Select(a => new WEMWBSResponseModel
             {
                 Id = a.Id,
-                CreatedAt = a.CreatedAt,
+                CreatedAt = a.CreatedAtUtc,
                 CreatedBy = a.CreatedBy,
                 TotalScore = CalculateTotalScore(a),
                 Scores = new WEMWBSScoresModel
@@ -143,7 +143,7 @@ public class WEMWBSController : LoggedInControllerBase
             var response = new WEMWBSResponseModel
             {
                 Id = assessment.Id,
-                CreatedAt = assessment.CreatedAt,
+                CreatedAt = assessment.CreatedAtUtc,
                 CreatedBy = assessment.CreatedBy,
                 TotalScore = CalculateTotalScore(assessment),
                 Scores = new WEMWBSScoresModel
@@ -221,7 +221,7 @@ public class WEMWBSController : LoggedInControllerBase
             var assessment = new WemwbsAssessmentEntityModel
             {
                 Id = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 CreatedBy = user!.Id,
                 OptimismScore = request.OptimismScore,
                 UsefulnessScore = request.UsefulnessScore,
@@ -245,7 +245,7 @@ public class WEMWBSController : LoggedInControllerBase
             var response = new WEMWBSResponseModel
             {
                 Id = assessment.Id,
-                CreatedAt = assessment.CreatedAt,
+                CreatedAt = assessment.CreatedAtUtc,
                 CreatedBy = assessment.CreatedBy,
                 TotalScore = CalculateTotalScore(assessment),
                 Scores = new WEMWBSScoresModel
@@ -323,7 +323,7 @@ public class WEMWBSController : LoggedInControllerBase
             var assessmentResponses = assessments.Select(a => new WEMWBSResponseModel
             {
                 Id = a.Id,
-                CreatedAt = a.CreatedAt,
+                CreatedAt = a.CreatedAtUtc,
                 CreatedBy = a.CreatedBy,
                 TotalScore = CalculateTotalScore(a),
                 Scores = new WEMWBSScoresModel
@@ -430,7 +430,7 @@ public class WEMWBSController : LoggedInControllerBase
 
             var assessments = await Db.UserWemwbsAssessments
                 .Where(w => w.CreatedBy == user!.Id)
-                .OrderBy(w => w.CreatedAt)
+                .OrderBy(w => w.CreatedAtUtc)
                 .ToListAsync();
 
             if (!assessments.Any())
@@ -516,8 +516,8 @@ public class WEMWBSController : LoggedInControllerBase
         return sortBy?.ToLower() switch
         {
             "createdat" => descending
-                ? query.OrderByDescending(w => w.CreatedAt)
-                : query.OrderBy(w => w.CreatedAt),
+                ? query.OrderByDescending(w => w.CreatedAtUtc)
+                : query.OrderBy(w => w.CreatedAtUtc),
             "totalscore" => descending
                 ? query.OrderByDescending(w => w.OptimismScore
                                                     + w.UsefulnessScore
@@ -549,7 +549,7 @@ public class WEMWBSController : LoggedInControllerBase
                                         + w.InterestedInNewThingsScore
                                         + w.FeelingCheerfulScore
                 ),
-            _ => query.OrderByDescending(w => w.CreatedAt)
+            _ => query.OrderByDescending(w => w.CreatedAtUtc)
         };
     }
 }

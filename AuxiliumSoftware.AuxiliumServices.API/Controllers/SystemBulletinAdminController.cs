@@ -49,19 +49,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             var bulletins = await query
                 .OrderByDescending(b => b.Severity)
-                .ThenByDescending(b => b.CreatedAt)
+                .ThenByDescending(b => b.CreatedAtUtc)
                 .Select(b => new SystemBulletinAdminResponseModel
                 {
                     Id = b.Id,
-                    CreatedAt = b.CreatedAt,
+                    CreatedAt = b.CreatedAtUtc,
                     CreatedBy = b.CreatedBy,
                     Severity = b.Severity,
                     Title = b.Title,
                     Content = b.Content,
                     IsActive = b.IsActive,
                     IsDismissible = b.IsDismissible,
-                    StartsAt = b.StartsAt,
-                    EndsAt = b.EndsAt,
+                    StartsAt = b.StartsAtUtc,
+                    EndsAt = b.EndsAtUtc,
                     TargetAudience = b.TargetAudience,
                     SpecificUserId = b.SpecificUserId
                 })
@@ -87,15 +87,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var bulletin = new SystemBulletinEntryEntityModel
             {
                 Id = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 Severity = request.Severity,
                 Title = request.Title,
                 Content = request.Content,
                 IsDismissible = request.IsDismissible,
                 IsActive = true,
-                StartsAt = request.StartsAt ?? DateTime.UtcNow,
-                EndsAt = request.EndsAt,
+                StartsAtUtc = request.StartsAt ?? DateTime.UtcNow,
+                EndsAtUtc = request.EndsAt,
                 TargetAudience = request.TargetAudience,
                 SpecificUserId = request.SpecificUserId
             };
@@ -106,15 +106,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             return StatusCode(StatusCodes.Status201Created, new SystemBulletinAdminResponseModel
             {
                 Id = bulletin.Id,
-                CreatedAt = bulletin.CreatedAt,
+                CreatedAt = bulletin.CreatedAtUtc,
                 CreatedBy = bulletin.CreatedBy,
                 Severity = bulletin.Severity,
                 Title = bulletin.Title,
                 Content = bulletin.Content,
                 IsActive = bulletin.IsActive,
                 IsDismissible = bulletin.IsDismissible,
-                StartsAt = bulletin.StartsAt,
-                EndsAt = bulletin.EndsAt,
+                StartsAt = bulletin.StartsAtUtc,
+                EndsAt = bulletin.EndsAtUtc,
                 TargetAudience = bulletin.TargetAudience,
                 SpecificUserId = bulletin.SpecificUserId
             });
@@ -172,7 +172,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Log_SystemBulletin_EntryDismissal_EventEntry),
                     CreatedBy = user.Id,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAtUtc = DateTime.UtcNow,
                     SystemBulletinId = id,
                 });
                 await this.Db.SaveChangesAsync();

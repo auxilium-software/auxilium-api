@@ -79,7 +79,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             {
                 Id = messageDoc.Id,
                 CreatedBy = messageDoc.CreatedBy,
-                CreatedAt = messageDoc.CreatedAt,
+                CreatedAt = messageDoc.CreatedAtUtc,
                 Subject = messageDoc.Subject,
                 Content = messageDoc.Content,
                 SenderId = messageDoc.SenderId,
@@ -134,7 +134,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
                 response.Add(new MessageResponseModel
                 {
                     Id = msg.Id,
-                    CreatedAt = msg.CreatedAt,
+                    CreatedAt = msg.CreatedAtUtc,
                     CreatedBy = msg.CreatedBy,
                     Subject = msg.Subject,
                     Content = msg.Content,
@@ -201,7 +201,7 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             return StatusCode(StatusCodes.Status200OK, new MessageResponseModel
             {
                 Id = messageDoc.Id,
-                CreatedAt = messageDoc.CreatedAt,
+                CreatedAt = messageDoc.CreatedAtUtc,
                 CreatedBy = messageDoc.CreatedBy,
                 Subject = messageDoc.Subject,
                 Content = messageDoc.Content,

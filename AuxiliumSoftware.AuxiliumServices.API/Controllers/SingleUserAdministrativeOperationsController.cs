@@ -105,7 +105,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 if (changes.Count > 0)
                 {
-                    userDoc.LastUpdatedAt = DateTime.UtcNow;
+                    userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
                     userDoc.LastUpdatedBy = user.Id;
 
                     await Db.SaveChangesAsync();
@@ -272,7 +272,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 userDoc.MustChangePassword = true;
-                userDoc.LastUpdatedAt = DateTime.UtcNow;
+                userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
                 userDoc.LastUpdatedBy = user!.Id;
 
                 await _messageQueueProducer.PublishAsync(new EmailQueueMessage
@@ -395,10 +395,10 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             // invalidate any existing unused tokens for this user
             var oldTokens = await Db.UserPasswordSetTokens
-                .Where(t => t.UserId == userId && !t.UsedAt.HasValue)
+                .Where(t => t.UserId == userId && !t.UsedAtUtc.HasValue)
                 .ToListAsync();
             foreach (var t in oldTokens)
-                t.UsedAt = DateTime.UtcNow;
+                t.UsedAtUtc = DateTime.UtcNow;
 
             // generate raw token bytes - store the hash, send the raw token
             var rawTokenBytes = RandomNumberGenerator.GetBytes(32);
@@ -408,12 +408,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var token = new PasswordSetTokenEntityModel
             {
                 Id = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 CreatedBy = user!.Id,
                 UserId = userId,
                 TokenHash = tokenHash,
-                ExpiresAt = DateTime.UtcNow.AddHours(72),
-                UsedAt = null,
+                ExpiresAtUtc = DateTime.UtcNow.AddHours(72),
+                UsedAtUtc = null,
                 Reason = PasswordSetTokenReasonEnum.PasswordReset,
             };
 

@@ -21,15 +21,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             return sortBy?.ToLower() switch
             {
                 "createdat" => descending
-                    ? query.OrderByDescending(u => u.CreatedAt)
-                    : query.OrderBy(u => u.CreatedAt),
+                    ? query.OrderByDescending(u => u.CreatedAtUtc)
+                    : query.OrderBy(u => u.CreatedAtUtc),
                 "fullname" => descending
                     ? query.OrderByDescending(u => u.FullName)
                     : query.OrderBy(u => u.FullName),
                 "email" => descending
                     ? query.OrderByDescending(u => u.EmailAddress)
                     : query.OrderBy(u => u.EmailAddress),
-                _ => query.OrderByDescending(u => u.CreatedAt)
+                _ => query.OrderByDescending(u => u.CreatedAtUtc)
             };
         }
         public static IQueryable<CaseEntityModel> ApplySortingForCases(
@@ -43,18 +43,18 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             return sortBy?.ToLower() switch
             {
                 "createdat" => descending
-                    ? query.OrderByDescending(c => c.CreatedAt)
-                    : query.OrderBy(c => c.CreatedAt),
+                    ? query.OrderByDescending(c => c.CreatedAtUtc)
+                    : query.OrderBy(c => c.CreatedAtUtc),
                 "updatedat" => descending
-                    ? query.OrderByDescending(c => c.LastUpdatedAt)
-                    : query.OrderBy(c => c.LastUpdatedAt),
+                    ? query.OrderByDescending(c => c.LastUpdatedAtUtc)
+                    : query.OrderBy(c => c.LastUpdatedAtUtc),
                 "title" => descending
                     ? query.OrderByDescending(c => c.Title)
                     : query.OrderBy(c => c.Title),
                 "status" => descending
                     ? query.OrderByDescending(c => c.Status)
                     : query.OrderBy(c => c.Status),
-                _ => query.OrderByDescending(c => c.CreatedAt)
+                _ => query.OrderByDescending(c => c.CreatedAtUtc)
             };
         }
 
@@ -80,9 +80,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
-                            CreatedAt = p.CreatedAt,
+                            CreatedAt = p.CreatedAtUtc,
                             CreatedBy = p.CreatedBy,
-                            UpdatedAt = p.LastUpdatedAt,
+                            UpdatedAt = p.LastUpdatedAtUtc,
                             LastUpdatedBy = p.LastUpdatedBy,
                             OriginalName = p.OriginalName,
                             UrlSlug = p.UrlSlug,
@@ -94,9 +94,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 return new UserResponseModel
                 {
                     ID = userDoc.Id,
-                    CreatedAt = userDoc.CreatedAt,
+                    CreatedAt = userDoc.CreatedAtUtc,
                     CreatedBy = userDoc.CreatedBy,
-                    LastUpdatedAt = userDoc.LastUpdatedAt,
+                    LastUpdatedAt = userDoc.LastUpdatedAtUtc,
                     LastUpdatedBy = userDoc.LastUpdatedBy,
 
                     EmailAddress = userDoc.EmailAddress,
@@ -123,7 +123,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             return new UserResponseModel
             {
                 ID = userDoc.Id,
-                CreatedAt = userDoc.CreatedAt,
+                CreatedAt = userDoc.CreatedAtUtc,
                 CreatedBy = userDoc.CreatedBy,
                 LastUpdatedAt = null,
                 LastUpdatedBy = null,
@@ -153,9 +153,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             return new CaseResponseModel
             {
                 ID = caseEntity.Id,
-                CreatedAt = caseEntity.CreatedAt,
+                CreatedAt = caseEntity.CreatedAtUtc,
                 CreatedBy = caseEntity.CreatedBy,
-                LastUpdatedAt = caseEntity.LastUpdatedAt,
+                LastUpdatedAt = caseEntity.LastUpdatedAtUtc,
                 LastUpdatedBy = caseEntity.LastUpdatedBy,
 
                 Title = caseEntity.Title,
@@ -184,7 +184,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             priority = t.Priority.ToString(),
                             due_date = t.DueDate,
                             assigned_to = t.AssignedTo,
-                            completed_at = t.CompletedAt
+                            completed_at = t.CompletedAtUtc
                         }
                     ) ?? new Dictionary<string, object>(),
                 /*
@@ -204,9 +204,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
-                            CreatedAt = p.CreatedAt,
+                            CreatedAt = p.CreatedAtUtc,
                             CreatedBy = p.CreatedBy,
-                            UpdatedAt = p.LastUpdatedAt,
+                            UpdatedAt = p.LastUpdatedAtUtc,
                             LastUpdatedBy = p.LastUpdatedBy,
                             OriginalName = p.OriginalName,
                             UrlSlug = p.UrlSlug,

@@ -139,7 +139,7 @@ public class AuthenticationController : ControllerBase
                     MustChangePassword = false,
                     DeletionRequested = false,
                     HasEmailAddressBeenVerified = false,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAtUtc = DateTime.UtcNow,
                     CreatedBy = userId
                 };
 
@@ -151,9 +151,9 @@ public class AuthenticationController : ControllerBase
                     Description = request.CaseDescription,
                     Sensitivity = CaseSensitivityEnum.Confidential,
                     Status = CaseStatusEnum.Open,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAtUtc = DateTime.UtcNow,
                     CreatedBy = userId,
-                    LastUpdatedAt = DateTime.UtcNow,
+                    LastUpdatedAtUtc = DateTime.UtcNow,
                     LastUpdatedBy = userId
                 };
 
@@ -165,7 +165,7 @@ public class AuthenticationController : ControllerBase
                 var caseClient = new CaseClientEntityModel
                 {
                     Id = caseClientId,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAtUtc = DateTime.UtcNow,
                     CreatedBy = userId,
                     CaseId = caseId,
                     UserId = userId
@@ -278,8 +278,8 @@ public class AuthenticationController : ControllerBase
                     UserId = user.Id,
                     TokenHash = tokenHash,
                     Reason = PasswordSetTokenReasonEnum.Auxilium1BCryptMigration,
-                    ExpiresAt = DateTime.UtcNow.AddHours(24),
-                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAtUtc = DateTime.UtcNow.AddHours(24),
+                    CreatedAtUtc = DateTime.UtcNow,
                     CreatedBy = user.Id,
                 });
                 await _db.SaveChangesAsync();
@@ -512,7 +512,7 @@ public class AuthenticationController : ControllerBase
 
                 // mark the recovery code as used
                 recoveryCode.IsUsed = true;
-                recoveryCode.UsedAt = DateTime.UtcNow;
+                recoveryCode.UsedAtUtc = DateTime.UtcNow;
 
                 await _db.SaveChangesAsync();
 
@@ -588,7 +588,7 @@ public class AuthenticationController : ControllerBase
             var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
             user.PasswordHash = _passwordService.HashPassword(normalised);
             user.MustChangePassword = false;
-            user.LastUpdatedAt = DateTime.UtcNow;
+            user.LastUpdatedAtUtc = DateTime.UtcNow;
             user.LastUpdatedBy = user.Id;
 
             await _db.SaveChangesAsync();
@@ -646,7 +646,7 @@ public class AuthenticationController : ControllerBase
                 .Include(rt => rt.CreatedByUser)
                 .FirstOrDefaultAsync(rt =>
                     rt.TokenHash == tokenHash &&
-                    rt.ExpiresAt > DateTime.UtcNow
+                    rt.ExpiresAtUtc > DateTime.UtcNow
                 );
 
             if (refreshToken == null || refreshToken.CreatedByUser == null)
@@ -671,7 +671,7 @@ public class AuthenticationController : ControllerBase
             );
 
             refreshToken.TokenHash = newTokenHash;
-            refreshToken.ExpiresAt = newExpiresAt;
+            refreshToken.ExpiresAtUtc = newExpiresAt;
 
             await this._db.SaveChangesAsync();
 
@@ -742,7 +742,7 @@ public class AuthenticationController : ControllerBase
 
         // remove expired refresh tokens
         var expiredTokens = _db.UserRefreshTokens
-            .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAt < DateTime.UtcNow);
+            .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAtUtc < DateTime.UtcNow);
         _db.UserRefreshTokens.RemoveRange(expiredTokens);
 
         // store the new refresh token
@@ -753,10 +753,10 @@ public class AuthenticationController : ControllerBase
         var refreshTokenEntity = new RefreshTokenEntityModel
         {
             Id = refreshTokenId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
             CreatedBy = user.Id,
             TokenHash = tokenHash,
-            ExpiresAt = expiresAtTime
+            ExpiresAtUtc = expiresAtTime
         };
         _db.UserRefreshTokens.Add(refreshTokenEntity);
 
@@ -803,8 +803,8 @@ public class AuthenticationController : ControllerBase
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t =>
                     t.TokenHash == tokenHash &&
-                    !t.UsedAt.HasValue &&
-                    t.ExpiresAt > DateTime.UtcNow);
+                    !t.UsedAtUtc.HasValue &&
+                    t.ExpiresAtUtc > DateTime.UtcNow);
 
             if (token == null)
             {
@@ -825,18 +825,18 @@ public class AuthenticationController : ControllerBase
 
             // invalidate all unused tokens for this user (including this one)
             var allTokens = await _db.UserPasswordSetTokens
-                .Where(t => t.UserId == user.Id && !t.UsedAt.HasValue)
+                .Where(t => t.UserId == user.Id && !t.UsedAtUtc.HasValue)
                 .ToListAsync();
 
             foreach (var t in allTokens)
-                t.UsedAt = DateTime.UtcNow;
+                t.UsedAtUtc = DateTime.UtcNow;
 
             // hash and set the new password
             var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
             user.PasswordHash = _passwordService.HashPassword(normalised);
             user.AllowLogin = true;
             user.MustChangePassword = false;
-            user.LastUpdatedAt = DateTime.UtcNow;
+            user.LastUpdatedAtUtc = DateTime.UtcNow;
             user.LastUpdatedBy = user.Id;
 
             await _db.SaveChangesAsync();

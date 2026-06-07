@@ -69,9 +69,9 @@ public class MeController : LoggedInControllerBase
                     p => new AdditionalPropertySubStructureDTO
                     {
                         Id = p.Id,
-                        CreatedAt = p.CreatedAt,
+                        CreatedAt = p.CreatedAtUtc,
                         CreatedBy = p.CreatedBy,
-                        UpdatedAt = p.LastUpdatedAt,
+                        UpdatedAt = p.LastUpdatedAtUtc,
                         LastUpdatedBy = p.LastUpdatedBy,
                         OriginalName = p.OriginalName,
                         UrlSlug = p.UrlSlug,
@@ -84,9 +84,9 @@ public class MeController : LoggedInControllerBase
             var response = new UserResponseModel
             {
                 ID = userDoc.Id,
-                CreatedAt = userDoc.CreatedAt,
+                CreatedAt = userDoc.CreatedAtUtc,
                 CreatedBy = userDoc.CreatedBy,
-                LastUpdatedAt = userDoc.LastUpdatedAt,
+                LastUpdatedAt = userDoc.LastUpdatedAtUtc,
                 LastUpdatedBy = userDoc.LastUpdatedBy,
 
                 EmailAddress = userDoc.EmailAddress,
@@ -158,7 +158,7 @@ public class MeController : LoggedInControllerBase
             if (request.HowDidYouFindOutAboutOurService != null)
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
 
-            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
             userDoc.LastUpdatedBy = user!.Id;
 
             await Db.SaveChangesAsync();
@@ -223,7 +223,7 @@ public class MeController : LoggedInControllerBase
             var newPasswordHash = _passwordService.HashPassword(newNormalized);
 
             userDoc.PasswordHash = newPasswordHash;
-            userDoc.LastUpdatedAt = DateTime.UtcNow;
+            userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
 
             await Db.SaveChangesAsync();
 

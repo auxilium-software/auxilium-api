@@ -64,8 +64,8 @@ public class CaseController : LoggedInControllerBase
                 Status = CaseStatusEnum.Open,
                 Sensitivity = CaseSensitivityEnum.Confidential,
                 CreatedBy = user!.Id,
-                CreatedAt = DateTime.UtcNow,
-                LastUpdatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
+                LastUpdatedAtUtc = DateTime.UtcNow,
                 LastUpdatedBy = user.Id
             };
 
@@ -79,7 +79,7 @@ public class CaseController : LoggedInControllerBase
                 CaseId = caseEntity.Id,
                 UserId = user.Id,
                 CreatedBy = user.Id,
-                CreatedAt = DateTime.UtcNow
+                CreatedAtUtc = DateTime.UtcNow
             });
 
             await Db.SaveChangesAsync();
@@ -90,9 +90,9 @@ public class CaseController : LoggedInControllerBase
             var response = new CaseResponseModel
             {
                 ID = caseEntity.Id,
-                CreatedAt = caseEntity.CreatedAt,
+                CreatedAt = caseEntity.CreatedAtUtc,
                 CreatedBy = caseEntity.CreatedBy,
-                LastUpdatedAt = caseEntity.LastUpdatedAt,
+                LastUpdatedAt = caseEntity.LastUpdatedAtUtc,
                 LastUpdatedBy = caseEntity.LastUpdatedBy,
                 Title = caseEntity.Title,
                 Description = caseEntity.Description,

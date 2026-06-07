@@ -76,10 +76,10 @@ public class SingleCaseTodoController : LoggedInControllerBase
                 Description = todo.Description,
                 Status = todo.Status,
                 Priority = todo.Priority,
-                CreatedAt = todo.CreatedAt,
+                CreatedAt = todo.CreatedAtUtc,
                 CreatedBy = todo.CreatedBy,
                 DueDate = todo.DueDate,
-                CompletedAt = todo.CompletedAt,
+                CompletedAt = todo.CompletedAtUtc,
                 CompletedBy = todo.CompletedBy,
                 AssignedTo = todo.AssignedTo,
                 CompletionNote = todo.CompletionNote

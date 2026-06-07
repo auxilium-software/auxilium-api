@@ -21,7 +21,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         var weekEnd = now.AddDays(-7 * i).Date;
 
                         var count = await Db.Users
-                            .CountAsync(u => u.CreatedAt >= weekStart && u.CreatedAt < weekEnd);
+                            .CountAsync(u => u.CreatedAtUtc >= weekStart && u.CreatedAtUtc < weekEnd);
 
                         labels.Add($"Week {4 - i}");
                         values.Add(count);
@@ -37,7 +37,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         var monthEnd = monthStart.AddMonths(1);
 
                         var count = await Db.Users
-                            .CountAsync(u => u.CreatedAt >= monthStart && u.CreatedAt < monthEnd);
+                            .CountAsync(u => u.CreatedAtUtc >= monthStart && u.CreatedAtUtc < monthEnd);
 
                         labels.Add(monthStart.ToString("MMM"));
                         values.Add(count);
@@ -47,7 +47,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 case "all":
                     // grab the oldest user to figure out the start date
                     var oldestUser = await Db.Users
-                        .OrderBy(u => u.CreatedAt)
+                        .OrderBy(u => u.CreatedAtUtc)
                         .FirstOrDefaultAsync();
 
                     if (oldestUser == null)
@@ -61,8 +61,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                     }
 
                     var startDate = new DateTime(
-                        oldestUser.CreatedAt.Year,
-                        oldestUser.CreatedAt.Month,
+                        oldestUser.CreatedAtUtc.Year,
+                        oldestUser.CreatedAtUtc.Month,
                         1, 0, 0, 0, DateTimeKind.Utc
                     );
 
@@ -76,7 +76,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             var monthEnd = date.AddMonths(1);
 
                             var count = await Db.Users
-                                .CountAsync(u => u.CreatedAt >= date && u.CreatedAt < monthEnd);
+                                .CountAsync(u => u.CreatedAtUtc >= date && u.CreatedAtUtc < monthEnd);
 
                             labels.Add(date.ToString("MMM yy"));
                             values.Add(count);
@@ -96,7 +96,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             var quarterEnd = date.AddMonths(3);
 
                             var count = await Db.Users
-                                .CountAsync(u => u.CreatedAt >= date && u.CreatedAt < quarterEnd);
+                                .CountAsync(u => u.CreatedAtUtc >= date && u.CreatedAtUtc < quarterEnd);
 
                             var quarterNum = ((date.Month - 1) / 3) + 1;
                             labels.Add($"Q{quarterNum} {date:yy}");
@@ -112,7 +112,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             var yearEnd = yearStart.AddYears(1);
 
                             var count = await Db.Users
-                                .CountAsync(u => u.CreatedAt >= yearStart && u.CreatedAt < yearEnd);
+                                .CountAsync(u => u.CreatedAtUtc >= yearStart && u.CreatedAtUtc < yearEnd);
 
                             labels.Add(year.ToString());
                             values.Add(count);
@@ -128,7 +128,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         var dayEnd = dayStart.AddDays(1);
 
                         var count = await Db.Users
-                            .CountAsync(u => u.CreatedAt >= dayStart && u.CreatedAt < dayEnd);
+                            .CountAsync(u => u.CreatedAtUtc >= dayStart && u.CreatedAtUtc < dayEnd);
 
                         labels.Add(dayStart.ToString("ddd"));
                         values.Add(count);
@@ -147,7 +147,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
             var cumulativeValues = new List<int>();
             var runningTotal = await Db.Users
-                .CountAsync(u => u.CreatedAt < periodStart);
+                .CountAsync(u => u.CreatedAtUtc < periodStart);
 
             foreach (var value in values)
             {
