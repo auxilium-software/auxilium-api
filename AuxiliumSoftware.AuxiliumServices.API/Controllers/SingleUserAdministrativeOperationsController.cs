@@ -110,7 +110,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                     await Db.SaveChangesAsync();
 
-                    Logger.LogInformation(
+                    Logger.LogWarning(
                         "Permissions updated for user {UserId} by admin {AdminId}: {Changes}",
                         userId, user.Id, string.Join(", ", changes)
                     );
