@@ -511,5 +511,104 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             return Ok(new { success = true });
         }
         */
+
+        [HttpGet("audit-log")]
+        [ProducesResponseType(typeof(List<UserAuditLogEntryResponseModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> AuditLog(Guid userId, [FromQuery] int limit = 50)
+        {
+            try
+            {
+                var (user, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                var targetExists = await Db.Users.AnyAsync(u => u.Id == userId);
+                if (!targetExists)
+                    return StatusCode(StatusCodes.Status404NotFound,
+                        new FailureResponseModel { Detail = "User not found" });
+
+                var entries = await Db.Log_UserModificationEvents
+                    .Where(e => e.UserId == userId)
+                    .Include(e => e.CreatedByUser)
+                    .Include(e => e.User)
+                    .OrderByDescending(e => e.CreatedAtUtc)
+                    .Take(Math.Min(limit, 200))
+                    .ToListAsync();
+
+                var result = entries.Select(e => new UserAuditLogEntryResponseModel
+                {
+                    Id = e.Id,
+                    CreatedAt = e.CreatedAtUtc,
+                    CreatedBy = e.CreatedByUserId,
+                    CreatedByName = e.CreatedByUser?.FullName,
+                    TargetUserId = e.UserId,
+                    TargetUserIdName = e.User?.FullName,
+                    EntityType = e.EntityType,
+                    EntityId = e.EntityId,
+                    Action = e.Action,
+
+                    PropertyName = e.PropertyName,
+                    PreviousValue = e.PreviousValue,
+                    NewValue = e.NewValue,
+
+                    Description = BuildDescription(e.Action, e.EntityType, e.PropertyName, e.PreviousValue, e.NewValue)
+                }).ToList();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to fetch audit log for user {UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new FailureResponseModel { Detail = "Failed to fetch audit log" });
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private static string BuildDescription(
+            AuditLogActionTypeEnum action,
+            UserEntityTypeEnum entityType,
+            string? propertyName,
+            string? oldValue,
+            string? newValue
+        )
+        {
+            var entity = entityType switch
+            {
+                UserEntityTypeEnum.User => "user account",
+                UserEntityTypeEnum.User_AdditionalProperty => "additional property",
+                UserEntityTypeEnum.User_File => "file",
+                _ => entityType.ToString()
+            };
+
+            return action switch
+            {
+                AuditLogActionTypeEnum.Creation => $"Created {entity}",
+                AuditLogActionTypeEnum.Deletion => $"Deleted {entity}",
+                AuditLogActionTypeEnum.Upload => $"Uploaded {entity}",
+                AuditLogActionTypeEnum.View => $"Viewed {entity}",
+                AuditLogActionTypeEnum.Modification when propertyName != null
+                    => $"Updated {entity}: {propertyName}" +
+                       (oldValue != null && newValue != null ? $" ({oldValue} -> {newValue})" : ""),
+                AuditLogActionTypeEnum.Modification => $"Modified {entity}",
+                _ => action.ToString()
+            };
+        }
     }
 }
