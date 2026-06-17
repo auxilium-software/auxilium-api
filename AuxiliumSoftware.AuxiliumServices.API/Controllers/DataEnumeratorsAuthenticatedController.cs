@@ -2,6 +2,7 @@
 using AuxiliumSoftware.AuxiliumServices.API.Mappers;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumerator;
+using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorTranslation;
 using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorValue;
 using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorValueTranslation;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
@@ -40,7 +41,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult<List<DataEnumeratorResponseModel>>> GetAllEnumerators(
             [FromQuery] bool includeInactive = false,
             [FromQuery] string? locale = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -82,7 +84,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromQuery] bool includeInactive = false,
             [FromQuery] string? locale = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -127,7 +130,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<DataEnumeratorResponseModel>> CreateEnumerator(
             [FromBody] DataEnumeratorCreationRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -165,7 +169,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult<DataEnumeratorResponseModel>> UpdateEnumerator(
             [FromRoute] Guid id,
             [FromBody] DataEnumeratorUpdateRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -211,7 +216,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult> SetEnumeratorActive(
             [FromRoute] Guid id,
             [FromBody] DataEnumeratorSetActiveRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -243,6 +249,192 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
         #endregion
 
+        #region ========================= ENUMERATOR TYPE TRANSLATION ENDPOINTS =========================
+
+        [HttpGet("{id:guid}/translations")]
+        [ProducesResponseType(typeof(List<DataEnumeratorTranslationResponseModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<DataEnumeratorTranslationResponseModel>>> GetEnumeratorTranslations(
+            [FromRoute] Guid id,
+            CancellationToken ct = default
+        )
+        {
+            try
+            {
+                var (_, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var translations = await _dataEnumeratorService.GetEnumeratorTranslationsAsync(id, ct);
+
+                var response = translations
+                    .Select(DataEnumeratorMapper.ToEnumeratorTranslationResponseModel)
+                    .ToList();
+
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to get translations for enumerator {EnumeratorId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+                {
+                    Detail = "An unexpected error occurred."
+                });
+            }
+        }
+
+        [HttpPost("{id:guid}/translations")]
+        [ProducesResponseType(typeof(DataEnumeratorTranslationResponseModel), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<DataEnumeratorTranslationResponseModel>> CreateEnumeratorTranslation(
+            [FromRoute] Guid id,
+            [FromBody] DataEnumeratorTranslationCreateRequestModel request,
+            CancellationToken ct = default
+        )
+        {
+            try
+            {
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                var (user, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var translation = await _dataEnumeratorService.CreateEnumeratorTranslationAsync(
+                    id,
+                    request.LanguageCode,
+                    request.Translation,
+                    user!,
+                    ct
+                );
+
+                return StatusCode(StatusCodes.Status201Created,
+                    DataEnumeratorMapper.ToEnumeratorTranslationResponseModel(translation));
+            }
+            catch (KeyNotFoundException)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Enumerator not found."
+                });
+            }
+            catch (InvalidOperationException)
+            {
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
+                {
+                    Detail = "A translation for that language already exists on this enumerator."
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to create translation for enumerator {EnumeratorId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+                {
+                    Detail = "An unexpected error occurred."
+                });
+            }
+        }
+
+        [HttpPatch("{id:guid}/translations/{translationId:guid}")]
+        [ProducesResponseType(typeof(DataEnumeratorTranslationResponseModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<DataEnumeratorTranslationResponseModel>> UpdateEnumeratorTranslation(
+            [FromRoute] Guid id,
+            [FromRoute] Guid translationId,
+            [FromBody] DataEnumeratorTranslationUpdateRequestModel request,
+            CancellationToken ct = default
+        )
+        {
+            try
+            {
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                var (user, error) = await GetCurrentUserAsync();
+                if (error != null) return error;
+
+                var translation = await _dataEnumeratorService.UpdateEnumeratorTranslationAsync(
+                    translationId,
+                    request.LanguageCode,
+                    request.Translation,
+                    user!,
+                    ct
+                );
+
+                return StatusCode(StatusCodes.Status200OK,
+                    DataEnumeratorMapper.ToEnumeratorTranslationResponseModel(translation));
+            }
+            catch (KeyNotFoundException)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Translation not found."
+                });
+            }
+            catch (InvalidOperationException)
+            {
+                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
+                {
+                    Detail = "A translation for that language already exists on this enumerator."
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to update enumerator translation {TranslationId}", translationId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+                {
+                    Detail = "An unexpected error occurred."
+                });
+            }
+        }
+
+        [HttpDelete("{id:guid}/translations/{translationId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> DeleteEnumeratorTranslation(
+            [FromRoute] Guid id,
+            [FromRoute] Guid translationId,
+            CancellationToken ct = default
+        )
+        {
+            try
+            {
+                var adminError = await RequireAdminAsync();
+                if (adminError != null) return adminError;
+
+                await _dataEnumeratorService.DeleteEnumeratorTranslationAsync(translationId, ct);
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (KeyNotFoundException)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "Translation not found."
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to delete enumerator translation {TranslationId}", translationId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+                {
+                    Detail = "An unexpected error occurred."
+                });
+            }
+        }
+
+        #endregion
+
         #region ========================= ENUMERATOR VALUE ENDPOINTS =========================
 
         [HttpGet("{id:guid}/values")]
@@ -254,7 +446,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromQuery] bool includeInactive = false,
             [FromQuery] string? locale = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -295,7 +488,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult<DataEnumeratorValueResponseModel>> CreateValue(
             [FromRoute] Guid id,
             [FromBody] DataEnumeratorValueCreateRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -342,7 +536,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromRoute] Guid valueId,
             [FromBody] DataEnumeratorValueUpdateRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -388,7 +583,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromRoute] Guid valueId,
             [FromBody] DataEnumeratorSetActiveRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -427,7 +623,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult> ReorderValues(
             [FromRoute] Guid id,
             [FromBody] ReorderValuesRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -459,7 +656,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
         #endregion
 
-        #region ========================= TRANSLATION ENDPOINTS =========================
+        #region ========================= ENUMERATOR VALUE TRANSLATION ENDPOINTS =========================
 
         [HttpGet("{id:guid}/values/{valueId:guid}/translations")]
         [ProducesResponseType(typeof(List<DataEnumeratorValueTranslationResponseModel>), StatusCodes.Status200OK)]
@@ -468,7 +665,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult<List<DataEnumeratorValueTranslationResponseModel>>> GetTranslations(
             [FromRoute] Guid id,
             [FromRoute] Guid valueId,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -504,7 +702,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromRoute] Guid valueId,
             [FromBody] DataEnumeratorValueTranslationCreateRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -560,7 +759,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid valueId,
             [FromRoute] Guid translationId,
             [FromBody] DataEnumeratorValueTranslationUpdateRequestModel request,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -614,7 +814,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             [FromRoute] Guid id,
             [FromRoute] Guid valueId,
             [FromRoute] Guid translationId,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {

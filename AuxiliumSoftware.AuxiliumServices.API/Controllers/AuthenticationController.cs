@@ -264,7 +264,7 @@ public class AuthenticationController : ControllerBase
 
             var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
 
-            // Legacy BCrypt account — can't verify without raw password.
+            // Legacy BCrypt account - can't verify without raw password.
             // Trigger an email-based reset instead.
             if (user.PasswordHash.StartsWith("$2a$") ||
                 user.PasswordHash.StartsWith("$2b$") ||

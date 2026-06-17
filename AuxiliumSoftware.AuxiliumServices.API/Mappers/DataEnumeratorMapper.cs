@@ -1,4 +1,5 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumerator;
+using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorTranslation;
 using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorValue;
 using AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorValueTranslation;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
@@ -9,7 +10,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Mappers
     {
         public static DataEnumeratorResponseModel ToResponseModel(
             DataEnumeratorEntityModel entity,
-            string? locale = null)
+            string? locale = null
+        )
         {
             return new DataEnumeratorResponseModel
             {
@@ -25,9 +27,25 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Mappers
             };
         }
 
+        public static DataEnumeratorTranslationResponseModel ToEnumeratorTranslationResponseModel(
+            DataEnumeratorTranslationEntityModel entity
+        )
+        {
+            return new DataEnumeratorTranslationResponseModel
+            {
+                Id = entity.Id,
+                DataEnumeratorId = entity.DataEnumeratorId,
+                LanguageCode = entity.LanguageCode,
+                Translation = entity.Translation,
+                CreatedAtUtc = entity.CreatedAtUtc,
+                LastUpdatedAtUtc = entity.LastUpdatedAtUtc,
+            };
+        }
+
         public static DataEnumeratorValueResponseModel ToValueResponseModel(
             DataEnumeratorValueEntityModel entity,
-            string? locale = null)
+            string? locale = null
+        )
         {
 
             return new DataEnumeratorValueResponseModel
@@ -43,7 +61,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Mappers
         }
 
         public static DataEnumeratorValueTranslationResponseModel ToTranslationResponseModel(
-            DataEnumeratorValueTranslationEntityModel entity)
+            DataEnumeratorValueTranslationEntityModel entity
+        )
         {
             return new DataEnumeratorValueTranslationResponseModel
             {

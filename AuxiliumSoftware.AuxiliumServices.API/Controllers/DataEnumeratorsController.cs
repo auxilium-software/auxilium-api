@@ -30,7 +30,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<List<DataEnumeratorResponseModel>>> GetAllEnumerators(
             [FromQuery] string? locale = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -62,7 +63,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         public async Task<ActionResult<DataEnumeratorResponseModel>> GetEnumeratorByName(
             [FromRoute] string name,
             [FromQuery] string? locale = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
