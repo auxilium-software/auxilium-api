@@ -223,6 +223,7 @@ public class WEMWBSController : LoggedInControllerBase
                 Id = Guid.NewGuid(),
                 CreatedAtUtc = DateTime.UtcNow,
                 CreatedByUserId = user!.Id,
+                UserId = user!.Id,
                 OptimismScore = request.OptimismScore,
                 UsefulnessScore = request.UsefulnessScore,
                 RelaxedScore = request.RelaxedScore,
