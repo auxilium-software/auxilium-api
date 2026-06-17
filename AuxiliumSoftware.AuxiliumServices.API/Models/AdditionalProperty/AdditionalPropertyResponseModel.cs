@@ -21,5 +21,19 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty
 
         [JsonPropertyName("lastUpdatedAt")]
         public DateTime? LastUpdatedAt { get; set; }
+
+
+
+
+
+
+        [JsonPropertyName("dataEnumeratorId")]
+        public Guid? DataEnumeratorId { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string? DisplayValue { get; set; }
+
+        [JsonPropertyName("enumDisplayName")]
+        public string? EnumDisplayName { get; set; }
     }
 }

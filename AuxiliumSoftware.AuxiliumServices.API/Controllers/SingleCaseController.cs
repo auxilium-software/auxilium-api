@@ -20,6 +20,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     {
         private readonly ICaseDocumentService _caseDocService;
         private readonly IFileDocumentService _fileService;
+        private readonly IDataEnumeratorService _dataEnumeratorService;
 
         public SingleCaseController(
             ISystemSettingsService systemSettingsService,
@@ -30,12 +31,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             ITotpService totpService,
 
             ICaseDocumentService caseDocService,
-            IFileDocumentService fileService
+            IFileDocumentService fileService,
+            IDataEnumeratorService dataEnumeratorService
             )
             : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
             _caseDocService = caseDocService;
             _fileService = fileService;
+            _dataEnumeratorService = dataEnumeratorService;
         }
 
 
@@ -86,6 +89,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 }
 
                 var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity);
+                await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user!.LanguagePreference);
                 return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
@@ -161,6 +165,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 await Db.Entry(caseEntity).Collection(c => c.AdditionalProperties!).LoadAsync();
 
                 var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity);
+                await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user!.LanguagePreference);
                 return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)

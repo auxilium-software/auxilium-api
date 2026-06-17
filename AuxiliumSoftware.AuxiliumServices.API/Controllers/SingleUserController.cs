@@ -13,6 +13,7 @@ using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Mail;
@@ -28,6 +29,7 @@ public class SingleUserController : LoggedInControllerBase
     private readonly IUserDocumentService _userDocService;
     private readonly IMessageQueueProducer _messageQueue;
     private readonly IFileDocumentService _fileService;
+    private readonly IDataEnumeratorService _dataEnumeratorService;
 
     public SingleUserController(
         ISystemSettingsService systemSettingsService,
@@ -38,13 +40,15 @@ public class SingleUserController : LoggedInControllerBase
         IWebApplicationFirewallService waf,
         IUserDocumentService userDocService,
         IMessageQueueProducer messageQueue,
-        IFileDocumentService fileService
+        IFileDocumentService fileService,
+        IDataEnumeratorService dataEnumeratorService
         )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _userDocService = userDocService;
         _messageQueue = messageQueue;
         _fileService = fileService;
+        _dataEnumeratorService = dataEnumeratorService;
     }
 
 
@@ -84,7 +88,9 @@ public class SingleUserController : LoggedInControllerBase
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
             }
 
-            return StatusCode(StatusCodes.Status200OK, ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator));
+            var response = ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator);
+            await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user.LanguagePreference);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {
@@ -226,7 +232,9 @@ public class SingleUserController : LoggedInControllerBase
                 userId, user.Id
             );
 
-            return StatusCode(StatusCodes.Status200OK, ControllerUtilities.UserMapToUserResponseModel(userDoc, true));
+            var response = ControllerUtilities.UserMapToUserResponseModel(userDoc, true);
+            await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user.LanguagePreference);
+            return StatusCode(StatusCodes.Status200OK, response);
         }
         catch (Exception ex)
         {

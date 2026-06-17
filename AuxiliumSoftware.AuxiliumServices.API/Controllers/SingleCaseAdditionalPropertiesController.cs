@@ -5,6 +5,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
 public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 {
     private readonly ICaseDocumentService _caseDocService;
+    private readonly IDataEnumeratorService _dataEnumeratorService;
 
     public SingleCaseAdditionalPropertiesController(
         ISystemSettingsService systemSettingsService,
@@ -27,11 +29,13 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         ILogger<SingleCaseAdditionalPropertiesController> logger,
         ITotpService totpService,
 
-        ICaseDocumentService caseDocService
+        ICaseDocumentService caseDocService,
+        IDataEnumeratorService dataEnumeratorService
     )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
     {
         _caseDocService = caseDocService;
+        _dataEnumeratorService = dataEnumeratorService;
     }
 
     private async Task<(CaseEntityModel? caseEntity, ActionResult? error)> GetCaseWithAccessCheckAsync(
@@ -99,7 +103,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
         }
 
-        return StatusCode(StatusCodes.Status200OK, new AdditionalPropertyResponseModel
+        var response = new AdditionalPropertyResponseModel
         {
             UrlSlug = property.UrlSlug,
             OriginalName = property.OriginalName,
@@ -107,7 +111,21 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             ContentType = property.ContentType,
             CreatedAt = property.CreatedAtUtc,
             LastUpdatedAt = property.LastUpdatedAtUtc
-        });
+        };
+
+        if (property.ContentType == Common.Constants.DataEnumeratorReferenceContentType && Guid.TryParse(property.Content, out var valueId))
+        {
+            var resolved = await _dataEnumeratorService.ResolveValueDisplaysAsync(
+                [valueId], user!.LanguagePreference);
+            if (resolved.TryGetValue(valueId, out var r))
+            {
+                response.DataEnumeratorId = r.EnumTypeId;
+                response.DisplayValue = r.ValueDisplay;
+                response.EnumDisplayName = r.EnumDisplay;
+            }
+        }
+
+        return StatusCode(StatusCodes.Status200OK, response);
     }
 
     [HttpPost("{propertyName}")]
@@ -130,10 +148,27 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             var (caseEntity, caseError) = await GetCaseWithAccessCheckAsync(caseId, user!, requireWorker: true);
             if (caseError != null) return caseError;
 
-            var sanitizedName = ControllerUtilities.SanitisePropertyName(request.OriginalName);
+            var effectiveName = request.OriginalName;
+
+            if (string.IsNullOrWhiteSpace(effectiveName) && request.ContentType == Common.Constants.DataEnumeratorReferenceContentType)
+            {
+                if (!Guid.TryParse(request.Content, out var valueId))
+                    return StatusCode(StatusCodes.Status400BadRequest,
+                        new FailureResponseModel { Detail = "Invalid enumerator value reference" });
+
+                var resolved = await _dataEnumeratorService.ResolveValueDisplaysAsync([valueId], null);
+                if (!resolved.TryGetValue(valueId, out var r))
+                    return StatusCode(StatusCodes.Status400BadRequest,
+                        new FailureResponseModel { Detail = "Enumerator value not found" });
+
+                effectiveName = r.EnumCanonicalName;
+            }
+
+            var sanitizedName = ControllerUtilities.SanitisePropertyName(effectiveName);
             if (string.IsNullOrEmpty(sanitizedName))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "Invalid property name" });
+                return StatusCode(StatusCodes.Status400BadRequest,
+                    new FailureResponseModel { Detail = "Invalid property name" });
             }
 
             var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);

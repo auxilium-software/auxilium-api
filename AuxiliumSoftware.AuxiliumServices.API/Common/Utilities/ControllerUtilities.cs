@@ -3,6 +3,8 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
@@ -320,6 +322,54 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
             // regular users cannot modify other users
             return false;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static async Task EnrichEnumPropertiesAsync(
+            IDictionary<string, AdditionalPropertySubStructureDTO> properties,
+            IDataEnumeratorService dataEnumeratorService,
+            string? locale,
+            CancellationToken ct = default)
+        {
+            if (properties == null || properties.Count == 0) return;
+
+            var valueIds = new List<Guid>();
+            foreach (var p in properties.Values)
+            {
+                if (p.ContentType == Common.Constants.DataEnumeratorReferenceContentType
+                    && Guid.TryParse(p.Content, out var vid))
+                {
+                    valueIds.Add(vid);
+                }
+            }
+
+            if (valueIds.Count == 0) return;
+
+            var resolved = await dataEnumeratorService.ResolveValueDisplaysAsync(valueIds, locale, ct);
+
+            foreach (var p in properties.Values)
+            {
+                if (p.ContentType == Common.Constants.DataEnumeratorReferenceContentType
+                    && Guid.TryParse(p.Content, out var vid)
+                    && resolved.TryGetValue(vid, out var r))
+                {
+                    p.DataEnumeratorId = r.EnumTypeId;
+                    p.DisplayValue = r.ValueDisplay;
+                    p.DataEnumeratorDisplayName = r.EnumDisplay;
+                }
+            }
         }
     }
 }
