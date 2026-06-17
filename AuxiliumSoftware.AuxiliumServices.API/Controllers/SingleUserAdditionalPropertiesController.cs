@@ -194,7 +194,7 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             existingProp.Content = request.Content;
             existingProp.ContentType = request.ContentType;
             existingProp.LastUpdatedAtUtc = DateTime.UtcNow;
-            existingProp.LastUpdatedBy = user.Id;
+            existingProp.LastUpdatedByUserId = user.Id;
 
             var userEntity = await Db.Users.FindAsync(userId);
             if (userEntity != null)
