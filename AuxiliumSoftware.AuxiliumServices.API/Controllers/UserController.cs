@@ -131,9 +131,9 @@ public class UserController : LoggedInControllerBase
                             {
                                 Id = p.Id,
                                 CreatedAt = p.CreatedAtUtc,
-                                CreatedBy = p.CreatedBy,
+                                CreatedBy = p.CreatedByUserId,
                                 UpdatedAt = p.LastUpdatedAtUtc,
-                                LastUpdatedBy = p.LastUpdatedBy,
+                                LastUpdatedBy = p.LastUpdatedByUserId,
                                 OriginalName = p.OriginalName,
                                 UrlSlug = p.UrlSlug,
                                 Content = p.Content,
@@ -145,9 +145,9 @@ public class UserController : LoggedInControllerBase
                     {
                         ID = userDoc.Id,
                         CreatedAt = userDoc.CreatedAtUtc,
-                        CreatedBy = userDoc.CreatedBy,
+                        CreatedBy = userDoc.CreatedByUserId,
                         LastUpdatedAt = userDoc.LastUpdatedAtUtc,
-                        LastUpdatedBy = userDoc.LastUpdatedBy,
+                        LastUpdatedBy = userDoc.LastUpdatedByUserId,
 
                         EmailAddress = userDoc.EmailAddress,
                         FullName = userDoc.FullName ?? string.Empty,
@@ -176,7 +176,7 @@ public class UserController : LoggedInControllerBase
                     {
                         ID = userDoc.Id,
                         CreatedAt = userDoc.CreatedAtUtc,
-                        CreatedBy = userDoc.CreatedBy,
+                        CreatedBy = userDoc.CreatedByUserId,
                         LastUpdatedAt = null,
                         LastUpdatedBy = null,
 
@@ -352,7 +352,7 @@ public class UserController : LoggedInControllerBase
             {
                 Id = userId,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = user.Id,
+                CreatedByUserId = user.Id,
                 EmailAddress = request.EmailAddress,
                 FullName = request.FullName,
                 FullAddress = "",
@@ -382,7 +382,7 @@ public class UserController : LoggedInControllerBase
             {
                 Id = Guid.NewGuid(),
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = user.Id,
+                CreatedByUserId = user.Id,
                 UserId = userId,
                 TokenHash = tokenHash,
                 ExpiresAtUtc = DateTime.UtcNow.AddHours(72),

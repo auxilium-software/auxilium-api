@@ -75,7 +75,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var strategy = this.Db.Database.CreateExecutionStrategy();
 
                 // delete all the refresh tokens for this user
-                var tokens = this.Db.UserRefreshTokens.Where(rt => rt.CreatedBy == userGuid);
+                var tokens = this.Db.UserRefreshTokens.Where(rt => rt.CreatedByUserId == userGuid);
                 this.Db.UserRefreshTokens.RemoveRange(tokens);
 
                 await this.Db.SaveChangesAsync();

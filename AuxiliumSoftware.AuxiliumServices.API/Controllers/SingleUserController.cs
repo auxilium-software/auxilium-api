@@ -217,7 +217,7 @@ public class SingleUserController : LoggedInControllerBase
             }
 
             userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
-            userDoc.LastUpdatedBy = user!.Id;
+            userDoc.LastUpdatedByUserId = user!.Id;
 
             await Db.SaveChangesAsync();
 

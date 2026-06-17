@@ -63,7 +63,7 @@ public class WEMWBSController : LoggedInControllerBase
             {
                 Id = a.Id,
                 CreatedAt = a.CreatedAtUtc,
-                CreatedBy = a.CreatedBy,
+                CreatedBy = a.CreatedByUserId,
                 TotalScore = CalculateTotalScore(a),
                 Scores = new WEMWBSScoresModel
                 {
@@ -132,7 +132,7 @@ public class WEMWBSController : LoggedInControllerBase
             }
 
             // only allow user to see their own assessments (unless admin)
-            if (assessment.CreatedBy != user!.Id && !user.IsAdministrator)
+            if (assessment.CreatedByUserId != user!.Id && !user.IsAdministrator)
             {
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
                 {
@@ -144,7 +144,7 @@ public class WEMWBSController : LoggedInControllerBase
             {
                 Id = assessment.Id,
                 CreatedAt = assessment.CreatedAtUtc,
-                CreatedBy = assessment.CreatedBy,
+                CreatedBy = assessment.CreatedByUserId,
                 TotalScore = CalculateTotalScore(assessment),
                 Scores = new WEMWBSScoresModel
                 {
@@ -222,7 +222,7 @@ public class WEMWBSController : LoggedInControllerBase
             {
                 Id = Guid.NewGuid(),
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = user!.Id,
+                CreatedByUserId = user!.Id,
                 OptimismScore = request.OptimismScore,
                 UsefulnessScore = request.UsefulnessScore,
                 RelaxedScore = request.RelaxedScore,
@@ -246,7 +246,7 @@ public class WEMWBSController : LoggedInControllerBase
             {
                 Id = assessment.Id,
                 CreatedAt = assessment.CreatedAtUtc,
-                CreatedBy = assessment.CreatedBy,
+                CreatedBy = assessment.CreatedByUserId,
                 TotalScore = CalculateTotalScore(assessment),
                 Scores = new WEMWBSScoresModel
                 {
@@ -307,7 +307,7 @@ public class WEMWBSController : LoggedInControllerBase
             }
 
             var query = Db.UserWemwbsAssessments
-                .Where(w => w.CreatedBy == targetUserId);
+                .Where(w => w.CreatedByUserId == targetUserId);
 
             // apply sorting
             query = ApplySorting(query, sortBy, sortOrder);
@@ -324,7 +324,7 @@ public class WEMWBSController : LoggedInControllerBase
             {
                 Id = a.Id,
                 CreatedAt = a.CreatedAtUtc,
-                CreatedBy = a.CreatedBy,
+                CreatedBy = a.CreatedByUserId,
                 TotalScore = CalculateTotalScore(a),
                 Scores = new WEMWBSScoresModel
                 {
@@ -429,7 +429,7 @@ public class WEMWBSController : LoggedInControllerBase
             if (error != null) return error;
 
             var assessments = await Db.UserWemwbsAssessments
-                .Where(w => w.CreatedBy == user!.Id)
+                .Where(w => w.CreatedByUserId == user!.Id)
                 .OrderBy(w => w.CreatedAtUtc)
                 .ToListAsync();
 

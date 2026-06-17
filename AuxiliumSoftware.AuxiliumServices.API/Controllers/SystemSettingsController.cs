@@ -104,7 +104,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     currentValue = DeserializeValue(dbSetting.ConfigValue, typeAttr?.ValueType ?? SystemSettingValueTypeEnum.String);
                     isDefault = false;
                     lastModified = dbSetting.CreatedAtUtc;
-                    lastModifiedBy = dbSetting.CreatedBy;
+                    lastModifiedBy = dbSetting.CreatedByUserId;
                 }
                 else
                 {
@@ -163,7 +163,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Value = setting.ConfigValue,
                 ValueType = setting.ValueType,
                 ModifiedAt = setting.CreatedAtUtc,
-                ModifiedBy = setting.CreatedBy,
+                ModifiedBy = setting.CreatedByUserId,
                 ModifiedByName = setting.CreatedByUser?.FullName,
                 ReasonForModification = setting.ReasonForModification
             });
@@ -193,7 +193,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Value = s.ConfigValue,
                 ValueType = s.ValueType,
                 ModifiedAt = s.CreatedAtUtc,
-                ModifiedBy = s.CreatedBy,
+                ModifiedBy = s.CreatedByUserId,
                 ModifiedByName = s.CreatedByUser?.FullName,
                 ReasonForModification = s.ReasonForModification
             }).ToList());
@@ -233,7 +233,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Value = setting.ConfigValue,
                 ValueType = setting.ValueType,
                 ModifiedAt = setting.CreatedAtUtc,
-                ModifiedBy = setting.CreatedBy,
+                ModifiedBy = setting.CreatedByUserId,
                 ModifiedByName = setting.CreatedByUser?.FullName,
                 ReasonForModification = setting.ReasonForModification
             });

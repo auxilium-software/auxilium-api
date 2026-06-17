@@ -70,9 +70,9 @@ public class MeController : LoggedInControllerBase
                     {
                         Id = p.Id,
                         CreatedAt = p.CreatedAtUtc,
-                        CreatedBy = p.CreatedBy,
+                        CreatedBy = p.CreatedByUserId,
                         UpdatedAt = p.LastUpdatedAtUtc,
-                        LastUpdatedBy = p.LastUpdatedBy,
+                        LastUpdatedBy = p.LastUpdatedByUserId,
                         OriginalName = p.OriginalName,
                         UrlSlug = p.UrlSlug,
                         Content = p.Content,
@@ -85,9 +85,9 @@ public class MeController : LoggedInControllerBase
             {
                 ID = userDoc.Id,
                 CreatedAt = userDoc.CreatedAtUtc,
-                CreatedBy = userDoc.CreatedBy,
+                CreatedBy = userDoc.CreatedByUserId,
                 LastUpdatedAt = userDoc.LastUpdatedAtUtc,
-                LastUpdatedBy = userDoc.LastUpdatedBy,
+                LastUpdatedBy = userDoc.LastUpdatedByUserId,
 
                 EmailAddress = userDoc.EmailAddress,
                 IsAdministrator = userDoc.IsAdministrator,
@@ -159,7 +159,7 @@ public class MeController : LoggedInControllerBase
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
 
             userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
-            userDoc.LastUpdatedBy = user!.Id;
+            userDoc.LastUpdatedByUserId = user!.Id;
 
             await Db.SaveChangesAsync();
 

@@ -78,11 +78,11 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             return StatusCode(StatusCodes.Status201Created, new MessageResponseModel
             {
                 Id = messageDoc.Id,
-                CreatedBy = messageDoc.CreatedBy,
+                CreatedBy = messageDoc.CreatedByUserId,
                 CreatedAt = messageDoc.CreatedAtUtc,
                 Subject = messageDoc.Subject,
                 Content = messageDoc.Content,
-                SenderId = messageDoc.SenderId,
+                SenderId = messageDoc.SenderUserId,
                 IsUrgent = messageDoc.IsUrgent,
                 ReadBy = readByDetails
             });
@@ -135,10 +135,10 @@ public class SingleCaseMessagesController : LoggedInControllerBase
                 {
                     Id = msg.Id,
                     CreatedAt = msg.CreatedAtUtc,
-                    CreatedBy = msg.CreatedBy,
+                    CreatedBy = msg.CreatedByUserId,
                     Subject = msg.Subject,
                     Content = msg.Content,
-                    SenderId = msg.SenderId,
+                    SenderId = msg.SenderUserId,
                     IsUrgent = msg.IsUrgent,
                     ReadBy = readByDetails
                 });
@@ -202,10 +202,10 @@ public class SingleCaseMessagesController : LoggedInControllerBase
             {
                 Id = messageDoc.Id,
                 CreatedAt = messageDoc.CreatedAtUtc,
-                CreatedBy = messageDoc.CreatedBy,
+                CreatedBy = messageDoc.CreatedByUserId,
                 Subject = messageDoc.Subject,
                 Content = messageDoc.Content,
-                SenderId = messageDoc.SenderId,
+                SenderId = messageDoc.SenderUserId,
                 IsUrgent = messageDoc.IsUrgent,
                 ReadBy = readByDetails
             });

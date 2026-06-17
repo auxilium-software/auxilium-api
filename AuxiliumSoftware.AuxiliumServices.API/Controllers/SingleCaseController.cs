@@ -147,7 +147,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     caseEntity.Sensitivity = request.Sensitivity ?? CaseSensitivityEnum.Confidential;
 
                 caseEntity.LastUpdatedAtUtc = DateTime.UtcNow;
-                caseEntity.LastUpdatedBy = user.Id;
+                caseEntity.LastUpdatedByUserId = user.Id;
 
                 //TODO: don't use EF directly here
                 await Db.SaveChangesAsync();

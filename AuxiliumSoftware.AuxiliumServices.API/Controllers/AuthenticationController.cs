@@ -140,7 +140,7 @@ public class AuthenticationController : ControllerBase
                     DeletionRequested = false,
                     HasEmailAddressBeenVerified = false,
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedBy = userId
+                    CreatedByUserId = userId
                 };
 
                 // create the case entity
@@ -152,9 +152,9 @@ public class AuthenticationController : ControllerBase
                     Sensitivity = CaseSensitivityEnum.Confidential,
                     Status = CaseStatusEnum.Open,
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedBy = userId,
+                    CreatedByUserId = userId,
                     LastUpdatedAtUtc = DateTime.UtcNow,
-                    LastUpdatedBy = userId
+                    LastUpdatedByUserId = userId
                 };
 
                 // add the user and the case to database
@@ -166,7 +166,7 @@ public class AuthenticationController : ControllerBase
                 {
                     Id = caseClientId,
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedBy = userId,
+                    CreatedByUserId = userId,
                     CaseId = caseId,
                     UserId = userId
                 };
@@ -280,7 +280,7 @@ public class AuthenticationController : ControllerBase
                     Reason = PasswordSetTokenReasonEnum.Auxilium1BCryptMigration,
                     ExpiresAtUtc = DateTime.UtcNow.AddHours(24),
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedBy = user.Id,
+                    CreatedByUserId = user.Id,
                 });
                 await _db.SaveChangesAsync();
 
@@ -501,7 +501,7 @@ public class AuthenticationController : ControllerBase
 
                 var recoveryCode = await _db.UserTotpRecoveryCodes
                     .FirstOrDefaultAsync(rc =>
-                        rc.CreatedBy == userId &&
+                        rc.CreatedByUserId == userId &&
                         rc.CodeHash == codeHash &&
                         !rc.IsUsed);
 
@@ -589,7 +589,7 @@ public class AuthenticationController : ControllerBase
             user.PasswordHash = _passwordService.HashPassword(normalised);
             user.MustChangePassword = false;
             user.LastUpdatedAtUtc = DateTime.UtcNow;
-            user.LastUpdatedBy = user.Id;
+            user.LastUpdatedByUserId = user.Id;
 
             await _db.SaveChangesAsync();
 
@@ -742,7 +742,7 @@ public class AuthenticationController : ControllerBase
 
         // remove expired refresh tokens
         var expiredTokens = _db.UserRefreshTokens
-            .Where(rt => rt.CreatedBy == user.Id && rt.ExpiresAtUtc < DateTime.UtcNow);
+            .Where(rt => rt.CreatedByUserId == user.Id && rt.ExpiresAtUtc < DateTime.UtcNow);
         _db.UserRefreshTokens.RemoveRange(expiredTokens);
 
         // store the new refresh token
@@ -754,7 +754,7 @@ public class AuthenticationController : ControllerBase
         {
             Id = refreshTokenId,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedBy = user.Id,
+            CreatedByUserId = user.Id,
             TokenHash = tokenHash,
             ExpiresAtUtc = expiresAtTime
         };
@@ -837,7 +837,7 @@ public class AuthenticationController : ControllerBase
             user.AllowLogin = true;
             user.MustChangePassword = false;
             user.LastUpdatedAtUtc = DateTime.UtcNow;
-            user.LastUpdatedBy = user.Id;
+            user.LastUpdatedByUserId = user.Id;
 
             await _db.SaveChangesAsync();
 

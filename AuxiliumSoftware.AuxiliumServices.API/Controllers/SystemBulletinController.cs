@@ -63,7 +63,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 query = query.Where(b =>
                     !b.IsDismissible ||
-                    !b.Dismissals.Any(d => d.CreatedBy == userGuid));
+                    !b.Dismissals.Any(d => d.CreatedByUserId == userGuid));
             }
 
             var bulletins = await query

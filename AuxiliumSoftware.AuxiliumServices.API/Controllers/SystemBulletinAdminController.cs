@@ -54,7 +54,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 {
                     Id = b.Id,
                     CreatedAt = b.CreatedAtUtc,
-                    CreatedBy = b.CreatedBy,
+                    CreatedBy = b.CreatedByUserId,
                     Severity = b.Severity,
                     Title = b.Title,
                     Content = b.Content,
@@ -88,7 +88,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 Id = Guid.NewGuid(),
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = user.Id,
+                CreatedByUserId = user.Id,
                 Severity = request.Severity,
                 Title = request.Title,
                 Content = request.Content,
@@ -107,7 +107,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 Id = bulletin.Id,
                 CreatedAt = bulletin.CreatedAtUtc,
-                CreatedBy = bulletin.CreatedBy,
+                CreatedBy = bulletin.CreatedByUserId,
                 Severity = bulletin.Severity,
                 Title = bulletin.Title,
                 Content = bulletin.Content,
@@ -164,14 +164,14 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 return StatusCode(StatusCodes.Status404NotFound);
 
             var alreadyDismissed = await this.Db.Log_SystemBulletinEntryDismissals
-                .AnyAsync(d => d.SystemBulletinId == id && d.CreatedBy == user.Id);
+                .AnyAsync(d => d.SystemBulletinId == id && d.CreatedByUserId == user.Id);
 
             if (!alreadyDismissed)
             {
                 this.Db.Log_SystemBulletinEntryDismissals.Add(new LogSystemBulletinEntryDismissalEventEntityModel
                 {
                     Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Log_SystemBulletin_EntryDismissal_EventEntry),
-                    CreatedBy = user.Id,
+                    CreatedByUserId = user.Id,
                     CreatedAtUtc = DateTime.UtcNow,
                     SystemBulletinId = id,
                 });

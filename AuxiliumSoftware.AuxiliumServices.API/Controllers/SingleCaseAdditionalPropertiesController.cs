@@ -204,11 +204,11 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             existingProp.Content = request.Content;
             existingProp.ContentType = request.ContentType;
             existingProp.LastUpdatedAtUtc = DateTime.UtcNow;
-            existingProp.LastUpdatedBy = user!.Id;
+            existingProp.LastUpdatedByUserId = user!.Id;
             await Db.SaveChangesAsync();
 
             caseEntity!.LastUpdatedAtUtc = DateTime.UtcNow;
-            caseEntity.LastUpdatedBy = user.Id;
+            caseEntity.LastUpdatedByUserId = user.Id;
             await Db.SaveChangesAsync();
 
             Logger.LogInformation(

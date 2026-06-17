@@ -706,7 +706,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     IsPermanent = w.IsPermanent,
                     IsActive = w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now),
                     WhitelistedAt = w.CreatedAtUtc,
-                    WhitelistedByUserId = w.CreatedBy,
+                    WhitelistedByUserId = w.CreatedByUserId,
                     ExpiresAt = w.ExpiresAtUtc,
                     RemovedAt = w.UnwhitelistedAtUtc,
                     RemovedByUserId = w.UnwhitelistedBy,
@@ -778,7 +778,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 IsPermanent = entry.IsPermanent,
                 IsActive = true,
                 WhitelistedAt = entry.CreatedAtUtc,
-                WhitelistedByUserId = entry.CreatedBy,
+                WhitelistedByUserId = entry.CreatedByUserId,
                 ExpiresAt = entry.ExpiresAtUtc
             });
         }
@@ -861,7 +861,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     IsPermanent = w.IsPermanent,
                     IsActive = w.UnwhitelistedAtUtc == null && (w.ExpiresAtUtc == null || w.ExpiresAtUtc > now),
                     WhitelistedAt = w.CreatedAtUtc,
-                    WhitelistedByUserId = w.CreatedBy,
+                    WhitelistedByUserId = w.CreatedByUserId,
                     ExpiresAt = w.ExpiresAtUtc,
                     RemovedAt = w.UnwhitelistedAtUtc,
                     RemovedByUserId = w.UnwhitelistedBy,
@@ -935,7 +935,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 IsPermanent = entry.IsPermanent,
                 IsActive = true,
                 WhitelistedAt = entry.CreatedAtUtc,
-                WhitelistedByUserId = entry.CreatedBy,
+                WhitelistedByUserId = entry.CreatedByUserId,
                 ExpiresAt = entry.ExpiresAtUtc
             });
         }

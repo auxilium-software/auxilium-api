@@ -106,7 +106,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 if (changes.Count > 0)
                 {
                     userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
-                    userDoc.LastUpdatedBy = user.Id;
+                    userDoc.LastUpdatedByUserId = user.Id;
 
                     await Db.SaveChangesAsync();
 
@@ -273,7 +273,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
                 userDoc.MustChangePassword = true;
                 userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
-                userDoc.LastUpdatedBy = user!.Id;
+                userDoc.LastUpdatedByUserId = user!.Id;
 
                 await _messageQueueProducer.PublishAsync(new EmailQueueMessage
                 {
@@ -409,7 +409,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 Id = Guid.NewGuid(),
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = user!.Id,
+                CreatedByUserId = user!.Id,
                 UserId = userId,
                 TokenHash = tokenHash,
                 ExpiresAtUtc = DateTime.UtcNow.AddHours(72),

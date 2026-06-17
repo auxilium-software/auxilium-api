@@ -63,10 +63,10 @@ public class CaseController : LoggedInControllerBase
                 Description = request.Description ?? string.Empty,
                 Status = CaseStatusEnum.Open,
                 Sensitivity = CaseSensitivityEnum.Confidential,
-                CreatedBy = user!.Id,
+                CreatedByUserId = user!.Id,
                 CreatedAtUtc = DateTime.UtcNow,
                 LastUpdatedAtUtc = DateTime.UtcNow,
-                LastUpdatedBy = user.Id
+                LastUpdatedByUserId = user.Id
             };
 
             //TODO: don't use EF directly here
@@ -78,7 +78,7 @@ public class CaseController : LoggedInControllerBase
                 Id = Guid.NewGuid(),
                 CaseId = caseEntity.Id,
                 UserId = user.Id,
-                CreatedBy = user.Id,
+                CreatedByUserId = user.Id,
                 CreatedAtUtc = DateTime.UtcNow
             });
 
@@ -91,9 +91,9 @@ public class CaseController : LoggedInControllerBase
             {
                 ID = caseEntity.Id,
                 CreatedAt = caseEntity.CreatedAtUtc,
-                CreatedBy = caseEntity.CreatedBy,
+                CreatedBy = caseEntity.CreatedByUserId,
                 LastUpdatedAt = caseEntity.LastUpdatedAtUtc,
-                LastUpdatedBy = caseEntity.LastUpdatedBy,
+                LastUpdatedBy = caseEntity.LastUpdatedByUserId,
                 Title = caseEntity.Title,
                 Description = caseEntity.Description,
                 Status = caseEntity.Status,
