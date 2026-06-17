@@ -81,9 +81,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         {
                             Id = p.Id,
                             CreatedAt = p.CreatedAtUtc,
-                            CreatedBy = p.CreatedBy,
+                            CreatedBy = p.CreatedByUserId,
                             UpdatedAt = p.LastUpdatedAtUtc,
-                            LastUpdatedBy = p.LastUpdatedBy,
+                            LastUpdatedBy = p.LastUpdatedByUserId,
                             OriginalName = p.OriginalName,
                             UrlSlug = p.UrlSlug,
                             Content = p.Content,
@@ -95,9 +95,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 {
                     ID = userDoc.Id,
                     CreatedAt = userDoc.CreatedAtUtc,
-                    CreatedBy = userDoc.CreatedBy,
+                    CreatedBy = userDoc.CreatedByUserId,
                     LastUpdatedAt = userDoc.LastUpdatedAtUtc,
-                    LastUpdatedBy = userDoc.LastUpdatedBy,
+                    LastUpdatedBy = userDoc.LastUpdatedByUserId,
 
                     EmailAddress = userDoc.EmailAddress,
                     FullName = userDoc.FullName ?? string.Empty,
@@ -124,7 +124,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             {
                 ID = userDoc.Id,
                 CreatedAt = userDoc.CreatedAtUtc,
-                CreatedBy = userDoc.CreatedBy,
+                CreatedBy = userDoc.CreatedByUserId,
                 LastUpdatedAt = null,
                 LastUpdatedBy = null,
 
@@ -154,9 +154,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             {
                 ID = caseEntity.Id,
                 CreatedAt = caseEntity.CreatedAtUtc,
-                CreatedBy = caseEntity.CreatedBy,
+                CreatedBy = caseEntity.CreatedByUserId,
                 LastUpdatedAt = caseEntity.LastUpdatedAtUtc,
-                LastUpdatedBy = caseEntity.LastUpdatedBy,
+                LastUpdatedBy = caseEntity.LastUpdatedByUserId,
 
                 Title = caseEntity.Title,
                 Description = caseEntity.Description,
@@ -183,7 +183,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             status = t.Status.ToString(),
                             priority = t.Priority.ToString(),
                             due_date = t.DueDate,
-                            assigned_to = t.AssignedTo,
+                            assigned_to = t.AssignedToUserId,
                             completed_at = t.CompletedAtUtc
                         }
                     ) ?? new Dictionary<string, object>(),
@@ -205,9 +205,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                         {
                             Id = p.Id,
                             CreatedAt = p.CreatedAtUtc,
-                            CreatedBy = p.CreatedBy,
+                            CreatedBy = p.CreatedByUserId,
                             UpdatedAt = p.LastUpdatedAtUtc,
-                            LastUpdatedBy = p.LastUpdatedBy,
+                            LastUpdatedBy = p.LastUpdatedByUserId,
                             OriginalName = p.OriginalName,
                             UrlSlug = p.UrlSlug,
                             Content = p.Content,
