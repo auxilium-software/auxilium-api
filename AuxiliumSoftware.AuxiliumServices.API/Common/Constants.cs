@@ -2,6 +2,6 @@
 {
     public class Constants
     {
-        public const string DataEnumeratorReferenceContentType = "application/x-auxilium-data-enumumerator-reference";
+        public const string DataEnumeratorReferenceContentType = "application/x-auxilium-data-enumumerator-value-id";
     }
 }
