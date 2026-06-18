@@ -147,6 +147,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
+builder.Services.AddScoped<IDataEnumeratorService, DataEnumeratorService>();
+
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
