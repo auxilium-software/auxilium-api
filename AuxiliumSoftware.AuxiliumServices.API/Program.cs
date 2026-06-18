@@ -19,6 +19,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 
@@ -60,6 +61,8 @@ builder.Services.AddControllers()
         // options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
 
         options.JsonSerializerOptions.Converters.Add(new IpAddressJsonConverter());
+
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 builder.Services.AddEndpointsApiExplorer();
 
