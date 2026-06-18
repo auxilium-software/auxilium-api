@@ -158,6 +158,9 @@ public class MeController : LoggedInControllerBase
             if (request.HowDidYouFindOutAboutOurService != null)
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
 
+            if (request.LanguagePreference != null)
+                userDoc.LanguagePreference = request.LanguagePreference;
+
             userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
             userDoc.LastUpdatedByUserId = user!.Id;
 
