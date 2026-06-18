@@ -178,6 +178,12 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+builder.Logging.AddFilter(
+    "AuxiliumSoftware.AuxiliumServices.API.Middleware.RequestLoggingMiddleware",
+    LogLevel.Information
+);
+
 
 
 var mariaDbHost = builder.Configuration["Databases:MariaDB:Host"]           ?? throw new InvalidOperationException("MariaDB Host not found");
