@@ -29,12 +29,13 @@ public class WEMWBSController : LoggedInControllerBase
     }
 
     /// <summary>
-    /// Get all WEMWBS assessments for the authenticated user
+    /// Search through all WEMWBS assessments.
+    /// This is an Administrator-only endpoint.
     /// </summary>
     [HttpGet("")]
     [ProducesResponseType(typeof(PaginatedWEMWBSResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PaginatedWEMWBSResponseModel>> GetAllAssessments(
+    public async Task<ActionResult<PaginatedWEMWBSResponseModel>> SearchAssessments(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "createdAt",
@@ -45,6 +46,9 @@ public class WEMWBSController : LoggedInControllerBase
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
+
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var query = Db.UserWemwbsAssessments.AsQueryable();
 
@@ -181,9 +185,10 @@ public class WEMWBSController : LoggedInControllerBase
     /// Create a new WEMWBS assessment
     /// </summary>
     [HttpPost("")]
-    [ProducesResponseType(typeof(WEMWBSResponseModel), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(WEMWBSResponseModel),  StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WEMWBSResponseModel>> CreateAssessment([FromBody] CreateWEMWBSRequestModel request)
     {
         try
@@ -191,53 +196,55 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            // validate scores (1-5 range for each)
-            var scores = new[]
-            {
-                request.OptimismScore,
-                request.UsefulnessScore,
-                request.RelaxedScore,
-                request.InterestedInPeopleScore,
-                request.SpareEnergyScore,
-                request.ProblemHandlingScore,
-                request.ClearThoughtScore,
-                request.FeelingGoodSelfScore,
-                request.FeelingCloseToPeopleScore,
-                request.ConfidenceScore,
-                request.MakingUpOwnMindScore,
-                request.FeelingLovedScore,
-                request.InterestedInNewThingsScore,
-                request.FeelingCheerfulScore
-            };
-
-            if (scores.Any(s => s < 1 || s > 5))
+            if (request.SubjectUserId == Guid.Empty)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
-                    Detail = "All scores must be between 1 and 5"
+                    Detail = "A subject user must be specified"
                 });
+            }
+
+            // self-submission is always fine; naming a different subject is privileged
+            if (request.SubjectUserId != user!.Id)
+            {
+                if (!user.IsAdministrator)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
+                    {
+                        Detail = "You cannot create an assessment for another user"
+                    });
+                }
+
+                var subjectExists = await Db.Users.AnyAsync(u => u.Id == request.SubjectUserId);
+                if (!subjectExists)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                    {
+                        Detail = "Subject user does not exist"
+                    });
+                }
             }
 
             var assessment = new WemwbsAssessmentEntityModel
             {
-                Id = Guid.NewGuid(),
-                CreatedAtUtc = DateTime.UtcNow,
-                CreatedByUserId = user!.Id,
-                UserId = user!.Id,
-                OptimismScore = request.OptimismScore,
-                UsefulnessScore = request.UsefulnessScore,
-                RelaxedScore = request.RelaxedScore,
-                InterestedInPeopleScore = request.InterestedInPeopleScore,
-                SpareEnergyScore = request.SpareEnergyScore,
-                ProblemHandlingScore = request.ProblemHandlingScore,
-                ClearThoughtScore = request.ClearThoughtScore,
-                FeelingGoodSelfScore = request.FeelingGoodSelfScore,
-                FeelingCloseToPeopleScore = request.FeelingCloseToPeopleScore,
-                ConfidenceScore = request.ConfidenceScore,
-                MakingUpOwnMindScore = request.MakingUpOwnMindScore,
-                FeelingLovedScore = request.FeelingLovedScore,
-                InterestedInNewThingsScore = request.InterestedInNewThingsScore,
-                FeelingCheerfulScore = request.FeelingCheerfulScore
+                Id                          = Guid.NewGuid(),
+                CreatedAtUtc                = DateTime.UtcNow,
+                CreatedByUserId             = user!.Id,
+                UserId                      = request.SubjectUserId,
+                OptimismScore               = request.Responses.OptimismScore,
+                UsefulnessScore             = request.Responses.UsefulnessScore,
+                RelaxedScore                = request.Responses.RelaxedScore,
+                InterestedInPeopleScore     = request.Responses.InterestedInPeopleScore,
+                SpareEnergyScore            = request.Responses.SpareEnergyScore,
+                ProblemHandlingScore        = request.Responses.ProblemHandlingScore,
+                ClearThoughtScore           = request.Responses.ClearThoughtScore,
+                FeelingGoodSelfScore        = request.Responses.FeelingGoodSelfScore,
+                FeelingCloseToPeopleScore   = request.Responses.FeelingCloseToPeopleScore,
+                ConfidenceScore             = request.Responses.ConfidenceScore,
+                MakingUpOwnMindScore        = request.Responses.MakingUpOwnMindScore,
+                FeelingLovedScore           = request.Responses.FeelingLovedScore,
+                InterestedInNewThingsScore  = request.Responses.InterestedInNewThingsScore,
+                FeelingCheerfulScore        = request.Responses.FeelingCheerfulScore
             };
 
             Db.UserWemwbsAssessments.Add(assessment);
@@ -299,16 +306,11 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdministrator)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
-                {
-                    Detail = "Forbidden"
-                });
-            }
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var query = Db.UserWemwbsAssessments
-                .Where(w => w.CreatedByUserId == targetUserId);
+                .Where(w => w.UserId == targetUserId);
 
             // apply sorting
             query = ApplySorting(query, sortBy, sortOrder);
@@ -383,13 +385,8 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
-            if (!user!.IsAdministrator)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
-                {
-                    Detail = "Forbidden"
-                });
-            }
+            var adminError = await RequireAdminAsync();
+            if (adminError != null) return adminError;
 
             var assessment = await Db.UserWemwbsAssessments.FindAsync(assessmentId);
 
