@@ -1,4 +1,5 @@
-﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+﻿using System.Linq.Expressions;
+using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.WEMWBS;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
@@ -63,34 +64,9 @@ public class WEMWBSController : LoggedInControllerBase
                 .Take(pageSize)
                 .ToListAsync();
 
-            var assessmentResponses = assessments.Select(a => new WEMWBSResponseModel
-            {
-                Id = a.Id,
-                CreatedAt = a.CreatedAtUtc,
-                CreatedBy = a.CreatedByUserId,
-                TotalScore = CalculateTotalScore(a),
-                Scores = new WEMWBSScoresModel
-                {
-                    OptimismScore = a.OptimismScore,
-                    UsefulnessScore = a.UsefulnessScore,
-                    RelaxedScore = a.RelaxedScore,
-                    InterestedInPeopleScore = a.InterestedInPeopleScore,
-                    SpareEnergyScore = a.SpareEnergyScore,
-                    ProblemHandlingScore = a.ProblemHandlingScore,
-                    ClearThoughtScore = a.ClearThoughtScore,
-                    FeelingGoodSelfScore = a.FeelingGoodSelfScore,
-                    FeelingCloseToPeopleScore = a.FeelingCloseToPeopleScore,
-                    ConfidenceScore = a.ConfidenceScore,
-                    MakingUpOwnMindScore = a.MakingUpOwnMindScore,
-                    FeelingLovedScore = a.FeelingLovedScore,
-                    InterestedInNewThingsScore = a.InterestedInNewThingsScore,
-                    FeelingCheerfulScore = a.FeelingCheerfulScore
-                }
-            }).ToList();
-
             var response = new PaginatedWEMWBSResponseModel
             {
-                Assessments = assessmentResponses,
+                Assessments = assessments.Select(MapToResponse).ToList(),
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
@@ -135,8 +111,9 @@ public class WEMWBSController : LoggedInControllerBase
                 });
             }
 
-            // only allow user to see their own assessments (unless admin)
-            if (assessment.CreatedByUserId != user!.Id && !user.IsAdministrator)
+            // an assessment is owned by its SUBJECT, not its author.
+            // only the subject (or an admin) may read it; 404 rather than 403 so we don't leak the existence of a row to someone it isn't about.
+            if (assessment.UserId != user!.Id && !user.IsAdministrator)
             {
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
                 {
@@ -144,32 +121,7 @@ public class WEMWBSController : LoggedInControllerBase
                 });
             }
 
-            var response = new WEMWBSResponseModel
-            {
-                Id = assessment.Id,
-                CreatedAt = assessment.CreatedAtUtc,
-                CreatedBy = assessment.CreatedByUserId,
-                TotalScore = CalculateTotalScore(assessment),
-                Scores = new WEMWBSScoresModel
-                {
-                    OptimismScore = assessment.OptimismScore,
-                    UsefulnessScore = assessment.UsefulnessScore,
-                    RelaxedScore = assessment.RelaxedScore,
-                    InterestedInPeopleScore = assessment.InterestedInPeopleScore,
-                    SpareEnergyScore = assessment.SpareEnergyScore,
-                    ProblemHandlingScore = assessment.ProblemHandlingScore,
-                    ClearThoughtScore = assessment.ClearThoughtScore,
-                    FeelingGoodSelfScore = assessment.FeelingGoodSelfScore,
-                    FeelingCloseToPeopleScore = assessment.FeelingCloseToPeopleScore,
-                    ConfidenceScore = assessment.ConfidenceScore,
-                    MakingUpOwnMindScore = assessment.MakingUpOwnMindScore,
-                    FeelingLovedScore = assessment.FeelingLovedScore,
-                    InterestedInNewThingsScore = assessment.InterestedInNewThingsScore,
-                    FeelingCheerfulScore = assessment.FeelingCheerfulScore
-                }
-            };
-
-            return StatusCode(StatusCodes.Status200OK, response);
+            return StatusCode(StatusCodes.Status200OK, MapToResponse(assessment));
         }
         catch (Exception ex)
         {
@@ -185,7 +137,7 @@ public class WEMWBSController : LoggedInControllerBase
     /// Create a new WEMWBS assessment
     /// </summary>
     [HttpPost("")]
-    [ProducesResponseType(typeof(WEMWBSResponseModel),  StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(WEMWBSResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
@@ -195,6 +147,32 @@ public class WEMWBSController : LoggedInControllerBase
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
+
+            var scores = new[]
+            {
+                request.Responses.OptimismScore,
+                request.Responses.UsefulnessScore,
+                request.Responses.RelaxedScore,
+                request.Responses.InterestedInPeopleScore,
+                request.Responses.SpareEnergyScore,
+                request.Responses.ProblemHandlingScore,
+                request.Responses.ClearThoughtScore,
+                request.Responses.FeelingGoodSelfScore,
+                request.Responses.FeelingCloseToPeopleScore,
+                request.Responses.ConfidenceScore,
+                request.Responses.MakingUpOwnMindScore,
+                request.Responses.FeelingLovedScore,
+                request.Responses.InterestedInNewThingsScore,
+                request.Responses.FeelingCheerfulScore
+            };
+
+            if (scores.Any(s => s is < 1 or > 5))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "All scores must be between 1 and 5"
+                });
+            }
 
             if (request.SubjectUserId == Guid.Empty)
             {
@@ -227,55 +205,30 @@ public class WEMWBSController : LoggedInControllerBase
 
             var assessment = new WemwbsAssessmentEntityModel
             {
-                Id                          = Guid.NewGuid(),
-                CreatedAtUtc                = DateTime.UtcNow,
-                CreatedByUserId             = user!.Id,
-                UserId                      = request.SubjectUserId,
-                OptimismScore               = request.Responses.OptimismScore,
-                UsefulnessScore             = request.Responses.UsefulnessScore,
-                RelaxedScore                = request.Responses.RelaxedScore,
-                InterestedInPeopleScore     = request.Responses.InterestedInPeopleScore,
-                SpareEnergyScore            = request.Responses.SpareEnergyScore,
-                ProblemHandlingScore        = request.Responses.ProblemHandlingScore,
-                ClearThoughtScore           = request.Responses.ClearThoughtScore,
-                FeelingGoodSelfScore        = request.Responses.FeelingGoodSelfScore,
-                FeelingCloseToPeopleScore   = request.Responses.FeelingCloseToPeopleScore,
-                ConfidenceScore             = request.Responses.ConfidenceScore,
-                MakingUpOwnMindScore        = request.Responses.MakingUpOwnMindScore,
-                FeelingLovedScore           = request.Responses.FeelingLovedScore,
-                InterestedInNewThingsScore  = request.Responses.InterestedInNewThingsScore,
-                FeelingCheerfulScore        = request.Responses.FeelingCheerfulScore
+                Id = Guid.NewGuid(),
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedByUserId = user!.Id,
+                UserId = request.SubjectUserId,
+                OptimismScore = request.Responses.OptimismScore,
+                UsefulnessScore = request.Responses.UsefulnessScore,
+                RelaxedScore = request.Responses.RelaxedScore,
+                InterestedInPeopleScore = request.Responses.InterestedInPeopleScore,
+                SpareEnergyScore = request.Responses.SpareEnergyScore,
+                ProblemHandlingScore = request.Responses.ProblemHandlingScore,
+                ClearThoughtScore = request.Responses.ClearThoughtScore,
+                FeelingGoodSelfScore = request.Responses.FeelingGoodSelfScore,
+                FeelingCloseToPeopleScore = request.Responses.FeelingCloseToPeopleScore,
+                ConfidenceScore = request.Responses.ConfidenceScore,
+                MakingUpOwnMindScore = request.Responses.MakingUpOwnMindScore,
+                FeelingLovedScore = request.Responses.FeelingLovedScore,
+                InterestedInNewThingsScore = request.Responses.InterestedInNewThingsScore,
+                FeelingCheerfulScore = request.Responses.FeelingCheerfulScore
             };
 
             Db.UserWemwbsAssessments.Add(assessment);
             await Db.SaveChangesAsync();
 
-            var response = new WEMWBSResponseModel
-            {
-                Id = assessment.Id,
-                CreatedAt = assessment.CreatedAtUtc,
-                CreatedBy = assessment.CreatedByUserId,
-                TotalScore = CalculateTotalScore(assessment),
-                Scores = new WEMWBSScoresModel
-                {
-                    OptimismScore = assessment.OptimismScore,
-                    UsefulnessScore = assessment.UsefulnessScore,
-                    RelaxedScore = assessment.RelaxedScore,
-                    InterestedInPeopleScore = assessment.InterestedInPeopleScore,
-                    SpareEnergyScore = assessment.SpareEnergyScore,
-                    ProblemHandlingScore = assessment.ProblemHandlingScore,
-                    ClearThoughtScore = assessment.ClearThoughtScore,
-                    FeelingGoodSelfScore = assessment.FeelingGoodSelfScore,
-                    FeelingCloseToPeopleScore = assessment.FeelingCloseToPeopleScore,
-                    ConfidenceScore = assessment.ConfidenceScore,
-                    MakingUpOwnMindScore = assessment.MakingUpOwnMindScore,
-                    FeelingLovedScore = assessment.FeelingLovedScore,
-                    InterestedInNewThingsScore = assessment.InterestedInNewThingsScore,
-                    FeelingCheerfulScore = assessment.FeelingCheerfulScore
-                }
-            };
-
-            return StatusCode(StatusCodes.Status201Created, response);
+            return StatusCode(StatusCodes.Status201Created, MapToResponse(assessment));
         }
         catch (Exception ex)
         {
@@ -303,12 +256,13 @@ public class WEMWBSController : LoggedInControllerBase
     {
         try
         {
-            var (user, error) = await GetCurrentUserAsync();
+            var (_, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
             var adminError = await RequireAdminAsync();
             if (adminError != null) return adminError;
 
+            // assessments ABOUT the target user (subject), regardless of who authored them
             var query = Db.UserWemwbsAssessments
                 .Where(w => w.UserId == targetUserId);
 
@@ -323,34 +277,9 @@ public class WEMWBSController : LoggedInControllerBase
                 .Take(pageSize)
                 .ToListAsync();
 
-            var assessmentResponses = assessments.Select(a => new WEMWBSResponseModel
-            {
-                Id = a.Id,
-                CreatedAt = a.CreatedAtUtc,
-                CreatedBy = a.CreatedByUserId,
-                TotalScore = CalculateTotalScore(a),
-                Scores = new WEMWBSScoresModel
-                {
-                    OptimismScore = a.OptimismScore,
-                    UsefulnessScore = a.UsefulnessScore,
-                    RelaxedScore = a.RelaxedScore,
-                    InterestedInPeopleScore = a.InterestedInPeopleScore,
-                    SpareEnergyScore = a.SpareEnergyScore,
-                    ProblemHandlingScore = a.ProblemHandlingScore,
-                    ClearThoughtScore = a.ClearThoughtScore,
-                    FeelingGoodSelfScore = a.FeelingGoodSelfScore,
-                    FeelingCloseToPeopleScore = a.FeelingCloseToPeopleScore,
-                    ConfidenceScore = a.ConfidenceScore,
-                    MakingUpOwnMindScore = a.MakingUpOwnMindScore,
-                    FeelingLovedScore = a.FeelingLovedScore,
-                    InterestedInNewThingsScore = a.InterestedInNewThingsScore,
-                    FeelingCheerfulScore = a.FeelingCheerfulScore
-                }
-            }).ToList();
-
             var response = new PaginatedWEMWBSResponseModel
             {
-                Assessments = assessmentResponses,
+                Assessments = assessments.Select(MapToResponse).ToList(),
                 Total = total,
                 Page = page,
                 PerPage = pageSize,
@@ -382,7 +311,7 @@ public class WEMWBSController : LoggedInControllerBase
     {
         try
         {
-            var (user, error) = await GetCurrentUserAsync();
+            var (_, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
             var adminError = await RequireAdminAsync();
@@ -414,9 +343,9 @@ public class WEMWBSController : LoggedInControllerBase
     }
 
     /// <summary>
-    /// Get wellbeing statistics for the authenticated user
+    /// Get statistics for the authenticated user
     /// </summary>
-    [HttpGet("statistics")]
+    [HttpGet("my-statistics")]
     [ProducesResponseType(typeof(WEMWBSStatisticsResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WEMWBSStatisticsResponseModel>> GetMyStatistics()
@@ -426,8 +355,9 @@ public class WEMWBSController : LoggedInControllerBase
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
+            // statistics over assessments ABOUT me (subject), not ones I authored
             var assessments = await Db.UserWemwbsAssessments
-                .Where(w => w.CreatedByUserId == user!.Id)
+                .Where(w => w.UserId == user!.Id)
                 .OrderBy(w => w.CreatedAtUtc)
                 .ToListAsync();
 
@@ -479,30 +409,50 @@ public class WEMWBSController : LoggedInControllerBase
 
 
 
+    private static readonly Expression<Func<WemwbsAssessmentEntityModel, int>> TotalScoreExpression =
+        w => w.OptimismScore
+           + w.UsefulnessScore
+           + w.RelaxedScore
+           + w.InterestedInPeopleScore
+           + w.SpareEnergyScore
+           + w.ProblemHandlingScore
+           + w.ClearThoughtScore
+           + w.FeelingGoodSelfScore
+           + w.FeelingCloseToPeopleScore
+           + w.ConfidenceScore
+           + w.MakingUpOwnMindScore
+           + w.FeelingLovedScore
+           + w.InterestedInNewThingsScore
+           + w.FeelingCheerfulScore;
 
+    private static readonly Func<WemwbsAssessmentEntityModel, int> CalculateTotalScore =
+        TotalScoreExpression.Compile();
 
-
-
-
-
-
-    private static int CalculateTotalScore(WemwbsAssessmentEntityModel assessment)
+    private static WEMWBSResponseModel MapToResponse(WemwbsAssessmentEntityModel a) => new()
     {
-        return assessment.OptimismScore
-            + assessment.UsefulnessScore
-            + assessment.RelaxedScore
-            + assessment.InterestedInPeopleScore
-            + assessment.SpareEnergyScore
-            + assessment.ProblemHandlingScore
-            + assessment.ClearThoughtScore
-            + assessment.FeelingGoodSelfScore
-            + assessment.FeelingCloseToPeopleScore
-            + assessment.ConfidenceScore
-            + assessment.MakingUpOwnMindScore
-            + assessment.FeelingLovedScore
-            + assessment.InterestedInNewThingsScore
-            + assessment.FeelingCheerfulScore;
-    }
+        Id = a.Id,
+        CreatedAt = a.CreatedAtUtc,
+        CreatedBy = a.CreatedByUserId,
+        Subject = a.UserId,
+        TotalScore = CalculateTotalScore(a),
+        Scores = new WEMWBSScoresModel
+        {
+            OptimismScore = a.OptimismScore,
+            UsefulnessScore = a.UsefulnessScore,
+            RelaxedScore = a.RelaxedScore,
+            InterestedInPeopleScore = a.InterestedInPeopleScore,
+            SpareEnergyScore = a.SpareEnergyScore,
+            ProblemHandlingScore = a.ProblemHandlingScore,
+            ClearThoughtScore = a.ClearThoughtScore,
+            FeelingGoodSelfScore = a.FeelingGoodSelfScore,
+            FeelingCloseToPeopleScore = a.FeelingCloseToPeopleScore,
+            ConfidenceScore = a.ConfidenceScore,
+            MakingUpOwnMindScore = a.MakingUpOwnMindScore,
+            FeelingLovedScore = a.FeelingLovedScore,
+            InterestedInNewThingsScore = a.InterestedInNewThingsScore,
+            FeelingCheerfulScore = a.FeelingCheerfulScore
+        }
+    };
 
     private static IQueryable<WemwbsAssessmentEntityModel> ApplySorting(
         IQueryable<WemwbsAssessmentEntityModel> query,
@@ -517,36 +467,8 @@ public class WEMWBSController : LoggedInControllerBase
                 ? query.OrderByDescending(w => w.CreatedAtUtc)
                 : query.OrderBy(w => w.CreatedAtUtc),
             "totalscore" => descending
-                ? query.OrderByDescending(w => w.OptimismScore
-                                                    + w.UsefulnessScore
-                                                    + w.RelaxedScore
-                                                    + w.InterestedInPeopleScore
-                                                    + w.SpareEnergyScore
-                                                    + w.ProblemHandlingScore
-                                                    + w.ClearThoughtScore
-                                                    + w.FeelingGoodSelfScore
-                                                    + w.FeelingCloseToPeopleScore
-                                                    + w.ConfidenceScore
-                                                    + w.MakingUpOwnMindScore
-                                                    + w.FeelingLovedScore
-                                                    + w.InterestedInNewThingsScore
-                                                    + w.FeelingCheerfulScore
-                )
-                : query.OrderBy(w => w.OptimismScore
-                                        + w.UsefulnessScore
-                                        + w.RelaxedScore
-                                        + w.InterestedInPeopleScore
-                                        + w.SpareEnergyScore
-                                        + w.ProblemHandlingScore
-                                        + w.ClearThoughtScore
-                                        + w.FeelingGoodSelfScore
-                                        + w.FeelingCloseToPeopleScore
-                                        + w.ConfidenceScore
-                                        + w.MakingUpOwnMindScore
-                                        + w.FeelingLovedScore
-                                        + w.InterestedInNewThingsScore
-                                        + w.FeelingCheerfulScore
-                ),
+                ? query.OrderByDescending(TotalScoreExpression)
+                : query.OrderBy(TotalScoreExpression),
             _ => query.OrderByDescending(w => w.CreatedAtUtc)
         };
     }
