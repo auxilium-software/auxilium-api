@@ -126,7 +126,7 @@ public class UserController : LoggedInControllerBase
                     // admins get all data including additional properties
                     var additionalProperties = userDoc.AdditionalProperties?
                         .ToDictionary(
-                            p => p.UrlSlug,
+                            p => p.Id.ToString(),
                             p => new AdditionalPropertySubStructureDTO
                             {
                                 Id = p.Id,
@@ -134,8 +134,7 @@ public class UserController : LoggedInControllerBase
                                 CreatedBy = p.CreatedByUserId,
                                 UpdatedAt = p.LastUpdatedAtUtc,
                                 LastUpdatedBy = p.LastUpdatedByUserId,
-                                OriginalName = p.OriginalName,
-                                UrlSlug = p.UrlSlug,
+                                DisplayName = p.DisplayName,
                                 Content = p.Content,
                                 ContentType = p.ContentType
                             }
@@ -360,7 +359,7 @@ public class UserController : LoggedInControllerBase
                 Gender = "",
                 DateOfBirth = new DateOnly(),
                 LanguagePreference = request.LanguagePreference,
-                PasswordHash = string.Empty, // no password yet — set via token
+                PasswordHash = string.Empty, // no password yet - set via token
                 AllowLogin = false,          // locked until password is set
                 MustChangePassword = true,
                 HasEmailAddressBeenVerified = false,

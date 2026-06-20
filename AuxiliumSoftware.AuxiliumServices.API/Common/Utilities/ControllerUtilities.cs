@@ -78,7 +78,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
             {
                 var additionalProperties = userDoc.AdditionalProperties?
                     .ToDictionary(
-                        p => p.UrlSlug,
+                        p => p.Id.ToString(),
                         p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
@@ -86,8 +86,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             CreatedBy = p.CreatedByUserId,
                             UpdatedAt = p.LastUpdatedAtUtc,
                             LastUpdatedBy = p.LastUpdatedByUserId,
-                            OriginalName = p.OriginalName,
-                            UrlSlug = p.UrlSlug,
+                            DisplayName = p.DisplayName,
                             Content = p.Content,
                             ContentType = p.ContentType
                         }
@@ -202,7 +201,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
                 AdditionalProperties = caseEntity.AdditionalProperties?
                     .ToDictionary(
-                        p => p.UrlSlug,
+                        p => p.Id.ToString(),
                         p => new AdditionalPropertySubStructureDTO
                         {
                             Id = p.Id,
@@ -210,8 +209,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             CreatedBy = p.CreatedByUserId,
                             UpdatedAt = p.LastUpdatedAtUtc,
                             LastUpdatedBy = p.LastUpdatedByUserId,
-                            OriginalName = p.OriginalName,
-                            UrlSlug = p.UrlSlug,
+                            DisplayName = p.DisplayName,
                             Content = p.Content,
                             ContentType = p.ContentType
                         }

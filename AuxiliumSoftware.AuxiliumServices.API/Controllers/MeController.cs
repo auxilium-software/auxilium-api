@@ -65,7 +65,7 @@ public class MeController : LoggedInControllerBase
             // get additional properties
             var additionalProperties = userDoc.AdditionalProperties?
                 .ToDictionary(
-                    p => p.UrlSlug,
+                    p => p.Id.ToString(),
                     p => new AdditionalPropertySubStructureDTO
                     {
                         Id = p.Id,
@@ -73,8 +73,7 @@ public class MeController : LoggedInControllerBase
                         CreatedBy = p.CreatedByUserId,
                         UpdatedAt = p.LastUpdatedAtUtc,
                         LastUpdatedBy = p.LastUpdatedByUserId,
-                        OriginalName = p.OriginalName,
-                        UrlSlug = p.UrlSlug,
+                        DisplayName = p.DisplayName,
                         Content = p.Content,
                         ContentType = p.ContentType
                     }

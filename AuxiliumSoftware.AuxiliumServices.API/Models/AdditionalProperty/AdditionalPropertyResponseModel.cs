@@ -4,11 +4,11 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty
 {
     public class AdditionalPropertyResponseModel
     {
-        [JsonPropertyName("urlSlug")]
-        public string UrlSlug { get; set; } = string.Empty;
+        [JsonPropertyName("id")]
+        public Guid Id { get; set; }
 
-        [JsonPropertyName("originalName")]
-        public string OriginalName { get; set; } = string.Empty;
+        [JsonPropertyName("displayName")]
+        public string DisplayName { get; set; } = string.Empty;
 
         [JsonPropertyName("content")]
         public string Content { get; set; } = string.Empty;

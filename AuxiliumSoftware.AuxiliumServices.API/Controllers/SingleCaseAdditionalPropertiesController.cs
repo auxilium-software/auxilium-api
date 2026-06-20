@@ -1,11 +1,9 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
-using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
-using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -80,13 +78,13 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         return (caseEntity, null);
     }
 
-    [HttpGet("{propertyName}")]
+    [HttpGet("{propertyId:guid}")]
     [ProducesResponseType(typeof(AdditionalPropertyResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AdditionalPropertyResponseModel>> GetProperty(
         Guid caseId,
-        string propertyName)
+        Guid propertyId)
     {
         var (user, error) = await GetCurrentUserAsync();
         if (error != null) return error;
@@ -95,8 +93,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         if (caseError != null) return caseError;
 
         var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-        var property = properties.FirstOrDefault(p =>
-            p.UrlSlug.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+        var property = properties.FirstOrDefault(p => p.Id == propertyId);
 
         if (property == null)
         {
@@ -105,15 +102,16 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
         var response = new AdditionalPropertyResponseModel
         {
-            UrlSlug = property.UrlSlug,
-            OriginalName = property.OriginalName,
+            Id = property.Id,
+            DisplayName = property.DisplayName,
             Content = property.Content,
             ContentType = property.ContentType,
             CreatedAt = property.CreatedAtUtc,
             LastUpdatedAt = property.LastUpdatedAtUtc
         };
 
-        if (property.ContentType == Common.Constants.DataEnumeratorReferenceContentType && Guid.TryParse(property.Content, out var valueId))
+        if (property.ContentType == Common.Constants.DataEnumeratorReferenceContentType
+            && Guid.TryParse(property.Content, out var valueId))
         {
             var resolved = await _dataEnumeratorService.ResolveValueDisplaysAsync(
                 [valueId], user!.LanguagePreference);
@@ -128,16 +126,14 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         return StatusCode(StatusCodes.Status200OK, response);
     }
 
-    [HttpPost("{propertyName}")]
-    [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status201Created)]
+    [HttpPost]
+    [ProducesResponseType(typeof(AdditionalPropertyCreationResponseModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<SuccessResponseModel>> CreateProperty(
+    public async Task<ActionResult<AdditionalPropertyCreationResponseModel>> CreateProperty(
         Guid caseId,
-        string propertyName,
         [FromBody] AdditionalPropertyCreationRequestModel request)
     {
         try
@@ -150,7 +146,8 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
 
             var effectiveName = request.OriginalName;
 
-            if (string.IsNullOrWhiteSpace(effectiveName) && request.ContentType == Common.Constants.DataEnumeratorReferenceContentType)
+            if (string.IsNullOrWhiteSpace(effectiveName)
+                && request.ContentType == Common.Constants.DataEnumeratorReferenceContentType)
             {
                 if (!Guid.TryParse(request.Content, out var valueId))
                     return StatusCode(StatusCodes.Status400BadRequest,
@@ -164,39 +161,26 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
                 effectiveName = r.EnumCanonicalName;
             }
 
-            var sanitizedName = ControllerUtilities.SanitisePropertyName(effectiveName);
-            if (string.IsNullOrEmpty(sanitizedName))
+            if (string.IsNullOrWhiteSpace(effectiveName))
             {
                 return StatusCode(StatusCodes.Status400BadRequest,
-                    new FailureResponseModel { Detail = "Invalid property name" });
+                    new FailureResponseModel { Detail = "Property name is required" });
             }
 
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-            var existingProp = properties.FirstOrDefault(p =>
-                p.UrlSlug.Equals(sanitizedName, StringComparison.OrdinalIgnoreCase));
-
-            if (existingProp != null)
-            {
-                return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
-                {
-                    Detail = "Property already exists"
-                });
-            }
-
-            await _caseDocService.SaveAdditionalPropertyAsync(
+            var newId = await _caseDocService.SaveAdditionalPropertyAsync(
                 user!,
                 caseId,
-                request.OriginalName,
-                sanitizedName,
+                effectiveName,
                 request.Content,
                 request.ContentType
             );
 
             Logger.LogInformation(
-                "Created property {PropertyName} for case {CaseId} by {CurrentUserId}",
-                sanitizedName, caseId, user!.Id);
+                "Created property {PropertyId} ({Name}) for case {CaseId} by {CurrentUserId}",
+                newId, effectiveName, caseId, user!.Id);
 
-            return StatusCode(StatusCodes.Status201Created, new SuccessResponseModel());
+            return StatusCode(StatusCodes.Status201Created,
+                new AdditionalPropertyCreationResponseModel { Id = newId });
         }
         catch (Exception ex)
         {
@@ -208,7 +192,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         }
     }
 
-    [HttpPatch("{propertyName}")]
+    [HttpPatch("{propertyId:guid}")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -216,7 +200,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> UpdateProperty(
         Guid caseId,
-        string propertyName,
+        Guid propertyId,
         [FromBody] AdditionalPropertyUpdateRequestModel request)
     {
         try
@@ -228,8 +212,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             if (caseError != null) return caseError;
 
             var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-            var existingProp = properties.FirstOrDefault(p =>
-                p.UrlSlug.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            var existingProp = properties.FirstOrDefault(p => p.Id == propertyId);
 
             if (existingProp == null)
             {
@@ -247,15 +230,15 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             await Db.SaveChangesAsync();
 
             Logger.LogInformation(
-                "Updated property {PropertyName} for case {CaseId} by {CurrentUserId}",
-                propertyName, caseId, user.Id);
+                "Updated property {PropertyId} ({Name}) for case {CaseId} by {CurrentUserId}",
+                existingProp.Id, existingProp.DisplayName, caseId, user.Id);
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to update property {PropertyName} for case {CaseId}",
-                propertyName, caseId);
+            Logger.LogError(ex, "Failed to update property {PropertyId} for case {CaseId}",
+                propertyId, caseId);
             return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to update property"
@@ -263,14 +246,14 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
         }
     }
 
-    [HttpDelete("{propertyName}")]
+    [HttpDelete("{propertyId:guid}")]
     [ProducesResponseType(typeof(SuccessResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SuccessResponseModel>> DeleteProperty(
         Guid caseId,
-        string propertyName)
+        Guid propertyId)
     {
         try
         {
@@ -281,8 +264,7 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             if (caseError != null) return caseError;
 
             var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-            var existingProp = properties.FirstOrDefault(p =>
-                p.UrlSlug.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            var existingProp = properties.FirstOrDefault(p => p.Id == propertyId);
 
             if (existingProp == null)
             {
@@ -292,15 +274,15 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             await _caseDocService.DeleteAdditionalPropertyAsync(caseId, existingProp.Id);
 
             Logger.LogInformation(
-                "Deleted property {PropertyName} from case {CaseId} by {CurrentUserId}",
-                propertyName, caseId, user!.Id);
+                "Deleted property {PropertyId} from case {CaseId} by {CurrentUserId}",
+                existingProp.Id, caseId, user!.Id);
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to delete property {PropertyName} from case {CaseId}",
-                propertyName, caseId);
+            Logger.LogError(ex, "Failed to delete property {PropertyId} from case {CaseId}",
+                propertyId, caseId);
             return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
             {
                 Detail = "Failed to delete property"
