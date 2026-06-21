@@ -188,16 +188,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             completed_at = t.CompletedAtUtc
                         }
                     ) ?? new Dictionary<string, object>(),
-                /*
-                Timeline = caseEntity.Timeline?
+                
+
+                Timeline = caseEntity.TimelineEntries?
                     .ToDictionary(
                         t => t.Id.ToString(),
                         t => (object)new
                         {
                             id = t.Id,
+                            title = t.Title,
+                            occurredAtUtc = t.OccurredAtUtc,
+                            description = t.Description,
                         }
                     ) ?? new Dictionary<string, object>(),
-                */
+                
 
                 AdditionalProperties = caseEntity.AdditionalProperties?
                     .ToDictionary(
