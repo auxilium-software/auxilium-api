@@ -82,6 +82,13 @@ public class CaseController : LoggedInControllerBase
                 CreatedAtUtc = DateTime.UtcNow
             });
 
+            await this._caseDocService.WriteToAuditLog(
+                currentUser: user,
+                targetCase: caseEntity,
+                entityType: CaseEntityTypeEnum.Case,
+                actionType: AuditLogActionTypeEnum.Creation
+            );
+
             await Db.SaveChangesAsync();
 
             this.Logger.LogInformation("Created case {CaseId} by user {UserId}", caseEntity.Id, user.Id);
@@ -103,6 +110,7 @@ public class CaseController : LoggedInControllerBase
                 Files = new List<string>(),
                 Messages = new List<string>(),
                 Todos = new Dictionary<string, object>(),
+                Timeline = new Dictionary<string, object>(),
                 AdditionalProperties = new Dictionary<string, AdditionalPropertySubStructureDTO>(),
                 Referrer = null,
             };
