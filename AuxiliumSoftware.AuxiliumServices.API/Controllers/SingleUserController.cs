@@ -154,6 +154,7 @@ public class SingleUserController : LoggedInControllerBase
                     AuditLogActionTypeEnum.Modification, "FullName", oldValue, request.FullName);
             }
 
+            /*
             if (request.EmailAddress != null && request.EmailAddress != userDoc.EmailAddress)
             {
                 // check for email uniqueness
@@ -173,6 +174,7 @@ public class SingleUserController : LoggedInControllerBase
                 await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
                     AuditLogActionTypeEnum.Modification, "EmailAddress", oldValue, request.EmailAddress);
             }
+            */
 
             if (request.TelephoneNumber != null && request.TelephoneNumber != userDoc.TelephoneNumber)
             {

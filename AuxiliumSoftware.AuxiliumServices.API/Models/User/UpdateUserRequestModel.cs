@@ -7,8 +7,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.User
         public string? FullName { get; set; }
 
 
-        [EmailAddress(ErrorMessage = "Invalid email address")]
-        public string? EmailAddress { get; set; }
+        // [EmailAddress(ErrorMessage = "Invalid email address")]
+        // public string? EmailAddress { get; set; }
 
 
         [Phone(ErrorMessage = "Invalid telephone number")]
