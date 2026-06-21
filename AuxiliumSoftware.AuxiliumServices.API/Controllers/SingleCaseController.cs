@@ -67,6 +67,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     .Include(c => c.Files)
                     .Include(c => c.Messages)
                     .Include(c => c.Todos)
+                    .Include(c => c.TimelineEntries)
                     .Include(c => c.AdditionalProperties)
                     .FirstOrDefaultAsync(c => c.Id == caseId);
 
