@@ -77,7 +77,11 @@ public class SingleCasePeopleController : LoggedInControllerBase
             }
 
             // add client
-            await _caseDocService.AddClientAsync(caseId, request.UserID);
+            await _caseDocService.AddClientAsync(
+                caseId: caseId,
+                userId: request.UserID,
+                actorUserId: user.Id
+            );
 
             this.Logger.LogInformation(
                 "Added client {ClientId} to case {CaseId} by user {UserId}",
@@ -127,7 +131,11 @@ public class SingleCasePeopleController : LoggedInControllerBase
             }
 
             // remove the client
-            await _caseDocService.RemoveClientAsync(caseId, clientId);
+            await _caseDocService.RemoveClientAsync(
+                caseId: caseId,
+                userId: clientId,
+                actorUserId: user.Id
+            );
 
             this.Logger.LogInformation(
                 "Removed client {ClientId} from case {CaseId} by user {UserId}",
@@ -190,7 +198,11 @@ public class SingleCasePeopleController : LoggedInControllerBase
             }
 
             // add worker
-            await _caseDocService.AddWorkerAsync(caseId, request.UserID);
+            await _caseDocService.AddWorkerAsync(
+                caseId: caseId,
+                userId: request.UserID,
+                actorUserId: user.Id
+            );
 
             this.Logger.LogInformation(
                 "Added worker {WorkerId} to case {CaseId} by user {UserId}",
@@ -240,7 +252,11 @@ public class SingleCasePeopleController : LoggedInControllerBase
             }
 
             // remove worker
-            await _caseDocService.RemoveWorkerAsync(caseId, workerId);
+            await _caseDocService.RemoveWorkerAsync(
+                caseId: caseId,
+                userId: workerId,
+                actorUserId: user.Id
+            );
 
             this.Logger.LogInformation(
                 "Removed worker {WorkerId} from case {CaseId} by user {UserId}",

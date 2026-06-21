@@ -150,8 +150,6 @@ public class SingleUserController : LoggedInControllerBase
             {
                 var oldValue = userDoc.FullName;
                 userDoc.FullName = request.FullName;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "FullName", oldValue, request.FullName);
             }
 
             /*
@@ -177,52 +175,22 @@ public class SingleUserController : LoggedInControllerBase
             */
 
             if (request.TelephoneNumber != null && request.TelephoneNumber != userDoc.TelephoneNumber)
-            {
-                var oldValue = userDoc.TelephoneNumber;
                 userDoc.TelephoneNumber = request.TelephoneNumber;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "TelephoneNumber", oldValue, request.TelephoneNumber);
-            }
 
             if (request.FullAddress != null && request.FullAddress != userDoc.FullAddress)
-            {
-                var oldValue = userDoc.FullAddress;
                 userDoc.FullAddress = request.FullAddress;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "FullAddress", oldValue, request.FullAddress);
-            }
 
             if (request.Gender != null && request.Gender != userDoc.Gender)
-            {
-                var oldValue = userDoc.Gender;
                 userDoc.Gender = request.Gender;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "Gender", oldValue, request.Gender);
-            }
 
             if (request.DateOfBirth.HasValue && request.DateOfBirth.Value != userDoc.DateOfBirth)
-            {
-                var oldValue = userDoc.DateOfBirth?.ToString("yyyy-MM-dd");
                 userDoc.DateOfBirth = request.DateOfBirth.Value;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "DateOfBirth", oldValue, request.DateOfBirth.Value.ToString("yyyy-MM-dd"));
-            }
 
             if (request.LanguagePreference != null && request.LanguagePreference != userDoc.LanguagePreference)
-            {
-                var oldValue = userDoc.LanguagePreference;
                 userDoc.LanguagePreference = request.LanguagePreference;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "LanguagePreference", oldValue, request.LanguagePreference);
-            }
 
             if (request.HowDidYouFindOutAboutOurService != null && request.HowDidYouFindOutAboutOurService != userDoc.HowDidYouFindOutAboutOurService)
-            {
-                var oldValue = userDoc.HowDidYouFindOutAboutOurService;
                 userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
-                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
-                    AuditLogActionTypeEnum.Modification, "HowDidYouFindOutAboutOurService", oldValue, request.HowDidYouFindOutAboutOurService);
-            }
 
             userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
             userDoc.LastUpdatedByUserId = user!.Id;

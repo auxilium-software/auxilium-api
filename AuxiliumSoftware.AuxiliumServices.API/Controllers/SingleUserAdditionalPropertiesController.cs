@@ -151,6 +151,14 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 request.Content,
                 request.ContentType
             );
+            await this._userDocService.WriteToAuditLog(
+                actorUserId: user.Id,
+                targetUserId: userDoc.Id,
+                entityType: UserEntityTypeEnum.User_AdditionalProperty,
+                actionType: AuditLogActionTypeEnum.Creation,
+                entityId: newId
+            );
+            await this.Db.SaveChangesAsync();
 
             Logger.LogInformation(
                 "Created property {PropertyId} ({Name}) for user {UserId} by {CurrentUserId}",
@@ -221,12 +229,12 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
             }
 
             await _userDocService.WriteToAuditLog(
-                currentUser: user,
-                targetUser: userDoc,
+                actorUserId: user.Id,
+                targetUserId: userDoc.Id,
                 entityType: UserEntityTypeEnum.User_AdditionalProperty,
                 entityId: existingProp.Id,
                 actionType: AuditLogActionTypeEnum.Modification,
-                propertyName: existingProp.DisplayName,
+                propertyName: "content",
                 oldValue: previousContent,
                 newValue: existingProp.Content
             );
@@ -285,11 +293,25 @@ public class SingleUserAdditionalPropertiesController : LoggedInControllerBase
                 return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
             }
 
-            await _userDocService.DeleteAdditionalPropertyAsync(userId, existingProp.Id);
+            await _userDocService.DeleteAdditionalPropertyAsync(
+                userId: userId,
+                additionalPropertyId: existingProp.Id,
+                actorUserId: user.Id
+            );
+
+            await this._userDocService.WriteToAuditLog(
+                actorUserId: user.Id,
+                targetUserId: userDoc.Id,
+                entityType: UserEntityTypeEnum.User_AdditionalProperty,
+                actionType: AuditLogActionTypeEnum.Deletion,
+                entityId: existingProp.Id
+            );
+            await this.Db.SaveChangesAsync();
 
             Logger.LogInformation(
                 "Deleted property {PropertyId} from user {UserId} by {CurrentUserId}",
-                existingProp.Id, userId, user!.Id);
+                existingProp.Id, userId, user!.Id
+            );
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }

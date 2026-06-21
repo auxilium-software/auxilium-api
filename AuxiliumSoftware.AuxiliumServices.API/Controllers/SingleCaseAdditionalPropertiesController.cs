@@ -3,6 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.AdditionalProperty;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -211,29 +212,18 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             var (caseEntity, caseError) = await GetCaseWithAccessCheckAsync(caseId, user!, requireWorker: true);
             if (caseError != null) return caseError;
 
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-            var existingProp = properties.FirstOrDefault(p => p.Id == propertyId);
-
-            if (existingProp == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
-            }
-
-            existingProp.Content = request.Content;
-            existingProp.ContentType = request.ContentType;
-            existingProp.LastUpdatedAtUtc = DateTime.UtcNow;
-            existingProp.LastUpdatedByUserId = user!.Id;
-            await Db.SaveChangesAsync();
-
-            caseEntity!.LastUpdatedAtUtc = DateTime.UtcNow;
-            caseEntity.LastUpdatedByUserId = user.Id;
-            await Db.SaveChangesAsync();
+            await _caseDocService.UpdateAdditionalPropertyAsync(
+                caseId, propertyId, request.Content, request.ContentType, user!.Id);
 
             Logger.LogInformation(
-                "Updated property {PropertyId} ({Name}) for case {CaseId} by {CurrentUserId}",
-                existingProp.Id, existingProp.DisplayName, caseId, user.Id);
+                "Updated property {PropertyId} for case {CaseId} by {CurrentUserId}",
+                propertyId, caseId, user.Id);
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
+        }
+        catch (KeyNotFoundException)
+        {
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
         }
         catch (Exception ex)
         {
@@ -263,21 +253,17 @@ public class SingleCaseAdditionalPropertiesController : LoggedInControllerBase
             var (caseEntity, caseError) = await GetCaseWithAccessCheckAsync(caseId, user!, requireWorker: true);
             if (caseError != null) return caseError;
 
-            var properties = await _caseDocService.GetAdditionalPropertiesAsync(caseId);
-            var existingProp = properties.FirstOrDefault(p => p.Id == propertyId);
-
-            if (existingProp == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
-            }
-
-            await _caseDocService.DeleteAdditionalPropertyAsync(caseId, existingProp.Id);
+            await _caseDocService.DeleteAdditionalPropertyAsync(caseId, propertyId, user!.Id);
 
             Logger.LogInformation(
                 "Deleted property {PropertyId} from case {CaseId} by {CurrentUserId}",
-                existingProp.Id, caseId, user!.Id);
+                propertyId, caseId, user.Id);
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
+        }
+        catch (KeyNotFoundException)
+        {
+            return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Property not found" });
         }
         catch (Exception ex)
         {

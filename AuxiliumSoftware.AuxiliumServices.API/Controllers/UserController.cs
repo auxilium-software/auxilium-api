@@ -408,8 +408,8 @@ public class UserController : LoggedInControllerBase
             });
 
             await _userDocService.WriteToAuditLog(
-                currentUser: user,
-                targetUser: newUser,
+                actorUserId: user.Id,
+                targetUserId: newUser.Id,
                 entityType: UserEntityTypeEnum.User,
                 entityId: newUser.Id,
                 actionType: AuditLogActionTypeEnum.Creation

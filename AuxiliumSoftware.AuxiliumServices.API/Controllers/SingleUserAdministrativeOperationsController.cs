@@ -354,10 +354,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 Db.Users.Remove(userDoc);
 
                 await this._userDocService.WriteToAuditLog(
-                    currentUser: user,
-                    targetUser: userDoc,
+                    actorUserId: user.Id,
+                    targetUserId: userDoc.Id,
                     entityType: UserEntityTypeEnum.User,
-                    entityId: userDoc.Id,
                     actionType: AuditLogActionTypeEnum.Deletion
                 );
 

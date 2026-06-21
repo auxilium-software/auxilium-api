@@ -83,8 +83,8 @@ public class CaseController : LoggedInControllerBase
             });
 
             await this._caseDocService.WriteToAuditLog(
-                currentUser: user,
-                targetCase: caseEntity,
+                actorUserId: user.Id,
+                caseId: caseEntity.Id,
                 entityType: CaseEntityTypeEnum.Case,
                 actionType: AuditLogActionTypeEnum.Creation
             );

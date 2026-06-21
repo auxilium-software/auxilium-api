@@ -125,25 +125,27 @@ public class SingleCaseTodoController : LoggedInControllerBase
 
             // update the todo
             await _caseDocService.UpdateTodoAsync(
-                caseId,
-                todoId,
-                request.Summary,
-                request.Description,
-                request.Priority,
-                request.DueDate,
-                request.AssignedTo,
-                request.Reminder
+                caseId: caseId,
+                todoId: todoId,
+                actorUserId: user.Id,
+                summary: request.Summary,
+                description: request.Description,
+                priority: request.Priority,
+                dueDate: request.DueDate,
+                assignedTo: request.AssignedTo,
+                reminder: request.Reminder
             );
 
             // update status is set
             if (request.Status.HasValue)
             {
                 await _caseDocService.UpdateTodoStatusAsync(
-                    caseId,
-                    todoId,
-                    request.Status.Value,
-                    request.Status == TodoStatusEnum.Completed ? user!.Id : null,
-                    request.CompletionNote
+                    caseId: caseId,
+                    todoId: todoId,
+                    actorUserId: user.Id,
+                    newStatus: request.Status.Value,
+                    completedBy: request.Status == TodoStatusEnum.Completed ? user!.Id : null,
+                    completionNotes: request.CompletionNote
                 );
             }
 
@@ -194,7 +196,11 @@ public class SingleCaseTodoController : LoggedInControllerBase
             }
 
             // delete the todo
-            await _caseDocService.DeleteTodoAsync(caseId, todoId);
+            await _caseDocService.DeleteTodoAsync(
+                caseId: caseId,
+                todoId: todoId,
+                actorUserId: user.Id
+            );
 
             return StatusCode(StatusCodes.Status200OK, new SuccessResponseModel());
         }

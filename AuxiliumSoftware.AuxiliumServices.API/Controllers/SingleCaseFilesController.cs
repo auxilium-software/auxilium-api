@@ -56,6 +56,12 @@ public class SingleCaseFilesController : LoggedInControllerBase
                 return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "No file provided" });
             }
 
+            var caseDoc = await _caseDocService.GetDocumentAsync(caseId);
+            if (caseDoc == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "Case not found" });
+            }
+
             // check case access
             if (!await _caseDocService.CheckUserAccessAsync(caseId, user!))
             {
