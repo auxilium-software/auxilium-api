@@ -237,6 +237,13 @@ builder.Services.AddDbContext<AuxiliumDbContext>(options =>
 });
 
 
+
+// cronjobs
+builder.Services.AddHostedService<ServiceUsageStatisticsWorker>();
+
+
+
+
 /*
  * 1. log the request
  * 2. enforce https

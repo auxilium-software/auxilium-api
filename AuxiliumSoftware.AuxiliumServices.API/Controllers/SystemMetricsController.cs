@@ -79,5 +79,109 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     .ToListAsync()
             });
         }
+
+        [HttpGet("api-cpu-usage")]
+        [ProducesResponseType(typeof(MetricsOverTimeResponseModel), StatusCodes.Status200OK)]
+        public async Task<ActionResult<MetricsOverTimeResponseModel>> GetApiCpuUsageOverTime()
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            return StatusCode(StatusCodes.Status200OK, new MetricsOverTimeResponseModel
+            {
+                MetricKey = SystemMetricKeyEnum.Api_CpuUsagePercentage,
+                Metrics = await this.Db.System_Metrics
+                    .Where(m => m.MetricKey == SystemMetricKeyEnum.Api_CpuUsagePercentage)
+                    .OrderByDescending(m => m.CreatedAtUtc)
+                    .Take(100)
+                    .Select(m => new MetricEntryResponseModel
+                    {
+                        Id = m.Id,
+                        CreatedAt = m.CreatedAtUtc,
+                        MetricValue = m.MetricValue
+                    })
+                    .ToListAsync()
+            });
+        }
+
+        [HttpGet("api-ram-usage")]
+        [ProducesResponseType(typeof(MetricsOverTimeResponseModel), StatusCodes.Status200OK)]
+        public async Task<ActionResult<MetricsOverTimeResponseModel>> GetApiRamUsageOverTime()
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            return StatusCode(StatusCodes.Status200OK, new MetricsOverTimeResponseModel
+            {
+                MetricKey = SystemMetricKeyEnum.Api_MemoryUsageBytes,
+                Metrics = await this.Db.System_Metrics
+                    .Where(m => m.MetricKey == SystemMetricKeyEnum.Api_MemoryUsageBytes)
+                    .OrderByDescending(m => m.CreatedAtUtc)
+                    .Take(100)
+                    .Select(m => new MetricEntryResponseModel
+                    {
+                        Id = m.Id,
+                        CreatedAt = m.CreatedAtUtc,
+                        MetricValue = m.MetricValue
+                    })
+                    .ToListAsync()
+            });
+        }
+
+        [HttpGet("task-runner-cpu-usage")]
+        [ProducesResponseType(typeof(MetricsOverTimeResponseModel), StatusCodes.Status200OK)]
+        public async Task<ActionResult<MetricsOverTimeResponseModel>> GetTaskRunnerCpuUsageOverTime()
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            return StatusCode(StatusCodes.Status200OK, new MetricsOverTimeResponseModel
+            {
+                MetricKey = SystemMetricKeyEnum.TaskRunner_CpuUsagePercentage,
+                Metrics = await this.Db.System_Metrics
+                    .Where(m => m.MetricKey == SystemMetricKeyEnum.TaskRunner_CpuUsagePercentage)
+                    .OrderByDescending(m => m.CreatedAtUtc)
+                    .Take(100)
+                    .Select(m => new MetricEntryResponseModel
+                    {
+                        Id = m.Id,
+                        CreatedAt = m.CreatedAtUtc,
+                        MetricValue = m.MetricValue
+                    })
+                    .ToListAsync()
+            });
+        }
+
+        [HttpGet("task-runner-ram-usage")]
+        [ProducesResponseType(typeof(MetricsOverTimeResponseModel), StatusCodes.Status200OK)]
+        public async Task<ActionResult<MetricsOverTimeResponseModel>> GetTaskRunnerRamUsageOverTime()
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+            var adminError = await this.RequireAdminAsync();
+            if (adminError != null) return adminError;
+
+            return StatusCode(StatusCodes.Status200OK, new MetricsOverTimeResponseModel
+            {
+                MetricKey = SystemMetricKeyEnum.TaskRunner_MemoryUsageBytes,
+                Metrics = await this.Db.System_Metrics
+                    .Where(m => m.MetricKey == SystemMetricKeyEnum.TaskRunner_MemoryUsageBytes)
+                    .OrderByDescending(m => m.CreatedAtUtc)
+                    .Take(100)
+                    .Select(m => new MetricEntryResponseModel
+                    {
+                        Id = m.Id,
+                        CreatedAt = m.CreatedAtUtc,
+                        MetricValue = m.MetricValue
+                    })
+                    .ToListAsync()
+            });
+        }
     }
 }

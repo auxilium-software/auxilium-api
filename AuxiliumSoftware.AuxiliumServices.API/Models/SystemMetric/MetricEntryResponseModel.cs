@@ -16,6 +16,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.SystemMetric
 
         [Required]
         [JsonPropertyName("value")]
-        public required float MetricValue { get; set; }
+        public required double MetricValue { get; set; }
     }
 }
