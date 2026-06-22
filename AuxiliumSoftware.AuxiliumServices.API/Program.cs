@@ -1,3 +1,4 @@
+using AuxiliumSoftware.AuxiliumServices.API.CronJobs;
 using AuxiliumSoftware.AuxiliumServices.API.Filters;
 using AuxiliumSoftware.AuxiliumServices.API.JsonSerialisationConverters;
 using AuxiliumSoftware.AuxiliumServices.API.Middleware;
