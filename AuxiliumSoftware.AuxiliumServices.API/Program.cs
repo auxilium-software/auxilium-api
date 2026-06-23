@@ -1,12 +1,16 @@
-using AuxiliumSoftware.AuxiliumServices.API.CronJobs;
 using AuxiliumSoftware.AuxiliumServices.API.Filters;
 using AuxiliumSoftware.AuxiliumServices.API.JsonSerialisationConverters;
+using AuxiliumSoftware.AuxiliumServices.API.Metrics;
 using AuxiliumSoftware.AuxiliumServices.API.Middleware;
 using AuxiliumSoftware.AuxiliumServices.Common.Configuration.Sections.Databases;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Messaging;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Collectors;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Common;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Workers;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -239,8 +243,24 @@ builder.Services.AddDbContext<AuxiliumDbContext>(options =>
 
 
 
-// cronjobs
-builder.Services.AddHostedService<ServiceUsageStatisticsWorker>();
+builder.Services.AddSingleton<IMetricCollector>(_ => new ProcessResourceCollector(new ProcessMetricKeys(
+    Cpu: SystemMetricKeyEnum.Api_CpuUsageAsPercentage,
+    Memory: SystemMetricKeyEnum.Api_MemoryUsageInBytes,
+    Uptime: SystemMetricKeyEnum.Api_UptimeInSeconds)));
+
+builder.Services.AddSingleton<IMetricCollector>(_ => new RuntimeCollector(new RuntimeMetricKeys(
+    ThreadPoolQueueLength: SystemMetricKeyEnum.Api_ThreadPoolQueueLength,
+    Gen0CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen0CollectionsPerMinute,
+    Gen1CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen1CollectionsPerMinute,
+    Gen2CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen2CollectionsPerMinute,
+    TimeInGcPercentage: SystemMetricKeyEnum.Api_TimeInGcAsPercentage)));
+
+builder.Services.AddSingleton<HttpMetricsAccumulator>();
+builder.Services.AddSingleton<IMetricCollector, HttpMetricsCollector>();
+
+builder.Services.AddHostedService<MinutelyMetricsWorker>();
+builder.Services.AddHostedService<HourlyMetricsWorker>();
+
 
 
 
@@ -250,6 +270,7 @@ builder.Services.AddHostedService<ServiceUsageStatisticsWorker>();
  * 2. enforce https
  * 3. sort out cors stuff
  * 4. manage ip and user blocking
+ * 5. http metrics
  */
 
 
@@ -273,6 +294,7 @@ if (builder.Configuration.GetValue<bool>("API:UseHttpsRedirection"))
 app.UseCors();
 
 app.UseMiddleware<WafIpMiddleware>();
+app.UseMiddleware<HttpMetricsMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
