@@ -243,6 +243,7 @@ builder.Services.AddDbContext<AuxiliumDbContext>(options =>
 
 
 
+// metrics
 builder.Services.AddSingleton<IMetricCollector>(_ => new ProcessResourceCollector(new ProcessMetricKeys(
     Cpu: SystemMetricKeyEnum.Api_CpuUsageAsPercentage,
     Memory: SystemMetricKeyEnum.Api_MemoryUsageInBytes,
