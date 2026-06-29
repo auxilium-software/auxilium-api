@@ -1,6 +1,7 @@
 ﻿using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Common;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Interfaces;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Metrics

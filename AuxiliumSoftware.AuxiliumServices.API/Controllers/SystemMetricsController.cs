@@ -2,10 +2,13 @@
 using AuxiliumSoftware.AuxiliumServices.API.Models;
 using AuxiliumSoftware.AuxiliumServices.API.Models.SystemMetric;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
-using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Naming;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Sinks;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 {
@@ -14,16 +17,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Tags("System Metrics")]
     public class SystemMetricsController : LoggedInControllerBase
     {
+        private readonly IMetricSink _metricSink;
+
         public SystemMetricsController(
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
             AuxiliumDbContext db,
             IWebApplicationFirewallService waf,
             ILogger<SystemMetricsController> logger,
-            ITotpService totpService
+            ITotpService totpService,
+            IMetricSink metricSink
         )
         : base(systemSettingsService, configuration, db, waf, logger, totpService)
         {
+            _metricSink = metricSink;
         }
 
         [HttpGet("series/{metricKey}")]
@@ -39,16 +46,23 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
 
             if (!Enum.TryParse<SystemMetricKeyEnum>(metricKey, ignoreCase: true, out var key) || !Enum.IsDefined(key))
             {
-                return StatusCode(
-                    StatusCodes.Status404NotFound,
-                    new FailureResponseModel
-                    {
-                        Detail = $"The metric key '{metricKey}' is not valid."
-                    }
-                );
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = $"The metric key '{metricKey}' is not valid."
+                });
             }
 
-            return StatusCode(StatusCodes.Status200OK, await BuildSeriesAsync(key));
+            var records = await _metricSink.ReadLatestAsync(key, 100, HttpContext.RequestAborted);
+
+            return StatusCode(StatusCodes.Status200OK, new MetricsOverTimeResponseModel
+            {
+                MetricKey = key,
+                Metrics = records.Select(r => new MetricEntryResponseModel
+                {
+                    CreatedAt = r.TimestampUtc,
+                    MetricValue = r.Value,
+                }).ToList()
+            });
         }
 
         [HttpGet("latest")]
@@ -61,36 +75,15 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             var adminError = await this.RequireAdminAsync();
             if (adminError != null) return adminError;
 
-            var latest = await this.Db.System_Metrics
-                .GroupBy(m => m.MetricKey)
-                .Select(g => g.OrderByDescending(m => m.CreatedAtUtc).First())
-                .ToListAsync();
+            var latest = await _metricSink.ReadLatestPerKeyAsync(HttpContext.RequestAborted);
 
-            return StatusCode(StatusCodes.Status200OK, latest.Select(m => new
+            return StatusCode(StatusCodes.Status200OK, latest.Select(r => new
             {
-                metricKey = m.MetricKey.ToString(),
-                value = m.MetricValue,
-                createdAt = m.CreatedAtUtc
+                metricKey = JsonEnumNames<SystemMetricKeyEnum>.Name(r.Key),
+                value = r.Value,
+                label = r.Label,
+                createdAt = r.TimestampUtc
             }));
-        }
-
-        private async Task<MetricsOverTimeResponseModel> BuildSeriesAsync(SystemMetricKeyEnum key)
-        {
-            return new MetricsOverTimeResponseModel
-            {
-                MetricKey = key,
-                Metrics = await this.Db.System_Metrics
-                    .Where(m => m.MetricKey == key)
-                    .OrderByDescending(m => m.CreatedAtUtc)
-                    .Take(100)
-                    .Select(m => new MetricEntryResponseModel
-                    {
-                        Id = m.Id,
-                        CreatedAt = m.CreatedAtUtc,
-                        MetricValue = m.MetricValue
-                    })
-                    .ToListAsync()
-            };
         }
     }
 }
