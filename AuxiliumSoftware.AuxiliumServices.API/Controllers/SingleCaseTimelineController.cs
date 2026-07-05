@@ -37,7 +37,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<CaseTimelineEntryResponseModel>> CreateTimelineEntry(
+        public async Task<ActionResult<CaseTimelineEntryResponseModel>> CreateTimelineNote(
             Guid caseId,
             [FromBody] CaseTimelineEntryCreationRequestModel request
         )
@@ -110,7 +110,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<SuccessResponseModel>> UpdateTimelineEntry(
+        public async Task<ActionResult<SuccessResponseModel>> UpdateTimelineNote(
             Guid caseId,
             Guid timelineEntryId,
             [FromBody] CaseTimelineEntryUpdateRequestModel request
