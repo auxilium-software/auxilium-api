@@ -12,15 +12,16 @@
     <PackageReference Include="FluentAssertions" Version="8.8.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.*" />
     <PackageReference Include="Moq" Version="4.20.*" />
-    <PackageReference Include="MSTest" Version="3.6.*" />
-    <PackageReference Include="xunit" Version="2.9.*" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.*">
+    <PackageReference Include="MSTest" Version="4.3.2" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 
+
     <!-- App dependencies -->
-    <PackageReference Include="AuxiliumSoftware.AuxiliumServices.Common" Version="3.0.46" />    
+    <PackageReference Include="AuxiliumSoftware.AuxiliumServices.Common" Version="3.0.47" />    
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
