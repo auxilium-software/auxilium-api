@@ -156,8 +156,20 @@ public class CaseController : LoggedInControllerBase
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
-            var caseResponses = cases.Select(ControllerUtilities.CaseMapToCaseResponseModel).ToList();
+            var caseIds = cases.Select(c => c.Id).ToList();
+            var assignmentEvents = await Db.Log_CaseModificationEvents
+                .Where(e => caseIds.Contains(e.CaseId)
+                    && (e.EntityType == CaseEntityTypeEnum.Case_Client || e.EntityType == CaseEntityTypeEnum.Case_Worker)
+                    && (e.Action == AuditLogActionTypeEnum.Assignment || e.Action == AuditLogActionTypeEnum.Unassignment))
+                .ToListAsync();
+            var eventsByCase = assignmentEvents
+                .GroupBy(e => e.CaseId)
+                .ToDictionary(g => g.Key, g => g.AsEnumerable());
+            var caseResponses = cases
+                .Select(c => ControllerUtilities.CaseMapToCaseResponseModel(
+                    c,
+                    eventsByCase.TryGetValue(c.Id, out var evs) ? evs : null))
+                .ToList();
 
             var response = new PaginatedCasesResponseModel
             {
@@ -210,8 +222,20 @@ public class CaseController : LoggedInControllerBase
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
-            var caseResponses = cases.Select(ControllerUtilities.CaseMapToCaseResponseModel).ToList();
+            var caseIds = cases.Select(c => c.Id).ToList();
+            var auditLog = await Db.Log_CaseModificationEvents
+                .Where(e => caseIds.Contains(e.CaseId)
+                    && (e.EntityType == CaseEntityTypeEnum.Case_Client || e.EntityType == CaseEntityTypeEnum.Case_Worker)
+                    && (e.Action == AuditLogActionTypeEnum.Assignment || e.Action == AuditLogActionTypeEnum.Unassignment))
+                .ToListAsync();
+            var eventsByCase = auditLog
+                .GroupBy(e => e.CaseId)
+                .ToDictionary(g => g.Key, g => g.AsEnumerable());
+            var caseResponses = cases
+                .Select(c => ControllerUtilities.CaseMapToCaseResponseModel(
+                    c,
+                    eventsByCase.TryGetValue(c.Id, out var evs) ? evs : null))
+                .ToList();
 
             var response = new PaginatedCasesResponseModel
             {
@@ -301,8 +325,20 @@ public class CaseController : LoggedInControllerBase
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
-            var caseResponses = cases.Select(ControllerUtilities.CaseMapToCaseResponseModel).ToList();
+            var caseIds = cases.Select(c => c.Id).ToList();
+            var assignmentEvents = await Db.Log_CaseModificationEvents
+                .Where(e => caseIds.Contains(e.CaseId)
+                    && (e.EntityType == CaseEntityTypeEnum.Case_Client || e.EntityType == CaseEntityTypeEnum.Case_Worker)
+                    && (e.Action == AuditLogActionTypeEnum.Assignment || e.Action == AuditLogActionTypeEnum.Unassignment))
+                .ToListAsync();
+            var eventsByCase = assignmentEvents
+                .GroupBy(e => e.CaseId)
+                .ToDictionary(g => g.Key, g => g.AsEnumerable());
+            var caseResponses = cases
+                .Select(c => ControllerUtilities.CaseMapToCaseResponseModel(
+                    c,
+                    eventsByCase.TryGetValue(c.Id, out var evs) ? evs : null))
+                .ToList();
 
             var response = new PaginatedCasesResponseModel
             {
