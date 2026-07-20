@@ -3,6 +3,7 @@ using AuxiliumSoftware.AuxiliumServices.API.Models.User;
 using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
 using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
 using AuxiliumSoftware.AuxiliumServices.Common.Services;
 using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
 using Microsoft.EntityFrameworkCore;
@@ -149,8 +150,67 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                 IsCaseWorker = null
             };
         }
-        public static CaseResponseModel CaseMapToCaseResponseModel(CaseEntityModel caseEntity)
+        public static CaseResponseModel CaseMapToCaseResponseModel(
+            CaseEntityModel caseEntity,
+            IEnumerable<LogCaseModificationEventEntityModel>? caseModificationEvents = null
+        )
         {
+            var timelineItems = new List<(DateTime OccurredAt, string Id, object Payload)>();
+
+            if (caseEntity.TimelineEntries != null)
+            {
+                foreach (var t in caseEntity.TimelineEntries)
+                {
+                    timelineItems.Add((
+                        t.OccurredAtUtc,
+                        t.Id.ToString(),
+                        new
+                        {
+                            id = t.Id,
+                            entryType = t.EntryType,
+                            title = t.Title,
+                            occurredAtUtc = t.OccurredAtUtc,
+                            description = t.Description,
+                        }
+                    ));
+                }
+            }
+
+            if (caseModificationEvents != null)
+            {
+                foreach (var e in caseModificationEvents)
+                {
+                    // only client/worker assignment + unassignment events belong on the timeline
+                    if (e.EntityType != CaseEntityTypeEnum.Case_Client && e.EntityType != CaseEntityTypeEnum.Case_Worker)
+                        continue;
+                    if (e.Action != AuditLogActionTypeEnum.Assignment && e.Action != AuditLogActionTypeEnum.Unassignment)
+                        continue;
+
+                    var isWorker = e.EntityType == CaseEntityTypeEnum.Case_Worker;
+                    var isAssignment = e.Action == AuditLogActionTypeEnum.Assignment;
+
+                    timelineItems.Add((
+                        e.CreatedAtUtc,
+                        e.Id.ToString(),
+                        new
+                        {
+                            id = e.Id,
+                            entryType = "note.system",
+                            title = $"{(isWorker ? "Worker" : "Client")} {(isAssignment ? "added to" : "removed from")} case",
+                            occurredAtUtc = e.CreatedAtUtc,
+                            description = (string?)null,
+                            action = isAssignment ? "added" : "removed",
+                            affectedUserId = e.EntityId,
+                            actorUserId = e.CreatedByUserId,
+                        }
+                    ));
+                }
+            }
+
+            var timeline = timelineItems
+                .OrderByDescending(x => x.OccurredAt)
+                .ToDictionary(x => x.Id, x => x.Payload);
+
             return new CaseResponseModel
             {
                 ID = caseEntity.Id,
@@ -172,7 +232,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
 
                 Referrer = null,
 
-                // Map todos from entities
                 Todos = caseEntity.Todos?
                     .ToDictionary(
                         t => t.Id.ToString(),
@@ -188,20 +247,8 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Common.Utilities
                             completed_at = t.CompletedAtUtc
                         }
                     ) ?? new Dictionary<string, object>(),
-                
 
-                Timeline = caseEntity.TimelineEntries?
-                    .ToDictionary(
-                        t => t.Id.ToString(),
-                        t => (object)new
-                        {
-                            id = t.Id,
-                            title = t.Title,
-                            occurredAtUtc = t.OccurredAtUtc,
-                            description = t.Description,
-                        }
-                    ) ?? new Dictionary<string, object>(),
-                
+                Timeline = timeline,
 
                 AdditionalProperties = caseEntity.AdditionalProperties?
                     .ToDictionary(
