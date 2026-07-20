@@ -89,7 +89,13 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     });
                 }
 
-                var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity);
+var auditLog = await Db.Log_CaseModificationEvents
+    .Where(a => a.CaseId == caseEntity.Id
+        && (a.EntityType == CaseEntityTypeEnum.Case_Client || a.EntityType == CaseEntityTypeEnum.Case_Worker)
+        && (a.Action == AuditLogActionTypeEnum.Assignment || a.Action == AuditLogActionTypeEnum.Unassignment))
+    .ToListAsync();
+
+                var response = ControllerUtilities.CaseMapToCaseResponseModel(caseEntity, auditLog);
                 await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user!.LanguagePreference);
                 return StatusCode(StatusCodes.Status200OK, response);
             }
