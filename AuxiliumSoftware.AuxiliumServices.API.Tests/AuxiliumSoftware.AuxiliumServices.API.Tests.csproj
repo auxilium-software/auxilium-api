@@ -20,19 +20,10 @@
     </PackageReference>
 
     <!-- App dependencies -->
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Dapper" Version="2.1.*" />
-    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.*" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-    <PackageReference Include="MySqlConnector" Version="2.5.*" />
-    <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
+    <PackageReference Include="AuxiliumSoftware.AuxiliumServices.Common" Version="3.0.46" />    
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.*" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.*" />
-    <PackageReference Include="YamlDotNet" Version="16.3.*" />
   </ItemGroup>
 
   <ItemGroup>
