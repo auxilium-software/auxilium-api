@@ -38,13 +38,7 @@ ENV ASPNETCORE_ENVIRONMENT=Development
 
 EXPOSE 1938
 
-ENTRYPOINT [
-    "dotnet", "watch", "run",
-    "--project", "AuxiliumSoftware.AuxiliumServices.API",
-    "--no-launch-profile",
-    "--",
-    "--config-path", "/etc/auxilium/config.yaml"
-]
+ENTRYPOINT ["dotnet", "watch", "run", "--project", "AuxiliumSoftware.AuxiliumServices.API", "--no-launch-profile", "--", "--config-path", "/etc/auxilium/config.yaml"]
 
 
 # ==================================================
@@ -68,8 +62,4 @@ USER app
 
 EXPOSE 1938
 
-ENTRYPOINT [
-    "dotnet",
-    "AuxiliumSoftware.AuxiliumServices.API.dll",
-    "--config-path", "/etc/auxilium/config.yaml"
-]
+ENTRYPOINT ["dotnet", "AuxiliumSoftware.AuxiliumServices.API.dll", "--config-path", "/etc/auxilium/config.yaml"]
