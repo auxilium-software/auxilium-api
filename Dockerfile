@@ -1,6 +1,6 @@
 
 # ==================================================
-# Restore dependencies
+# restore dependencies
 # ==================================================
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS restore
 
@@ -16,7 +16,7 @@ RUN dotnet restore AuxiliumSoftware.AuxiliumServices.API/AuxiliumSoftware.Auxili
 
 
 # ==================================================
-# Publish
+# publish
 # ==================================================
 FROM restore AS publish
 
@@ -30,7 +30,7 @@ RUN dotnet publish \
 
 
 # ==================================================
-# Development
+# development
 # ==================================================
 FROM restore AS dev
 
@@ -48,7 +48,7 @@ ENTRYPOINT [
 
 
 # ==================================================
-# Production
+# production
 # ==================================================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS prod
 
