@@ -1,0 +1,867 @@
+﻿using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.Case;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserLogin;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserRefresh;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserRegistration;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Utilities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
+
+[AllowAnonymous]
+[ApiController]
+[Route("/api/v3/authentication")]
+[Tags("Authentication")]
+public class AuthenticationController : ControllerBase
+{
+    private readonly ConfigurationStructure _configuration;
+    private readonly ISystemSettingsService _systemSettings;
+    private readonly ILogger<AuthenticationController> _logger;
+    private readonly AuxiliumDbContext _db;
+    private readonly IWebApplicationFirewallService _wafService;
+    private readonly ITotpService _totpService;
+
+    private readonly ICaptchaService _captchaService;
+    private readonly IPasswordService _passwordService;
+    private readonly ITokenService _tokenService;
+
+    private readonly IMessageQueueProducer _messageQueueProducer;
+
+    public AuthenticationController(
+        IConfiguration configuration,
+        ISystemSettingsService systemSettingsService,
+        AuxiliumDbContext db,
+        ILogger<AuthenticationController> logger,
+        IWebApplicationFirewallService wafService,
+        ITotpService totpService,
+
+        ICaptchaService captchaService,
+        IPasswordService passwordService,
+        ITokenService tokenService,
+
+        IMessageQueueProducer messageQueueProducer
+        )
+    {
+        _configuration = configuration.Get<ConfigurationStructure>();
+        _systemSettings = systemSettingsService;
+        _logger = logger;
+        _db = db;
+        _wafService = wafService;
+        _totpService = totpService;
+
+        _captchaService = captchaService;
+        _passwordService = passwordService;
+        _tokenService = tokenService;
+
+        _messageQueueProducer = messageQueueProducer;
+    }
+
+    [AllowAnonymous]
+    [HttpPost("register")]
+    [ProducesResponseType(typeof(UserRegistrationResponseModel), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserRegistrationResponseModel>> Register(
+        [FromBody] UserRegistrationRequestModel request
+    )
+    {
+        try
+        {
+            // verify the reCAPTCHA token
+            if (string.IsNullOrEmpty(request.RecaptchaToken))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "reCAPTCHA token is required"
+                });
+            }
+
+            string? clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            Guid? createdUserId = null;
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                // check if user already exists
+                var existingUser = await _db.Users
+                    .FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
+
+                if (existingUser != null)
+                {
+                    throw new InvalidOperationException("Email address is already associated with an existing user account.");
+                }
+
+                // generate UUIDs
+                var userId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User);
+                var caseId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case);
+                var caseClientId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.Case_Client);
+
+                // hash password
+                var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+                var passwordHash = _passwordService.HashPassword(normalised);
+
+                // create the user entity
+                var user = new UserEntityModel
+                {
+                    Id = userId,
+                    EmailAddress = request.EmailAddress,
+                    PasswordHash = passwordHash,
+                    FullName = request.FullName,
+                    FullAddress = request.FullAddress,
+                    TelephoneNumber = request.TelephoneNumber,
+                    Gender = request.Gender,
+                    DateOfBirth = DateOnly.Parse(request.DateOfBirth),
+                    LanguagePreference = request.LanguagePreference,
+                    HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService,
+                    IsAdministrator = false,
+                    IsCaseWorker = false,
+                    IsCaseWorkerManager = false,
+                    AllowLogin = true,
+                    MustChangePassword = false,
+                    DeletionRequested = false,
+                    HasEmailAddressBeenVerified = false,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedByUserId = userId
+                };
+
+                // create the case entity
+                var caseEntity = new CaseEntityModel
+                {
+                    Id = caseId,
+                    Title = request.CaseTitle,
+                    Description = request.CaseDescription,
+                    Sensitivity = CaseSensitivityEnum.Confidential,
+                    Status = CaseStatusEnum.Open,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedByUserId = userId,
+                    LastUpdatedAtUtc = DateTime.UtcNow,
+                    LastUpdatedByUserId = userId
+                };
+
+                // add the user and the case to database
+                _db.Users.Add(user);
+                _db.Cases.Add(caseEntity);
+
+                // add the user as a client of the case
+                var caseClient = new CaseClientEntityModel
+                {
+                    Id = caseClientId,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedByUserId = userId,
+                    CaseId = caseId,
+                    UserId = userId
+                };
+                _db.CaseClients.Add(caseClient);
+
+                // save all changes
+                await _db.SaveChangesAsync();
+
+                var portalBaseUrl = await _systemSettings.GetStringAsync(SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl);
+                foreach (var caseWorkerManagerUser in _db.Users.Where(u => u.IsCaseWorkerManager == true))
+                {
+
+                    await _messageQueueProducer.PublishAsync(new EmailQueueMessage
+                    {
+                        TargetUserId = caseWorkerManagerUser.Id,
+                        Subject = "A new client has onboarded",
+                        TemplateName = "AccountOnboarded",
+                        Priority = EmailPriorityEnum.Normal,
+                        TemplateData = new Dictionary<string, string>
+                        {
+                            ["userId"] = user.Id.ToString(),
+                            ["view_link"] = $"{portalBaseUrl}/users/{user.Id}",
+                        }
+                    });
+                }
+
+                createdUserId = userId;
+                _logger.LogInformation("User {UserId} registered successfully", userId);
+            });
+
+            return StatusCode(StatusCodes.Status201Created, new UserRegistrationResponseModel
+            {
+                Id = createdUserId!.Value
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status409Conflict, new FailureResponseModel
+            {
+                Detail = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during user registration");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during registration"
+            });
+        }
+    }
+
+
+    [AllowAnonymous]
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(FailureResponseModel), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> Login(
+        [FromBody] UserLoginRequestModel request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.RecaptchaToken))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "reCAPTCHA token is required"
+                });
+            }
+
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _captchaService.VerifyRecaptchaAsync(request.RecaptchaToken, clientIp);
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            UserLoginResponseModel? response = null;
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.EmailAddress == request.EmailAddress);
+
+            if (user == null)
+            {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: null,
+                    failureReason: LoginAttemptFailureReasonEnum.UserNotFound
+                );
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "Invalid credentials"
+                });
+            }
+
+            var normalised = this._passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+
+            // Legacy BCrypt account - can't verify without raw password.
+            // Trigger an email-based reset instead.
+            if (user.PasswordHash.StartsWith("$2a$") ||
+                user.PasswordHash.StartsWith("$2b$") ||
+                user.PasswordHash.StartsWith("$2y$"))
+            {
+                var (rawToken, tokenHash) = _passwordService.GeneratePasswordSetToken();
+
+                _db.UserPasswordSetTokens.Add(new PasswordSetTokenEntityModel
+                {
+                    Id = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User_PasswordSetToken),
+                    UserId = user.Id,
+                    TokenHash = tokenHash,
+                    Reason = PasswordSetTokenReasonEnum.Auxilium1BCryptMigration,
+                    ExpiresAtUtc = DateTime.UtcNow.AddHours(24),
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedByUserId = user.Id,
+                });
+                await _db.SaveChangesAsync();
+
+                var portalBaseUrl = await _systemSettings.GetStringAsync(
+                    SystemSettingKeyEnum.Instance_Navigation_PortalBaseUrl
+                );
+
+                await _messageQueueProducer.PublishAsync(new EmailQueueMessage
+                {
+                    TargetUserId = user.Id,
+                    Subject = "Action required: please reset your password",
+                    TemplateName = "PasswordMigrationRequired",
+                    Priority = EmailPriorityEnum.High,
+                    TemplateData = new Dictionary<string, string>
+                    {
+                        ["set_password_link"] = $"{portalBaseUrl}/set-initial-password?token={Uri.EscapeDataString(rawToken)}"
+                    }
+                });
+
+                // Return 401 with a distinct detail string the frontend can key off
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "PasswordResetRequired"
+                });
+            }
+
+            if (!_passwordService.VerifyPassword(normalised, user.PasswordHash))
+            {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: user,
+                    failureReason: LoginAttemptFailureReasonEnum.InvalidPassword
+                );
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "Invalid credentials"
+                });
+            }
+
+            if (!user.AllowLogin)
+            {
+                await this._wafService.RecordFailedLoginAsync(
+                    ipAddress: HttpContext.Connection.RemoteIpAddress,
+                    attemptedEmail: request.EmailAddress,
+                    user: user,
+                    failureReason: LoginAttemptFailureReasonEnum.AccountLocked
+                );
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
+                {
+                    Detail = "Account blocked from logging in by the Auxilium IT department."
+                });
+            }
+
+            // TOTP enabled => return MFA session token instead
+            if (user.TotpEnabled)
+            {
+                var userData = new Dictionary<string, object>
+                {
+                    ["id"] = user.Id
+                };
+
+                _logger.LogInformation("MFA required for user {UserId}", user.Id);
+                return StatusCode(StatusCodes.Status200OK, new UserLoginResponseModel
+                {
+                    MfaRequired = true,
+                    MfaSessionToken = _tokenService.CreateMfaToken(userData),
+                    MustChangePassword = false,
+                });
+            }
+
+            // no TOTP for this account => issue tokens directly
+            response = await IssueTokensForUserAsync(user);
+            _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+
+
+            await this._wafService.RecordSuccessfulLoginAsync(
+                ipAddress: HttpContext.Connection.RemoteIpAddress,
+                email: request.EmailAddress,
+                user: user
+            );
+
+            return StatusCode(
+                StatusCodes.Status200OK,
+                response
+            );
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+            {
+                Detail = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during user login");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during login"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("verify-totp")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> VerifyTotp(
+        [FromBody] VerifyTotpRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
+            if (userId == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+            }
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            UserLoginResponseModel? response = null;
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Invalid session");
+            }
+
+            if (!user.AllowLogin)
+            {
+                throw new UnauthorizedAccessException("Account blocked from logging in by the Auxilium IT department.");
+            }
+
+            if (string.IsNullOrEmpty(user.TotpSecret))
+            {
+                throw new UnauthorizedAccessException("TOTP not configured for this account");
+            }
+
+            if (!(await _totpService.ValidateUserTotpAsync(user.Id, request.TotpCode)))
+            {
+                throw new UnauthorizedAccessException("Invalid TOTP code");
+            }
+
+            response = await IssueTokensForUserAsync(user);
+            _logger.LogInformation("User {UserId} completed MFA login", user.Id);
+
+            await this._wafService.RecordSuccessfulLoginAsync(
+                ipAddress: HttpContext.Connection.RemoteIpAddress,
+                email: user.EmailAddress,
+                user: user
+            );
+
+            return StatusCode(StatusCodes.Status200OK, response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during TOTP verification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during verification"
+            });
+        }
+    }
+
+
+    [AllowAnonymous]
+    [HttpPost("verify-recovery-code")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> VerifyRecoveryCode(
+    [FromBody] VerifyRecoveryCodeRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.MfaSessionToken);
+            if (userId == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid or expired MFA session" });
+            }
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            UserLoginResponseModel? response = null;
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new UnauthorizedAccessException("Invalid session");
+                }
+
+                if (!user.AllowLogin)
+                {
+                    throw new UnauthorizedAccessException("Account blocked from logging in by the Auxilium IT department.");
+                }
+
+                // hash the provided recovery code and look for a match
+                var codeHash = HashingUtilities.SHA256Hash(request.RecoveryCode);
+
+                var recoveryCode = await _db.UserTotpRecoveryCodes
+                    .FirstOrDefaultAsync(rc =>
+                        rc.CreatedByUserId == userId &&
+                        rc.CodeHash == codeHash &&
+                        !rc.IsUsed);
+
+                if (recoveryCode == null)
+                {
+                    throw new UnauthorizedAccessException("Invalid recovery code");
+                }
+
+                // mark the recovery code as used
+                recoveryCode.IsUsed = true;
+                recoveryCode.UsedAtUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                response = await IssueTokensForUserAsync(user);
+
+                _logger.LogInformation(
+                    "User {UserId} completed MFA login using recovery code {CodeId}",
+                    user.Id,
+                    recoveryCode.Id
+                );
+            });
+
+            return StatusCode(StatusCodes.Status200OK, response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during recovery code verification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during verification"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("forced-password-change")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> ForcedPasswordChange(
+    [FromBody] ForcedPasswordChangeRequestModel request)
+    {
+        try
+        {
+            var userId = _tokenService.ValidateMfaToken(request.PasswordChangeToken);
+            if (userId == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "Invalid or expired password change session"
+                });
+            }
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = "Invalid session" });
+            }
+
+            if (!user.MustChangePassword)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "Password change is not required for this account"
+                });
+            }
+
+            // hash and set the new password
+            var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+            user.PasswordHash = _passwordService.HashPassword(normalised);
+            user.MustChangePassword = false;
+            user.LastUpdatedAtUtc = DateTime.UtcNow;
+            user.LastUpdatedByUserId = user.Id;
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} completed forced password change", user.Id);
+
+            // don't issue tokens - make them log in fresh (goes through TOTP if enabled)
+            return StatusCode(StatusCodes.Status200OK, new { success = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during forced password change");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during password change"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(UserLoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserLoginResponseModel>> Refresh(
+        [FromBody] UserRefreshTokenRequestModel request
+    )
+    {
+        try
+        {
+            string? accessToken = null;
+            string? newRefreshToken = null;
+            int expiresIn = 0;
+
+            // hash the provided refresh token
+            var tokenHash = HashingUtilities.SHA256Hash(request.RefreshToken);
+
+            // verify the refresh token and get user
+            var refreshToken = await this._db.UserRefreshTokens
+                .Include(rt => rt.CreatedByUser)
+                .FirstOrDefaultAsync(rt =>
+                    rt.TokenHash == tokenHash &&
+                    rt.ExpiresAtUtc > DateTime.UtcNow
+                );
+
+            if (refreshToken == null || refreshToken.CreatedByUser == null)
+            {
+                throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            }
+
+            var user = refreshToken.CreatedByUser;
+
+            // create new access and refresh tokens
+            var userData = new Dictionary<string, object>
+            {
+                ["id"] = user.Id
+            };
+            accessToken = _tokenService.CreateAccessToken(userData);
+            newRefreshToken = _tokenService.CreateRefreshToken(userData);
+
+            // update the refresh token
+            var newTokenHash = HashingUtilities.SHA256Hash(newRefreshToken);
+            var newExpiresAt = DateTime.UtcNow.AddDays(
+                this._configuration.JWT.RefreshTokenExpirationInDays
+            );
+
+            refreshToken.TokenHash = newTokenHash;
+            refreshToken.ExpiresAtUtc = newExpiresAt;
+
+            await this._db.SaveChangesAsync();
+
+            expiresIn = this._configuration.JWT.AccessTokenExpirationInMinutes * 60;
+
+            this._logger.LogInformation("Refresh token renewed for user {UserId}", user.Id);
+
+            return StatusCode(StatusCodes.Status200OK, new UserLoginResponseModel
+            {
+                AccessToken = accessToken!,
+                RefreshToken = newRefreshToken!,
+                ExpiresIn = expiresIn,
+                MfaRequired = false,
+                MustChangePassword = false
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel { Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(ex, "Error during token refresh");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred during token refresh"
+            });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<UserLoginResponseModel> IssueTokensForUserAsync(UserEntityModel user)
+    {
+        var userData = new Dictionary<string, object>
+        {
+            ["id"] = user.Id
+        };
+
+
+
+        if (user.MustChangePassword)
+        {
+            _logger.LogInformation("User {UserId} must change password before login", user.Id);
+
+            return new UserLoginResponseModel
+            {
+                MfaRequired = false,
+                MustChangePassword = true,
+                PasswordChangeToken = _tokenService.CreateMfaToken(userData)
+            };
+        }
+
+
+
+        var accessToken = _tokenService.CreateAccessToken(userData);
+        var refreshToken = _tokenService.CreateRefreshToken(userData);
+
+        // remove expired refresh tokens
+        var expiredTokens = _db.UserRefreshTokens
+            .Where(rt => rt.CreatedByUserId == user.Id && rt.ExpiresAtUtc < DateTime.UtcNow);
+        _db.UserRefreshTokens.RemoveRange(expiredTokens);
+
+        // store the new refresh token
+        var refreshTokenId = UUIDUtilities.GenerateV5(DatabaseObjectTypeEnum.User_RefreshToken);
+        var tokenHash = HashingUtilities.SHA256Hash(refreshToken);
+        var expiresAtTime = DateTime.UtcNow.AddDays(_configuration.JWT.RefreshTokenExpirationInDays);
+
+        var refreshTokenEntity = new RefreshTokenEntityModel
+        {
+            Id = refreshTokenId,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedByUserId = user.Id,
+            TokenHash = tokenHash,
+            ExpiresAtUtc = expiresAtTime
+        };
+        _db.UserRefreshTokens.Add(refreshTokenEntity);
+
+        await _db.SaveChangesAsync();
+
+        return new UserLoginResponseModel
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ExpiresIn = _configuration.JWT.AccessTokenExpirationInMinutes * 60,
+            MfaRequired = false,
+            MustChangePassword = false
+        };
+    }
+
+
+
+
+
+
+    [AllowAnonymous]
+    [HttpPost("set-initial-password")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SetPassword(
+    [FromBody] InitialSetPasswordRequestModel request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.RawPassword) && string.IsNullOrWhiteSpace(request.PasswordSha512))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                {
+                    Detail = "A password must be provided"
+                });
+            }
+
+            // hash the incoming token to match against stored hash
+            var tokenHash = _passwordService.HashToken(request.Token);
+
+            var token = await _db.UserPasswordSetTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t =>
+                    t.TokenHash == tokenHash &&
+                    !t.UsedAtUtc.HasValue &&
+                    t.ExpiresAtUtc > DateTime.UtcNow);
+
+            if (token == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "Invalid or expired token"
+                });
+            }
+
+            var user = token.User;
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new FailureResponseModel
+                {
+                    Detail = "Invalid token"
+                });
+            }
+
+            // invalidate all unused tokens for this user (including this one)
+            var allTokens = await _db.UserPasswordSetTokens
+                .Where(t => t.UserId == user.Id && !t.UsedAtUtc.HasValue)
+                .ToListAsync();
+
+            foreach (var t in allTokens)
+                t.UsedAtUtc = DateTime.UtcNow;
+
+            // hash and set the new password
+            var normalised = _passwordService.NormalisePassword(request.RawPassword, request.PasswordSha512);
+            user.PasswordHash = _passwordService.HashPassword(normalised);
+            user.AllowLogin = true;
+            user.MustChangePassword = false;
+            user.LastUpdatedAtUtc = DateTime.UtcNow;
+            user.LastUpdatedByUserId = user.Id;
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Password set for user {UserId} via token (reason: {Reason})",
+                user.Id, token.Reason
+            );
+
+            return StatusCode(StatusCodes.Status200OK, new { success = true });
+        }
+        catch (FormatException)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+            {
+                Detail = "Invalid token format"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during password set");
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "An error occurred while setting the password"
+            });
+        }
+    }
+}

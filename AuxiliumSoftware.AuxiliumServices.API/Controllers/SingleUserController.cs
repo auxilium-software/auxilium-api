@@ -1,0 +1,218 @@
+﻿using AuxiliumSoftware.AuxiliumServices.API.Common.ControllerBases;
+using AuxiliumSoftware.AuxiliumServices.API.Common.Utilities;
+using AuxiliumSoftware.AuxiliumServices.API.Models;
+using AuxiliumSoftware.AuxiliumServices.API.Models.File;
+using AuxiliumSoftware.AuxiliumServices.API.Models.User;
+using AuxiliumSoftware.AuxiliumServices.API.Models.UserStatistic;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration;
+using AuxiliumSoftware.AuxiliumServices.Common.DataTransferObjects;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging.Models.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
+using System.Security.Cryptography;
+
+namespace AuxiliumSoftware.AuxiliumServices.API.Controllers;
+
+[ApiController]
+[Route("/api/v3/users/{userId:guid}")]
+[Tags("Users")]
+public class SingleUserController : LoggedInControllerBase
+{
+    private readonly IUserDocumentService _userDocService;
+    private readonly IMessageQueueProducer _messageQueue;
+    private readonly IFileDocumentService _fileService;
+    private readonly IDataEnumeratorService _dataEnumeratorService;
+
+    public SingleUserController(
+        ISystemSettingsService systemSettingsService,
+        IConfiguration configuration,
+        AuxiliumDbContext db,
+        ILogger<SingleUserController> logger,
+        ITotpService totpService,
+        IWebApplicationFirewallService waf,
+        IUserDocumentService userDocService,
+        IMessageQueueProducer messageQueue,
+        IFileDocumentService fileService,
+        IDataEnumeratorService dataEnumeratorService
+        )
+        : base(systemSettingsService, configuration, db, waf, logger, totpService)
+    {
+        _userDocService = userDocService;
+        _messageQueue = messageQueue;
+        _fileService = fileService;
+        _dataEnumeratorService = dataEnumeratorService;
+    }
+
+
+    [HttpGet("")]
+    [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserResponseModel>> GetUserById(Guid userId)
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            UserEntityModel targetUser = Db.Users.FirstOrDefault(u => u.Id == userId);
+            if (targetUser == null)
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "The targeted User does not exist."
+                });
+
+            if (await ControllerUtilities.HasUserGotConnectionToUser(Db, user!, targetUser) == false)
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
+                {
+                    Detail = "You may not access this user."
+                });
+
+            var userDoc = await Db.Users
+                .Include(u => u.AdditionalProperties)
+                .Include(u => u.Files)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (userDoc == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
+            }
+
+            var response = ControllerUtilities.UserMapToUserResponseModel(userDoc, user!.IsAdministrator);
+            await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user.LanguagePreference);
+            return StatusCode(StatusCodes.Status200OK, response);
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Failed to fetch user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "Failed to fetch user"
+            });
+        }
+    }
+
+
+    [HttpPatch("")]
+    [ProducesResponseType(typeof(UserResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserResponseModel>> UpdateUser(
+        Guid userId,
+        [FromBody] UpdateUserRequestModel request
+    )
+    {
+        try
+        {
+            var (user, error) = await GetCurrentUserAsync();
+            if (error != null) return error;
+
+            UserEntityModel targetUser = Db.Users.FirstOrDefault(u => u.Id == userId);
+            if (targetUser == null)
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel
+                {
+                    Detail = "The targeted User does not exist."
+                });
+
+            if (await ControllerUtilities.HasUserGotConnectionToUser(Db, user!, targetUser) == false)
+                return StatusCode(StatusCodes.Status403Forbidden, new FailureResponseModel
+                {
+                    Detail = "You may not access this user."
+                });
+
+            var totpError = await RequireTotpAsync(user!.Id);
+            if (totpError != null) return totpError;
+
+            var userDoc = await Db.Users
+                .Include(u => u.AdditionalProperties)
+                .Include(u => u.Files)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (userDoc == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "User not found" });
+            }
+
+            // apply changes only for fields that were provided
+            if (request.FullName != null && request.FullName != userDoc.FullName)
+            {
+                var oldValue = userDoc.FullName;
+                userDoc.FullName = request.FullName;
+            }
+
+            /*
+            if (request.EmailAddress != null && request.EmailAddress != userDoc.EmailAddress)
+            {
+                // check for email uniqueness
+                var emailExists = await Db.Users
+                    .AnyAsync(u => u.Id != userId && u.EmailAddress == request.EmailAddress);
+
+                if (emailExists)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
+                    {
+                        Detail = "A user with this email address already exists"
+                    });
+                }
+
+                var oldValue = userDoc.EmailAddress;
+                userDoc.EmailAddress = request.EmailAddress;
+                await _userDocService.WriteToAuditLog(user, userDoc, UserEntityTypeEnum.User, userDoc.Id,
+                    AuditLogActionTypeEnum.Modification, "EmailAddress", oldValue, request.EmailAddress);
+            }
+            */
+
+            if (request.TelephoneNumber != null && request.TelephoneNumber != userDoc.TelephoneNumber)
+                userDoc.TelephoneNumber = request.TelephoneNumber;
+
+            if (request.FullAddress != null && request.FullAddress != userDoc.FullAddress)
+                userDoc.FullAddress = request.FullAddress;
+
+            if (request.Gender != null && request.Gender != userDoc.Gender)
+                userDoc.Gender = request.Gender;
+
+            if (request.DateOfBirth.HasValue && request.DateOfBirth.Value != userDoc.DateOfBirth)
+                userDoc.DateOfBirth = request.DateOfBirth.Value;
+
+            if (request.LanguagePreference != null && request.LanguagePreference != userDoc.LanguagePreference)
+                userDoc.LanguagePreference = request.LanguagePreference;
+
+            if (request.HowDidYouFindOutAboutOurService != null && request.HowDidYouFindOutAboutOurService != userDoc.HowDidYouFindOutAboutOurService)
+                userDoc.HowDidYouFindOutAboutOurService = request.HowDidYouFindOutAboutOurService;
+
+            userDoc.LastUpdatedAtUtc = DateTime.UtcNow;
+            userDoc.LastUpdatedByUserId = user!.Id;
+
+            await Db.SaveChangesAsync();
+
+            Logger.LogInformation(
+                "User {UserId} updated by admin {AdminId}",
+                userId, user.Id
+            );
+
+            var response = ControllerUtilities.UserMapToUserResponseModel(userDoc, true);
+            await ControllerUtilities.EnrichEnumPropertiesAsync(response.AdditionalProperties, _dataEnumeratorService, user.LanguagePreference);
+            return StatusCode(StatusCodes.Status200OK, response);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new FailureResponseModel
+            {
+                Detail = "Failed to update user"
+            });
+        }
+    }
+}

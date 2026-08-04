@@ -1,0 +1,317 @@
+using AuxiliumSoftware.AuxiliumServices.API.Filters;
+using AuxiliumSoftware.AuxiliumServices.API.JsonSerialisationConverters;
+using AuxiliumSoftware.AuxiliumServices.API.Metrics;
+using AuxiliumSoftware.AuxiliumServices.API.Middleware;
+using AuxiliumSoftware.AuxiliumServices.Common.Configuration.Sections.Databases;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.EntityModels;
+using AuxiliumSoftware.AuxiliumServices.Common.EntityFramework.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Messaging;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Collectors;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Common;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Enumerators;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Interfaces;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Sinks;
+using AuxiliumSoftware.AuxiliumServices.Common.Metrics.Workers;
+using AuxiliumSoftware.AuxiliumServices.Common.Services;
+using AuxiliumSoftware.AuxiliumServices.Common.Services.Implementations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+
+
+string? configPath = args
+    .SkipWhile(a => a != "--config-path")
+    .Skip(1)
+    .FirstOrDefault() ?? throw new InvalidOperationException("Configuration path not specified. Please provide a path via command line argument '--config-path'.");
+
+builder.Configuration.AddYamlFile(
+    configPath,
+    optional: false,
+    reloadOnChange: true
+);
+
+
+
+var urls = builder.Configuration
+    .GetSection("API:AvailableFrom")
+    .Get<string[]>();
+
+if (urls?.Length == 0)
+    throw new InvalidOperationException("At least ONE API->AvailableFrom MUST be specified.");
+
+builder.WebHost.UseUrls(urls);
+
+
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+
+        options.JsonSerializerOptions.WriteIndented = true;
+        // options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+
+        options.JsonSerializerOptions.Converters.Add(new IpAddressJsonConverter());
+
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+builder.Services.AddEndpointsApiExplorer();
+
+
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v3", new OpenApiInfo
+    {
+        Title = "Auxilium API",
+        Version = "V3"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme",
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    options.OperationFilter<FileUploadOperationFilter>();
+});
+
+
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration!["JWT:ValidIssuer"]!,
+            ValidAudience = builder.Configuration!["JWT:ValidAudiencePrefix"]! + "/access",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration!["JWT:SecretKey"]!))
+        };
+    });
+builder.Services.AddAuthorization();
+
+
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
+});
+
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var originsSection = builder.Configuration.GetSection("API:CORS:AllowedOrigins");
+        var origins = originsSection.Get<string[]>() ?? Array.Empty<string>();
+
+        policy.WithOrigins(origins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+
+
+builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
+
+builder.Services.AddScoped<IDataEnumeratorService, DataEnumeratorService>();
+
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddScoped<ICaseDocumentService, CaseDocumentService>();
+builder.Services.AddScoped<IUserDocumentService, UserDocumentService>();
+builder.Services.AddScoped<IFileDocumentService, FileDocumentService>();
+builder.Services.AddScoped<IMessageDocumentService, MessageDocumentService>();
+
+builder.Services.AddScoped<IWebApplicationFirewallService, WebApplicationFirewallService>();
+builder.Services.AddScoped<ITotpService, TotpService>();
+
+
+var rabbitConfig = builder.Configuration
+    .GetSection("Databases:RabbitMQ")
+    .Get<RabbitMQConfigurationSection>()
+    ?? throw new InvalidOperationException("RabbitMQ configuration section is missing.");
+
+rabbitConfig.Validate();
+builder.Services.AddRabbitMqCore(rabbitConfig);
+builder.Services.AddRabbitMqProducer();
+
+
+
+builder.Services.AddHttpClient<ICaptchaService, CaptchaService>();
+
+
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+builder.Logging.AddFilter(
+    "AuxiliumSoftware.AuxiliumServices.API.Middleware.RequestLoggingMiddleware",
+    LogLevel.Information
+);
+
+
+
+var mariaDbHost = builder.Configuration["Databases:MariaDB:Host"]           ?? throw new InvalidOperationException("MariaDB Host not found");
+var mariaDbPort = builder.Configuration["Databases:MariaDB:Port"]           ?? throw new InvalidOperationException("MariaDB Port not found");
+var mariaDbUsername = builder.Configuration["Databases:MariaDB:Username"]   ?? throw new InvalidOperationException("MariaDB Username not found");
+var mariaDbPassword = builder.Configuration["Databases:MariaDB:Password"]   ?? throw new InvalidOperationException("MariaDB Password not found");
+var mariaDbDatabase = builder.Configuration["Databases:MariaDB:Database"]   ?? throw new InvalidOperationException("MariaDB Database not found");
+
+var connectionString =
+    $"Server={mariaDbHost};"
+    + $"Port={mariaDbPort};"
+    + $"Database={mariaDbDatabase};"
+    + $"User={mariaDbUsername};"
+    + $"Password={mariaDbPassword};"
+    + $"CharSet=utf8mb4;"
+    + $"Pooling=true;"
+    + $"MinimumPoolSize=5;"
+    + $"MaximumPoolSize=100;"
+    + $"ConnectionLifeTime=300;"
+    + $"ConnectionIdleTimeout=180;"
+    + $"CancellationTimeout=5;"
+    + $"ConnectionReset=false;"
+    + $"DefaultCommandTimeout=30;";
+
+
+builder.Services.AddDbContext<AuxiliumDbContext>(options =>
+{
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString),
+        mySqlOptions =>
+        {
+            mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+            );
+        }
+    );
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
+
+
+
+// metrics
+builder.Services.AddSingleton<IMetricSink, JsonlMetricSink>();
+
+builder.Services.AddSingleton<IMetricCollector>(_ => new ProcessResourceCollector(new ProcessMetricKeys(
+    Cpu: SystemMetricKeyEnum.Api_CpuUsageAsPercentage,
+    Memory: SystemMetricKeyEnum.Api_MemoryUsageInBytes,
+    Uptime: SystemMetricKeyEnum.Api_UptimeInSeconds)));
+
+builder.Services.AddSingleton<IMetricCollector>(_ => new RuntimeCollector(new RuntimeMetricKeys(
+    ThreadPoolQueueLength: SystemMetricKeyEnum.Api_ThreadPoolQueueLength,
+    Gen0CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen0CollectionsPerMinute,
+    Gen1CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen1CollectionsPerMinute,
+    Gen2CollectionsPerMinute: SystemMetricKeyEnum.Api_Gen2CollectionsPerMinute,
+    TimeInGcPercentage: SystemMetricKeyEnum.Api_TimeInGcAsPercentage)));
+
+builder.Services.AddSingleton<HttpMetricsAccumulator>();
+builder.Services.AddSingleton<IMetricCollector, HttpMetricsCollector>();
+
+builder.Services.AddHostedService<MinutelyMetricsWorker>();
+builder.Services.AddHostedService<HourlyMetricsWorker>();
+
+
+
+
+
+/*
+ * 1. log the request
+ * 2. enforce https
+ * 3. sort out cors stuff
+ * 4. manage ip and user blocking
+ * 5. http metrics
+ */
+
+
+var app = builder.Build();
+
+app.UseForwardedHeaders();
+
+app.UseSwagger();
+app.UseSwaggerUI(swaggerUI =>
+{
+    swaggerUI.SwaggerEndpoint("/swagger/v3/swagger.json", "Auxilium API V3");
+});
+
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+if (builder.Configuration.GetValue<bool>("API:UseHttpsRedirection"))
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors();
+
+app.UseMiddleware<WafIpMiddleware>();
+app.UseMiddleware<HttpMetricsMiddleware>();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+app.MapFallback(() => Results.NotFound(new
+{
+    error = "Not Found",
+    message = "The requested endpoint does not exist.",
+    statusCode = 404
+}));
+
+app.Run();
