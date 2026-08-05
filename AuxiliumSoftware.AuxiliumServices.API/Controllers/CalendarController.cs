@@ -450,12 +450,6 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var (user, error) = await RequireCalendarAccessAsync();
                 if (error != null) return error;
 
-                var statusValue = request.Status.Trim().ToLowerInvariant();
-                if (statusValue != "accepted" && statusValue != "declined")
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel { Detail = "status must be 'accepted' or 'declined'" });
-                }
-
                 var entity = await Db.CalendarEvents.Include(e => e.Invites).FirstOrDefaultAsync(e => e.Id == id, ct);
                 if (entity == null)
                 {
@@ -468,12 +462,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                     return StatusCode(StatusCodes.Status404NotFound, new FailureResponseModel { Detail = "You don't have an invite for this event" });
                 }
 
-                myInvite.Status = statusValue == "accepted" ? CalendarEventInviteStatusEnum.Accepted : CalendarEventInviteStatusEnum.Declined;
+                myInvite.Status = request.Status;
                 myInvite.RespondedAtUtc = DateTime.UtcNow;
 
                 await Db.SaveChangesAsync(ct);
 
-                this.Logger.LogInformation("User {UserId} {Status} invite to calendar event {EventId}", user!.Id, statusValue, id);
+                this.Logger.LogInformation("User {UserId} {Status} invite to calendar event {EventId}", user!.Id, request.Status, id);
 
                 var categoryNamesById = await GetCategoryNameLookupAsync(ct);
                 var involvedUserIds = (entity.Invites ?? new List<CalendarEventInviteEntityModel>())
@@ -710,7 +704,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new FailureResponseModel
                 {
-                    Detail = "Can only invite case workers, case worker managers, or administrators — they're the only users with calendar access."
+                    Detail = "Can only invite case workers, case worker managers, or administrators - they're the only users with calendar access."
                 });
             }
 
