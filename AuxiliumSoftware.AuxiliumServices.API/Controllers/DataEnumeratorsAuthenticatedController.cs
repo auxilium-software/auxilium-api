@@ -142,6 +142,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 if (error != null) return error;
 
                 var enumerator = await _dataEnumeratorService.CreateEnumeratorAsync(
+                    request.Scope,
                     request.Name,
                     request.Description,
                     user!,
@@ -502,6 +503,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var value = await _dataEnumeratorService.CreateValueAsync(
                     id,
                     request.DisplayName,
+                    request.ColourHex,
                     user!,
                     request.SortOrder,
                     ct
@@ -550,6 +552,7 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 var value = await _dataEnumeratorService.UpdateValueAsync(
                     valueId,
                     request.DisplayName,
+                    request.ColourHex,
                     user!,
                     ct
                 );
