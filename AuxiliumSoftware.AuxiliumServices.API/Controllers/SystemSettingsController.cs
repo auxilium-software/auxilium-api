@@ -262,12 +262,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
             if (defaultAttr?.DefaultValue is null)
                 return null;
 
-            if (valueType == SystemSettingValueTypeEnum.StringArray)
+            if (valueType == SystemSettingValueTypeEnum.DayArray)
             {
                 var stringValue = defaultAttr.DefaultValue.ToString() ?? "";
                 return string.IsNullOrEmpty(stringValue)
-                    ? new List<string>()
-                    : stringValue.Split(',').Select(s => s.Trim()).ToList();
+                    ? new List<DayOfWeek>()
+                    : stringValue.Split(',').Select(s => Enum.Parse<DayOfWeek>(s.Trim())).ToList();
             }
 
             return defaultAttr.DefaultValue;
@@ -281,8 +281,9 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
                 SystemSettingValueTypeEnum.Int => JsonSerializer.Deserialize<int>(json),
                 SystemSettingValueTypeEnum.Bool => JsonSerializer.Deserialize<bool>(json),
                 SystemSettingValueTypeEnum.Decimal => JsonSerializer.Deserialize<decimal>(json),
-                SystemSettingValueTypeEnum.StringArray => JsonSerializer.Deserialize<List<string>>(json),
-                SystemSettingValueTypeEnum.Json => JsonSerializer.Deserialize<JsonElement>(json),
+                SystemSettingValueTypeEnum.DayArray => JsonSerializer.Deserialize<List<DayOfWeek>>(json),
+                // SystemSettingValueTypeEnum.StringArray => JsonSerializer.Deserialize<List<string>>(json),
+                // SystemSettingValueTypeEnum.Json => JsonSerializer.Deserialize<JsonElement>(json),
                 _ => json
             };
         }
