@@ -11,6 +11,12 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Models.DataEnumeratorValue
 
 
 
+        [Required]
+        [JsonPropertyName("colourHex")]
+        public required string ColourHex { get; set; }
+
+
+
         [JsonPropertyName("sortOrder")]
         public int? SortOrder { get; set; }
     }
