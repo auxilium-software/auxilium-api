@@ -1,7 +1,11 @@
 
 .vs/
 *.user
+
 /AuxiliumSoftware.AuxiliumServices.API/bin
 /AuxiliumSoftware.AuxiliumServices.API/obj
 /AuxiliumSoftware.AuxiliumServices.API.Tests/bin
 /AuxiliumSoftware.AuxiliumServices.API.Tests/obj
+
+AuxiliumSoftware.AuxiliumServices.API.Tests/AuxiliumSoftware.AuxiliumServices.API.Tests.csproj.Backup.tmp
+AuxiliumSoftware.AuxiliumServices.API/AuxiliumSoftware.AuxiliumServices.API.csproj.Backup.tmp
