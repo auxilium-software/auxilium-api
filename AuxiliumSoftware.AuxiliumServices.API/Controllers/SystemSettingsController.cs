@@ -20,6 +20,27 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
     [Tags("System Settings")]
     public class SystemSettingsController : LoggedInControllerBase
     {
+        private static readonly Dictionary<string, SystemSettingKeyEnum> _jsonKeyToEnum = BuildJsonKeyLookup();
+
+        private static Dictionary<string, SystemSettingKeyEnum> BuildJsonKeyLookup()
+        {
+            var map = new Dictionary<string, SystemSettingKeyEnum>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (SystemSettingKeyEnum key in Enum.GetValues<SystemSettingKeyEnum>())
+            {
+                var field = typeof(SystemSettingKeyEnum).GetField(key.ToString());
+                var jsonNameAttr = field?.GetCustomAttribute<JsonPropertyNameAttribute>();
+
+                if (jsonNameAttr is not null)
+                    map[jsonNameAttr.Name] = key;
+            }
+
+            return map;
+        }
+
+        private static bool TryResolveSettingKey(string jsonKey, out SystemSettingKeyEnum settingKey) => _jsonKeyToEnum.TryGetValue(jsonKey, out settingKey);
+
+
         public SystemSettingsController(
             ISystemSettingsService systemSettingsService,
             IConfiguration configuration,
@@ -137,19 +158,20 @@ namespace AuxiliumSoftware.AuxiliumServices.API.Controllers
         [HttpGet("{settingKey}")]
         [ProducesResponseType(typeof(SystemSettingResponseModel), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<SystemSettingResponseModel>> GetSetting(
-            SystemSettingKeyEnum settingKey
-        )
+        public async Task<ActionResult<SystemSettingResponseModel>> GetSetting(string settingKey)
         {
             var (user, error) = await GetCurrentUserAsync();
             if (error != null) return error;
 
             var adminError = await this.RequireAdminAsync();
-            if (adminError!= null) return adminError;
+            if (adminError != null) return adminError;
+
+            if (!TryResolveSettingKey(settingKey, out var resolvedKey))
+                return StatusCode(StatusCodes.Status404NotFound, new { message = $"Setting not found: {settingKey}" });
 
             var setting = await this.Db.System_Settings
                 .AsNoTracking()
-                .Where(s => s.ConfigKey == settingKey)
+                .Where(s => s.ConfigKey == resolvedKey)
                 .OrderByDescending(s => s.CreatedAtUtc)
                 .Include(s => s.CreatedByUser)
                 .FirstOrDefaultAsync();
